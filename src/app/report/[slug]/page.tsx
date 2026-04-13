@@ -1240,129 +1240,84 @@ export default function ReportPage() {
             )}
 
             {/* CTA: Agent Alice */}
-            <section className="bg-gradient-to-br from-gray-900 via-black to-gray-900 border-2 border-orange-500 rounded-xl overflow-hidden">
-              <div className="p-10 text-center border-b border-orange-500/30">
-                <p className="text-orange-400 text-sm uppercase tracking-widest font-bold mb-3">
+            <section className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden">
+              {/* Header */}
+              <div className="px-10 pt-10 pb-8 text-center border-b border-[#E2E8F0]">
+                <p className="text-xs font-bold text-[#0BA5C9] uppercase tracking-widest mb-3">
                   Part 1 Complete
                 </p>
                 <h2
-                  className="text-4xl md:text-5xl font-black text-white mb-4"
+                  className="text-4xl md:text-5xl font-black text-[#0F172A] mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   There&apos;s a Part 2 to This Report
                 </h2>
-                <div className="w-16 h-1 bg-orange-500 mx-auto my-4" />
-                <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+                <div className="w-16 h-1 bg-[#E8890C] mx-auto my-4" />
+                <p className="text-[#64748B] text-lg max-w-2xl mx-auto">
                   You&apos;ve seen where you stand. Now discover exactly{" "}
-                  <strong className="text-white">
-                    what you need to rank for
-                  </strong>{" "}
+                  <strong className="text-[#0F172A]">what you need to rank for</strong>{" "}
                   in order to succeed in AI search.
                 </p>
               </div>
 
-              <div className="p-10">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                  <div className="bg-black/60 border border-gray-800 rounded-xl p-6 text-center">
-                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <svg
-                        className="w-6 h-6 text-black"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+              {/* Feature cards */}
+              <div className="px-10 pt-8 pb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  {[
+                    {
+                      icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+                      title: "Your AI Ranking Plan",
+                      desc: "A detailed, query-by-query strategy for getting your brand recommended by every AI engine.",
+                    },
+                    {
+                      icon: "M13 10V3L4 14h7v7l9-11h-7z",
+                      title: "On-Brand Content",
+                      desc: "Not AI slop. On-brand content specifically designed to rank in AI search results.",
+                    },
+                    {
+                      icon: "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+                      title: "Automated Execution",
+                      desc: "Our AI agents implement the plan for you. Activate it, and watch your visibility climb.",
+                    },
+                  ].map((item) => (
+                    <div key={item.title} className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-6 text-center">
+                      <div className="w-12 h-12 bg-[#E8890C] rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                        </svg>
+                      </div>
+                      <h3 className="text-[#0F172A] font-bold mb-2 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                        {item.title}
+                      </h3>
+                      <p className="text-[#64748B] text-sm leading-relaxed">{item.desc}</p>
                     </div>
-                    <h3 className="text-white font-bold mb-2">
-                      Your AI Ranking Plan
-                    </h3>
-                    <p className="text-gray-400 text-sm">
-                      A detailed, query-by-query strategy for getting your brand
-                      recommended by every AI engine.
-                    </p>
-                  </div>
-                  <div className="bg-black/60 border border-gray-800 rounded-xl p-6 text-center">
-                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <svg
-                        className="w-6 h-6 text-black"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-white font-bold mb-2">
-                      On-Brand Content
-                    </h3>
-                    <p className="text-gray-400 text-sm">
-                      Not AI slop. On-brand content specifically designed to rank
-                      in AI search results.
-                    </p>
-                  </div>
-                  <div className="bg-black/60 border border-gray-800 rounded-xl p-6 text-center">
-                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <svg
-                        className="w-6 h-6 text-black"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                    <h3 className="text-white font-bold mb-2">
-                      Automated Execution
-                    </h3>
-                    <p className="text-gray-400 text-sm">
-                      Our AI agents implement the plan for you. Activate it, and
-                      watch your visibility climb.
-                    </p>
-                  </div>
+                  ))}
                 </div>
 
-                <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-8 text-center mb-8">
-                  <p className="text-lg text-white mb-2">
+                {/* Agent Alice callout */}
+                <div className="bg-[#FFF3E0] border border-[#E8890C]/20 rounded-2xl p-8 text-center mb-8">
+                  <p className="text-base text-[#0F172A] mb-2">
                     We&apos;ve built{" "}
-                    <strong className="text-orange-400">Agent Alice</strong> to
-                    do exactly this.
+                    <strong className="text-[#E8890C]">Agent Alice</strong> to do exactly this.
                   </p>
-                  <p className="text-gray-400">
-                    She analyses your gaps, creates the content plan, and writes
-                    on-brand content that gets you mentioned by AI search
-                    engines. Not generic AI slop &mdash; content designed to
-                    rank.
+                  <p className="text-[#64748B] text-sm max-w-xl mx-auto leading-relaxed">
+                    She analyses your gaps, creates the content plan, and writes on-brand content that gets you mentioned by AI search engines. Not generic AI slop &mdash; content designed to rank.
                   </p>
                 </div>
 
-                <div className="text-center">
+                {/* CTA */}
+                <div className="text-center pb-4">
                   <a
                     href="https://balmeragency.com.au/contact"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block px-10 py-4 bg-orange-500 text-black font-bold rounded-lg hover:bg-orange-400 transition-colors text-lg uppercase tracking-wider"
+                    className="inline-block px-10 py-4 bg-[#E8890C] text-white font-bold rounded-xl hover:bg-[#d07a0a] transition-colors text-base uppercase tracking-wider"
+                    style={{ fontFamily: "'DM Sans', sans-serif" }}
                   >
                     Activate the Plan
                   </a>
-                  <p className="text-gray-500 text-sm mt-3">
-                    Talk to us about Part 2 &mdash; your AI visibility action
-                    plan
+                  <p className="text-[#94A3B8] text-sm mt-3">
+                    Talk to us about Part 2 &mdash; your AI visibility action plan
                   </p>
                 </div>
               </div>

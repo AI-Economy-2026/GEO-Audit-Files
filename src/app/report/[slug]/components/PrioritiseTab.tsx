@@ -115,13 +115,10 @@ export default function PrioritiseTab({
 
         {/* Right: opportunity score */}
         <div className="lg:col-span-2 flex flex-col gap-3">
-          <div
-            className="flex-1 rounded-xl p-6 flex flex-col justify-center text-white"
-            style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f766e 100%)" }}
-          >
-            <div className="text-5xl font-extrabold leading-none tracking-tight">{avgActivation}</div>
-            <div className="text-sm font-semibold opacity-90 mt-1">Avg. Opportunity Score</div>
-            <div className="text-xs opacity-60 mt-2 leading-relaxed">
+          <div className="flex-1 bg-white border border-[#E2E8F0] border-t-4 border-t-[#004AAD] rounded-2xl p-6 flex flex-col justify-center">
+            <div className="text-5xl font-extrabold leading-none tracking-tight text-[#004AAD]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{avgActivation}</div>
+            <div className="text-sm font-semibold text-[#0F172A] mt-2">Avg. Opportunity Score</div>
+            <div className="text-xs text-[#94A3B8] mt-1 leading-relaxed">
               Based on {derivedPrompts.length} scored prompts · {Math.round(overallVisibility)}% current visibility
             </div>
           </div>
@@ -180,13 +177,12 @@ export default function PrioritiseTab({
       </div>
 
       {/* CTA banner */}
-      <div
-        className="rounded-xl px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-5 text-white"
-        style={{ background: "linear-gradient(135deg, #0f172a, #1e3a5f)" }}
-      >
+      <div className="bg-[#E6F1FB] border border-[#004AAD]/20 rounded-2xl px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-5">
         <div>
-          <h4 className="text-base font-bold mb-1">Ready to activate the plan?</h4>
-          <p className="text-sm opacity-70 max-w-md">
+          <h4 className="text-base font-bold text-[#0F172A] mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            Ready to activate the plan?
+          </h4>
+          <p className="text-sm text-[#64748B] max-w-md">
             Talk to Balmer Agency about running a GEO Fix Sprint — we implement the recommendations for you.
           </p>
         </div>
@@ -194,7 +190,8 @@ export default function PrioritiseTab({
           href="https://balmeragency.com.au/contact"
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 px-6 py-2.5 bg-white text-teal-700 font-bold rounded-lg hover:bg-teal-50 transition-colors text-sm"
+          className="shrink-0 px-6 py-2.5 bg-[#004AAD] text-white font-bold rounded-xl hover:bg-[#003A8C] transition-colors text-sm"
+          style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
           Start GEO Fix Sprint →
         </a>
