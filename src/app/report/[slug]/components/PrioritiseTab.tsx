@@ -105,9 +105,9 @@ export default function PrioritiseTab({
               { value: quickWins, label: "Quick wins" },
               { value: "30–60d", label: "Execution window" },
             ].map(({ value, label }) => (
-              <div key={label} className="bg-gray-50 rounded-xl border border-gray-100 px-4 py-3">
-                <div className="text-2xl font-extrabold text-gray-900 leading-none mb-1">{value}</div>
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{label}</div>
+              <div key={label} className="bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] px-4 py-3">
+                <div className="text-2xl font-extrabold text-[#0F172A] leading-none mb-1">{value}</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</div>
               </div>
             ))}
           </div>

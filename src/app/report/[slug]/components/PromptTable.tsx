@@ -138,7 +138,7 @@ export default function PromptTable({ prompts }: Props) {
                 </span>
               </td>
               <td className="px-4 py-4">
-                <span className="text-xs font-semibold px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100">
+                <span className="text-xs font-semibold px-2 py-1 rounded-md bg-[#E6F1FB] text-[#004AAD] border border-[#004AAD]/10">
                   {p.content_suggestion}
                 </span>
               </td>

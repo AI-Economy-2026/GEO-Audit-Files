@@ -1,32 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800;9..40,900&family=Poppins:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --blue: #004AAD;
+  --blue-light: #E6F1FB;
+  --blue-dark: #003A8C;
+  --teal: #0BA5C9;
+  --teal-light: #E0F5FA;
+  --dark: #0F172A;
+  --g800: #1E293B;
+  --g700: #334155;
+  --g500: #64748B;
+  --g400: #94A3B8;
+  --g300: #CBD5E1;
+  --g200: #E2E8F0;
+  --g100: #F1F5F9;
+  --g50: #F8FAFC;
+  --white: #ffffff;
+  --green: #1D9E75;
+  --green-l: #E1F5EE;
+  --orange: #E8890C;
+  --orange-l: #FFF3E0;
+  --red: #DC2626;
+  --red-l: #FEF2F2;
+
+  --background: var(--g100);
+  --foreground: var(--dark);
   color-scheme: light;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Poppins', sans-serif;
+  --font-display: 'DM Sans', sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 input,
 textarea,
 select {
-  color: #171717;
-  background-color: #ffffff;
+  color: var(--dark);
+  background-color: var(--white);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #9ca3af;
+  color: var(--g400);
 }

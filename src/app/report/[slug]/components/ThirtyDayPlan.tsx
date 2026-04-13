@@ -20,14 +20,14 @@ export default function ThirtyDayPlan({ prompts }: Props) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {plan.map((week) => (
           <div key={week.week} className="bg-gray-50 rounded-xl border border-gray-100 p-4">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-teal-700 mb-2">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#0BA5C9] mb-2">
               Week {week.week}
             </div>
             <div className="text-[13px] font-bold text-gray-900 mb-3 leading-snug">{week.title}</div>
             <ul className="space-y-1">
               {week.tasks.map((task) => (
                 <li key={task} className="text-[12px] text-gray-500 leading-relaxed flex gap-1.5">
-                  <span className="shrink-0 text-teal-500 mt-0.5">›</span>
+                  <span className="shrink-0 text-[#0BA5C9] mt-0.5">›</span>
                   {task}
                 </li>
               ))}

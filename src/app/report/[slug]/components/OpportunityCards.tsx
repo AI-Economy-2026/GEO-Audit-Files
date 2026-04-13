@@ -199,7 +199,7 @@ export default function OpportunityCards({ prompts, brandName, engineBreakdown }
               <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">
                 View fixes
               </button>
-              <button className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-teal-700 text-white hover:bg-teal-800">
+              <button className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#004AAD] text-white hover:bg-[#003A8C] transition-colors">
                 Add to sprint
               </button>
             </div>

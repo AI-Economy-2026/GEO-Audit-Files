@@ -81,7 +81,7 @@ export default function AskSarah({
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm"
-          style={{ background: "linear-gradient(135deg, #0f766e, #1d4ed8)" }}>
+          style={{ background: "linear-gradient(135deg, #004AAD, #0BA5C9)" }}>
           S
         </div>
         <div>
@@ -103,8 +103,8 @@ export default function AskSarah({
             disabled={loading}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left text-sm font-semibold transition-all
               ${activePreset === preset && (loading || response)
-                ? "bg-teal-50 border-teal-200 text-teal-700"
-                : "bg-gray-50 border-gray-200 text-gray-800 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 hover:translate-x-1"
+                ? "bg-[#E6F1FB] border-[#004AAD]/30 text-[#004AAD]"
+                : "bg-[#F8FAFC] border-[#E2E8F0] text-[#0F172A] hover:bg-[#E6F1FB] hover:border-[#004AAD]/30 hover:text-[#004AAD] hover:translate-x-1"
               }
               disabled:opacity-60 disabled:cursor-wait`}
           >
@@ -116,9 +116,9 @@ export default function AskSarah({
 
       {/* Response */}
       {(loading || response || error) && (
-        <div className="mt-4 p-4 rounded-xl bg-teal-50 border border-teal-100 text-sm text-gray-800 leading-relaxed animate-in fade-in duration-300">
+        <div className="mt-4 p-4 rounded-xl bg-[#E6F1FB] border border-[#004AAD]/15 text-sm text-[#0F172A] leading-relaxed animate-in fade-in duration-300">
           {loading && (
-            <div className="flex items-center gap-2 text-teal-700 font-medium">
+            <div className="flex items-center gap-2 text-[#004AAD] font-medium">
               <span className="animate-spin">⟳</span> Sarah is thinking…
             </div>
           )}
