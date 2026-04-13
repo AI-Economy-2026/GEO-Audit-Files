@@ -11,8 +11,8 @@ const DEFAULT_ENGINES = [
   "google",
   "perplexity",
   "xai",
-  // "deepseek",       // Enable when DEEPSEEK_API_KEY is added to Railway
-  // "meta_llama",     // Enable when META_LLAMA_API_KEY is added to Railway
+  // "deepseek",         // Enable when DEEPSEEK_API_KEY is set
+  // "meta_llama",       // Enable when META_LLAMA_API_KEY is set
   "google_ai_mode",
   "google_ai_overview",
   "bing_copilot",

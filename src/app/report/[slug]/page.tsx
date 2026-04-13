@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import PrioritiseTab from "./components/PrioritiseTab";
 
 interface ClientData {
   id: string;
@@ -171,6 +172,9 @@ export default function ReportPage() {
   const [audit, setAudit] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"overview" | "prioritise">("overview");
 
   // Add more queries state
   const [additionalQueries, setAdditionalQueries] = useState<string[]>([""]);
@@ -1147,6 +1151,41 @@ export default function ReportPage() {
               </section>
             )}
 
+            {/* ── Tab navigation ── */}
+            <div className="flex gap-1 border-b border-gray-800 pb-0">
+              {(["overview", "prioritise"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors -mb-px ${
+                    activeTab === tab
+                      ? "border-orange-500 text-orange-400"
+                      : "border-transparent text-gray-500 hover:text-gray-300"
+                  }`}
+                >
+                  {tab === "overview" ? "Overview" : "Prioritise & Activate"}
+                </button>
+              ))}
+            </div>
+
+            {/* ── Prioritise & Activate tab ── */}
+            {activeTab === "prioritise" && (
+              <section className="bg-gray-50 rounded-xl p-6 -mx-0">
+                <PrioritiseTab
+                  brandName={client?.name ?? ""}
+                  overallVisibility={audit!.visibility_rate ?? 0}
+                  totalQueries={audit!.total_queries ?? 0}
+                  totalMentioned={audit!.total_mentioned ?? 0}
+                  keywordGaps={keywordGaps}
+                  engineBreakdown={engineBreakdown}
+                />
+              </section>
+            )}
+
+            {/* ── Overview tab content (existing sections) ── */}
+            {activeTab === "overview" && (
+              <>
+
             {/* Test More Queries */}
             {audit!.status === "completed" && (
               <section className="bg-gray-900 border-2 border-dashed border-orange-500/50 rounded-xl p-6">
@@ -1346,6 +1385,8 @@ export default function ReportPage() {
                 </div>
               </div>
             </section>
+              </>
+            )}
           </>
         )}
       </main>
