@@ -23,6 +23,20 @@ interface AuditData {
   created_at: string;
   completed_at: string | null;
   duration_seconds: number | null;
+  parent_audit_id: string | null;
+  version: number;
+}
+
+interface AuditHistoryEntry {
+  id: string;
+  version: number;
+  status: string;
+  visibility_rate: number | null;
+  total_queries: number | null;
+  total_mentioned: number | null;
+  engines: Record<string, number>;
+  created_at: string;
+  completed_at: string | null;
 }
 
 const ENGINE_LABELS: Record<string, string> = {
@@ -43,6 +57,8 @@ export default function AuditDetailPage() {
   const router = useRouter();
   const [audit, setAudit] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState<AuditHistoryEntry[]>([]);
+  const [reAuditLoading, setReAuditLoading] = useState(false);
 
   const fetchAudit = useCallback(async () => {
     const res = await fetch(`/api/geo-audits/${id}`);
@@ -52,6 +68,31 @@ export default function AuditDetailPage() {
     }
     setLoading(false);
   }, [id]);
+
+  const fetchHistory = useCallback(async () => {
+    const res = await fetch(`/api/geo-audits/${id}/history`);
+    const data = await res.json();
+    if (data.history) {
+      setHistory(data.history);
+    }
+  }, [id]);
+
+  async function handleReAudit() {
+    setReAuditLoading(true);
+    try {
+      const res = await fetch(`/api/geo-audits/${id}/re-audit`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.audit_id) {
+        router.push(`/audits/${data.audit_id}`);
+      }
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setReAuditLoading(false);
+    }
+  }
 
   useEffect(() => {
     fetchAudit();
@@ -83,6 +124,13 @@ export default function AuditDetailPage() {
       supabase.removeChannel(channel);
     };
   }, [id]);
+
+  // Fetch audit history when audit is completed
+  useEffect(() => {
+    if (audit?.status === "completed") {
+      fetchHistory();
+    }
+  }, [audit?.status, fetchHistory]);
 
   async function handleCancel() {
     await fetch(`/api/geo-audits/${id}`, {
@@ -136,6 +184,11 @@ export default function AuditDetailPage() {
           <h1 className="text-xl font-bold text-gray-900">
             {audit.brand_name}
           </h1>
+          {audit.version > 1 && (
+            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+              v{audit.version}
+            </span>
+          )}
           <span className="text-sm text-gray-500">{audit.brand_url}</span>
         </div>
       </header>
@@ -285,24 +338,135 @@ export default function AuditDetailPage() {
               </section>
             )}
 
-            {/* View Dashboard Button */}
-            {audit.dashboard_url && (
-              <div className="flex gap-4">
+            {/* Action Buttons */}
+            <div className="flex gap-4 flex-wrap">
+              {audit.dashboard_url && (
+                <>
+                  <button
+                    onClick={() => router.push(`/audits/${id}/dashboard`)}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                  >
+                    View Full Dashboard
+                  </button>
+                  <a
+                    href={audit.dashboard_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+                  >
+                    Open in New Tab
+                  </a>
+                </>
+              )}
+              {!history.some((h) => h.status === "running" || h.status === "pending") && (
                 <button
-                  onClick={() => router.push(`/audits/${id}/dashboard`)}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                  onClick={handleReAudit}
+                  disabled={reAuditLoading}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  View Full Dashboard
+                  {reAuditLoading ? "Starting Re-Audit..." : "Re-Audit"}
                 </button>
-                <a
-                  href={audit.dashboard_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
-                >
-                  Open in New Tab
-                </a>
-              </div>
+              )}
+            </div>
+
+            {/* Score History (shown when there are multiple versions) */}
+            {history.length > 1 && (
+              <section className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Audit History &mdash; Score Changes
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200 text-left text-gray-500">
+                        <th className="pb-3 pr-4">Version</th>
+                        <th className="pb-3 pr-4">Date</th>
+                        <th className="pb-3 pr-4">Visibility</th>
+                        <th className="pb-3 pr-4">Change</th>
+                        <th className="pb-3 pr-4">Mentions</th>
+                        <th className="pb-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.map((entry, idx) => {
+                        const prev = idx > 0 ? history[idx - 1] : null;
+                        const delta =
+                          prev && entry.visibility_rate != null && prev.visibility_rate != null
+                            ? +(entry.visibility_rate - prev.visibility_rate).toFixed(1)
+                            : null;
+
+                        return (
+                          <tr
+                            key={entry.id}
+                            className={`border-b border-gray-100 ${entry.id === id ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                          >
+                            <td className="py-3 pr-4 font-medium">
+                              <button
+                                onClick={() => router.push(`/audits/${entry.id}`)}
+                                className="text-blue-600 hover:underline"
+                              >
+                                v{entry.version}
+                              </button>
+                            </td>
+                            <td className="py-3 pr-4 text-gray-600">
+                              {entry.completed_at
+                                ? new Date(entry.completed_at).toLocaleDateString("en-AU", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "In progress"}
+                            </td>
+                            <td className="py-3 pr-4 font-semibold">
+                              {entry.visibility_rate != null ? `${entry.visibility_rate}%` : "—"}
+                            </td>
+                            <td className="py-3 pr-4">
+                              {delta != null ? (
+                                <span
+                                  className={`inline-flex items-center gap-1 font-semibold ${
+                                    delta > 0
+                                      ? "text-green-600"
+                                      : delta < 0
+                                        ? "text-red-600"
+                                        : "text-gray-400"
+                                  }`}
+                                >
+                                  {delta > 0 ? "+" : ""}
+                                  {delta}%
+                                  {delta > 0 && <span>&#9650;</span>}
+                                  {delta < 0 && <span>&#9660;</span>}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">&mdash;</span>
+                              )}
+                            </td>
+                            <td className="py-3 pr-4 text-gray-700">
+                              {entry.total_mentioned != null
+                                ? `${entry.total_mentioned} / ${entry.total_queries}`
+                                : "—"}
+                            </td>
+                            <td className="py-3">
+                              <span
+                                className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                                  entry.status === "completed"
+                                    ? "bg-green-100 text-green-700"
+                                    : entry.status === "running"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : entry.status === "failed"
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-gray-100 text-gray-600"
+                                }`}
+                              >
+                                {entry.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             )}
 
             {/* Duration */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PrioritiseTab from "./components/PrioritiseTab";
 
@@ -27,6 +27,20 @@ interface AuditData {
   progress_current: number;
   progress_total: number;
   progress_message: string | null;
+  parent_audit_id: string | null;
+  version: number;
+}
+
+interface AuditHistoryEntry {
+  id: string;
+  version: number;
+  status: string;
+  visibility_rate: number | null;
+  total_queries: number | null;
+  total_mentioned: number | null;
+  engines: Record<string, number>;
+  created_at: string;
+  completed_at: string | null;
 }
 
 interface EngineStats {
@@ -168,6 +182,7 @@ function priorityLabel(gap: number) {
 
 export default function ReportPage() {
   const { slug } = useParams<{ slug: string }>();
+  const router = useRouter();
   const [client, setClient] = useState<ClientData | null>(null);
   const [audit, setAudit] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -180,6 +195,10 @@ export default function ReportPage() {
   const [additionalQueries, setAdditionalQueries] = useState<string[]>([""]);
   const [addingQueries, setAddingQueries] = useState(false);
   const [addQueryError, setAddQueryError] = useState("");
+
+  // Re-audit state
+  const [history, setHistory] = useState<AuditHistoryEntry[]>([]);
+  const [reAuditLoading, setReAuditLoading] = useState(false);
 
   const fetchReport = useCallback(async () => {
     try {
@@ -199,9 +218,48 @@ export default function ReportPage() {
     }
   }, [slug]);
 
+  const fetchHistory = useCallback(async () => {
+    if (!audit?.id) return;
+    try {
+      const res = await fetch(`/api/geo-audits/${audit.id}/history`);
+      const data = await res.json();
+      if (data.history) {
+        setHistory(data.history);
+      }
+    } catch {
+      // ignore — history is optional
+    }
+  }, [audit?.id]);
+
+  async function handleReAudit() {
+    if (!audit?.id) return;
+    setReAuditLoading(true);
+    try {
+      const res = await fetch(`/api/geo-audits/${audit.id}/re-audit`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.audit_id) {
+        // Navigate to the new audit's detail page
+        router.push(`/audits/${data.audit_id}`);
+      }
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setReAuditLoading(false);
+    }
+  }
+
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
+
+  // Fetch history when audit is loaded and completed
+  useEffect(() => {
+    if (audit?.status === "completed") {
+      fetchHistory();
+    }
+  }, [audit?.status, fetchHistory]);
 
   async function handleAddQueries() {
     const validQueries = additionalQueries.filter((q) => q.trim());
@@ -521,6 +579,131 @@ export default function ReportPage() {
                 </div>
               ))}
             </div>
+
+            {/* Re-Audit Button (hidden when any version is running/pending) */}
+            {!history.some((h) => h.status === "running" || h.status === "pending") && (
+              <div className="flex justify-center">
+                <button
+                  onClick={handleReAudit}
+                  disabled={reAuditLoading}
+                  className="px-8 py-3 bg-[#1D9E75] text-white font-bold rounded-xl hover:bg-[#178a65] disabled:opacity-50 disabled:cursor-not-allowed transition-colors uppercase tracking-wider text-sm"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  {reAuditLoading ? "Starting Re-Audit..." : "Re-Audit This Brand"}
+                </button>
+              </div>
+            )}
+
+            {/* Score History (shown when there are multiple versions) */}
+            {history.length > 1 && (
+              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+                <h2
+                  className="text-xl font-bold text-[#0F172A] mb-4"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Audit History &mdash; Score Changes
+                </h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[#E2E8F0] text-[#94A3B8] uppercase text-xs">
+                        <th className="text-left py-3 px-2">Version</th>
+                        <th className="text-left py-3 px-2">Date</th>
+                        <th className="text-center py-3 px-2">Visibility</th>
+                        <th className="text-center py-3 px-2">Change</th>
+                        <th className="text-center py-3 px-2">Mentions</th>
+                        <th className="text-center py-3 px-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.map((entry, idx) => {
+                        const prev = idx > 0 ? history[idx - 1] : null;
+                        const delta =
+                          prev && entry.visibility_rate != null && prev.visibility_rate != null
+                            ? +(entry.visibility_rate - prev.visibility_rate).toFixed(1)
+                            : null;
+                        const isCurrent = entry.id === audit?.id;
+
+                        return (
+                          <tr
+                            key={entry.id}
+                            className={`border-b border-[#F1F5F9] ${isCurrent ? "bg-[#FFF3E0]" : "hover:bg-[#F8FAFC]"}`}
+                          >
+                            <td className="py-3 px-2 font-medium">
+                              <button
+                                onClick={() => router.push(`/audits/${entry.id}`)}
+                                className="text-[#004AAD] hover:underline font-bold"
+                              >
+                                v{entry.version}
+                              </button>
+                              {isCurrent && (
+                                <span className="ml-2 text-[10px] bg-[#E8890C] text-white px-1.5 py-0.5 rounded font-bold">
+                                  Current
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-2 text-[#64748B]">
+                              {entry.completed_at
+                                ? new Date(entry.completed_at).toLocaleDateString("en-AU", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "In progress"}
+                            </td>
+                            <td className="py-3 px-2 text-center font-bold">
+                              {entry.visibility_rate != null
+                                ? <span className={rateColor(entry.visibility_rate).text}>{entry.visibility_rate}%</span>
+                                : "—"}
+                            </td>
+                            <td className="py-3 px-2 text-center">
+                              {delta != null ? (
+                                <span
+                                  className={`inline-flex items-center gap-1 font-bold ${
+                                    delta > 0
+                                      ? "text-[#1D9E75]"
+                                      : delta < 0
+                                        ? "text-[#DC2626]"
+                                        : "text-[#94A3B8]"
+                                  }`}
+                                >
+                                  {delta > 0 ? "+" : ""}
+                                  {delta}%
+                                  {delta > 0 && <span>&#9650;</span>}
+                                  {delta < 0 && <span>&#9660;</span>}
+                                </span>
+                              ) : (
+                                <span className="text-[#94A3B8]">&mdash;</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-2 text-center text-[#64748B]">
+                              {entry.total_mentioned != null
+                                ? `${entry.total_mentioned} / ${entry.total_queries}`
+                                : "—"}
+                            </td>
+                            <td className="py-3 px-2 text-center">
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full font-bold ${
+                                  entry.status === "completed"
+                                    ? "bg-[#E1F5EE] text-[#1D9E75]"
+                                    : entry.status === "running"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : entry.status === "failed"
+                                        ? "bg-[#FEF2F2] text-[#DC2626]"
+                                        : "bg-gray-100 text-gray-600"
+                                }`}
+                              >
+                                {entry.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
 
             {/* Performance by AI Engine */}
             {sortedEngines.length > 0 && (

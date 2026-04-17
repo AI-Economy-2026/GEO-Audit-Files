@@ -23,7 +23,7 @@ export async function GET(
     const { data } = await admin
       .from("geo_audits")
       .select(
-        "id, status, visibility_rate, total_queries, total_mentioned, dashboard_url, summary_json, engines, completed_at, progress_current, progress_total, progress_message"
+        "id, status, visibility_rate, total_queries, total_mentioned, dashboard_url, summary_json, engines, completed_at, progress_current, progress_total, progress_message, parent_audit_id, version"
       )
       .eq("id", client.audit_id)
       .single();
