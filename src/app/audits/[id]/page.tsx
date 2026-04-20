@@ -3,6 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import AppShell from "@/components/ui/AppShell";
+import TopNav from "@/components/ui/TopNav";
+import GlassCard from "@/components/ui/GlassCard";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
 interface AuditData {
   id: string;
@@ -39,18 +44,28 @@ interface AuditHistoryEntry {
   completed_at: string | null;
 }
 
-const ENGINE_LABELS: Record<string, string> = {
-  openai: "ChatGPT",
-  anthropic: "Claude",
-  google: "Gemini",
-  perplexity: "Perplexity",
-  xai: "Grok",
-  deepseek: "DeepSeek",
-  meta_llama: "Llama",
-  google_ai_mode: "AI Mode",
-  google_ai_overview: "AI Overview",
-  bing_copilot: "Bing Copilot",
+type Tone = "primary" | "secondary" | "error" | "neutral" | "success";
+
+const STATUS_TONE: Record<string, Tone> = {
+  pending: "secondary",
+  running: "primary",
+  completed: "success",
+  failed: "error",
+  cancelled: "neutral",
 };
+
+function visibilityTone(rate: number | null): string {
+  if (rate == null) return "text-on-surface-variant";
+  if (rate >= 50) return "text-primary";
+  if (rate >= 25) return "text-secondary";
+  return "text-error";
+}
+
+function visibilityBar(rate: number): string {
+  if (rate >= 50) return "bg-primary";
+  if (rate >= 25) return "bg-secondary";
+  return "bg-error";
+}
 
 export default function AuditDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -125,7 +140,6 @@ export default function AuditDetailPage() {
     };
   }, [id]);
 
-  // Fetch audit history when audit is completed
   useEffect(() => {
     if (audit?.status === "completed") {
       fetchHistory();
@@ -141,19 +155,40 @@ export default function AuditDetailPage() {
     fetchAudit();
   }
 
+  const shell = (children: React.ReactNode) => (
+    <AppShell
+      topNav={
+        <TopNav
+          brand="GEO Audit Pro"
+          tabs={[
+            { href: "/audits", label: "Audits", match: (p) => p.startsWith("/audits") },
+            { href: "/clients", label: "Clients", match: (p) => p.startsWith("/clients") },
+          ]}
+          right={
+            <Button variant="ghost" icon="arrow_back" size="sm" onClick={() => router.push("/audits")}>
+              Back
+            </Button>
+          }
+        />
+      }
+    >
+      {children}
+    </AppShell>
+  );
+
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading audit...</p>
-      </div>
+    return shell(
+      <GlassCard padding="xl" className="text-center">
+        <p className="text-on-surface-variant">Loading audit...</p>
+      </GlassCard>
     );
   }
 
   if (!audit) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-500">Audit not found.</p>
-      </div>
+    return shell(
+      <GlassCard padding="xl" className="text-center">
+        <p className="text-error">Audit not found.</p>
+      </GlassCard>
     );
   }
 
@@ -166,324 +201,352 @@ export default function AuditDetailPage() {
   const isCompleted = audit.status === "completed";
   const isFailed = audit.status === "failed";
 
-  // Extract engine breakdown from summary_json
   const engineBreakdown = audit.summary_json?.engine_breakdown as
-    | Record<string, { display_name: string; visibility_rate: number; brand_mentioned: number; total_queries: number }>
+    | Record<
+        string,
+        {
+          display_name: string;
+          visibility_rate: number;
+          brand_mentioned: number;
+          total_queries: number;
+        }
+      >
     | undefined;
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => router.push("/audits")}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            &larr; Back
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">
-            {audit.brand_name}
-          </h1>
-          {audit.version > 1 && (
-            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-              v{audit.version}
-            </span>
-          )}
-          <span className="text-sm text-gray-500">{audit.brand_url}</span>
-        </div>
-      </header>
+  const hasRunningVersion = history.some(
+    (h) => h.status === "running" || h.status === "pending"
+  );
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
-        {/* Progress Section (visible while running) */}
-        {isRunning && (
-          <section className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Audit in Progress
-              </h2>
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
-              >
-                Cancel
-              </button>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full bg-gray-200 rounded-full h-4 mb-3">
-              <div
-                className="bg-blue-600 h-4 rounded-full transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>
-                {audit.progress_current} / {audit.progress_total} queries
-              </span>
-              <span>{progressPercent}%</span>
-            </div>
-
-            {audit.progress_message && (
-              <p className="mt-3 text-sm text-gray-500 font-mono">
-                {audit.progress_message}
-              </p>
-            )}
-
-            {/* Estimated time remaining */}
-            {audit.progress_current > 0 && (
-              <p className="mt-2 text-xs text-gray-400">
-                ~{Math.ceil(((audit.progress_total - audit.progress_current) * 2) / 60)}{" "}
-                min remaining
-              </p>
-            )}
-          </section>
-        )}
-
-        {/* Error Section */}
-        {isFailed && (
-          <section className="bg-red-50 border border-red-200 rounded-xl p-6">
-            <h2 className="text-lg font-semibold text-red-900 mb-2">
-              Audit Failed
+  return shell(
+    <>
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-end mb-10 gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-4xl font-extrabold tracking-tighter text-on-surface">
+              {audit.brand_name}
             </h2>
-            <p className="text-red-700">{audit.error_message || "Unknown error."}</p>
-          </section>
-        )}
-
-        {/* Results Section (visible when completed) */}
-        {isCompleted && (
-          <>
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-                <div className="text-3xl font-bold text-blue-600">
-                  {audit.visibility_rate}%
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Overall Visibility
-                </div>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-                <div className="text-3xl font-bold text-gray-900">
-                  {audit.total_mentioned}
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Brand Mentions
-                </div>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-                <div className="text-3xl font-bold text-gray-900">
-                  {audit.total_queries}
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Total Queries
-                </div>
-              </div>
-              <div className="bg-white rounded-xl shadow-sm p-6 text-center">
-                <div className="text-3xl font-bold text-gray-900">
-                  {audit.engines?.length}
-                </div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Engines Tested
-                </div>
-              </div>
-            </div>
-
-            {/* Engine Breakdown */}
-            {engineBreakdown && (
-              <section className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Engine Performance
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Object.entries(engineBreakdown).map(([key, stats]) => (
-                    <div
-                      key={key}
-                      className="border border-gray-200 rounded-lg p-4"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-900">
-                          {stats.display_name}
-                        </span>
-                        <span
-                          className={`text-lg font-bold ${
-                            stats.visibility_rate >= 50
-                              ? "text-green-600"
-                              : stats.visibility_rate >= 25
-                                ? "text-orange-500"
-                                : "text-red-500"
-                          }`}
-                        >
-                          {stats.visibility_rate}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${
-                            stats.visibility_rate >= 50
-                              ? "bg-green-500"
-                              : stats.visibility_rate >= 25
-                                ? "bg-orange-400"
-                                : "bg-red-400"
-                          }`}
-                          style={{ width: `${stats.visibility_rate}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">
-                        {stats.brand_mentioned} / {stats.total_queries} mentions
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </section>
+            {audit.version > 1 && (
+              <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-bold">
+                v{audit.version}
+              </span>
             )}
+            <Badge tone={STATUS_TONE[audit.status] || "neutral"}>{audit.status}</Badge>
+          </div>
+          <p className="text-on-surface-variant text-lg">{audit.brand_url}</p>
+        </div>
+        <div className="flex gap-3 flex-wrap">
+          {isCompleted && audit.dashboard_url && (
+            <>
+              <Button
+                variant="secondary"
+                icon="open_in_new"
+                onClick={() => router.push(`/audits/${id}/dashboard`)}
+              >
+                Full Dashboard
+              </Button>
+            </>
+          )}
+          {isCompleted && !hasRunningVersion && (
+            <Button
+              icon="refresh"
+              onClick={handleReAudit}
+              disabled={reAuditLoading}
+            >
+              {reAuditLoading ? "Starting..." : "Re-Audit"}
+            </Button>
+          )}
+        </div>
+      </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 flex-wrap">
-              {audit.dashboard_url && (
-                <>
-                  <button
-                    onClick={() => router.push(`/audits/${id}/dashboard`)}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-                  >
-                    View Full Dashboard
-                  </button>
-                  <a
-                    href={audit.dashboard_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
-                  >
-                    Open in New Tab
-                  </a>
-                </>
-              )}
-              {!history.some((h) => h.status === "running" || h.status === "pending") && (
-                <button
-                  onClick={handleReAudit}
-                  disabled={reAuditLoading}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {reAuditLoading ? "Starting Re-Audit..." : "Re-Audit"}
-                </button>
-              )}
+      {/* Running: progress panel */}
+      {isRunning && (
+        <GlassCard padding="lg" className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-on-surface flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary animate-pulse">radar</span>
+              Audit in Progress
+            </h3>
+            <Button variant="ghost" size="sm" icon="stop" onClick={handleCancel}>
+              Cancel
+            </Button>
+          </div>
+
+          <div className="w-full h-2 bg-surface-container-lowest rounded-full overflow-hidden mb-3">
+            <div
+              className="h-full bg-primary transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between text-sm mb-2">
+            <span className="text-on-surface-variant">
+              {audit.progress_current} / {audit.progress_total} queries
+            </span>
+            <span className="text-primary font-bold">{progressPercent}%</span>
+          </div>
+
+          {audit.progress_message && (
+            <p className="text-xs text-on-surface-variant font-mono mt-3 opacity-70">
+              {audit.progress_message}
+            </p>
+          )}
+
+          {audit.progress_current > 0 && (
+            <p className="text-xs text-on-surface-variant mt-2 opacity-60">
+              ~
+              {Math.ceil(((audit.progress_total - audit.progress_current) * 2) / 60)}{" "}
+              min remaining
+            </p>
+          )}
+        </GlassCard>
+      )}
+
+      {/* Failed */}
+      {isFailed && (
+        <GlassCard padding="lg" className="mb-8 border-error/30">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-xl bg-error-container/30 flex items-center justify-center flex-shrink-0">
+              <span className="material-symbols-outlined text-error">report</span>
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-on-surface mb-2">Audit Failed</h3>
+              <p className="text-on-surface-variant">
+                {audit.error_message || "Unknown error."}
+              </p>
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Completed */}
+      {isCompleted && (
+        <div className="space-y-8">
+          {/* KPI Bento */}
+          <div className="grid grid-cols-12 gap-6">
+            {/* Hero visibility score — floating dark glass card with cyan accent */}
+            <div className="col-span-12 lg:col-span-4 glass-card p-8 rounded-[2rem] border border-white/5 shadow-[0_0_60px_rgba(68,216,241,0.08)] h-full flex flex-col justify-between items-center text-center">
+              <div className="w-full text-left">
+                <span className="text-on-surface-variant font-bold uppercase tracking-widest text-xs">
+                  Visibility Score
+                </span>
+              </div>
+              <div className="py-8">
+                <span className="text-8xl font-black text-primary tracking-tighter drop-shadow-[0_0_30px_rgba(68,216,241,0.35)]">
+                  {audit.visibility_rate ?? 0}%
+                </span>
+                <p className="text-on-surface font-bold mt-3 text-base">
+                  {audit.total_mentioned} of {audit.total_queries} queries
+                </p>
+              </div>
+              <div className="w-full bg-white/5 border border-white/5 p-3 rounded-2xl flex items-center gap-3">
+                <span className="material-symbols-outlined text-primary">
+                  schedule
+                </span>
+                <span className="text-on-surface-variant text-sm text-left leading-tight">
+                  {audit.duration_seconds
+                    ? `Completed in ${Math.floor(audit.duration_seconds / 60)}m ${audit.duration_seconds % 60}s`
+                    : "Completed"}
+                </span>
+              </div>
             </div>
 
-            {/* Score History (shown when there are multiple versions) */}
-            {history.length > 1 && (
-              <section className="bg-white rounded-xl shadow-sm p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                  Audit History &mdash; Score Changes
-                </h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-200 text-left text-gray-500">
-                        <th className="pb-3 pr-4">Version</th>
-                        <th className="pb-3 pr-4">Date</th>
-                        <th className="pb-3 pr-4">Visibility</th>
-                        <th className="pb-3 pr-4">Change</th>
-                        <th className="pb-3 pr-4">Mentions</th>
-                        <th className="pb-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.map((entry, idx) => {
-                        const prev = idx > 0 ? history[idx - 1] : null;
-                        const delta =
-                          prev && entry.visibility_rate != null && prev.visibility_rate != null
-                            ? +(entry.visibility_rate - prev.visibility_rate).toFixed(1)
-                            : null;
+            {/* Stat cards column */}
+            <div className="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-6">
+              <GlassCard padding="md">
+                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
+                  Total Queries
+                </p>
+                <p className="text-3xl font-black tracking-tighter text-on-surface">
+                  {audit.total_queries}
+                </p>
+              </GlassCard>
+              <GlassCard padding="md">
+                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
+                  Brand Mentions
+                </p>
+                <p className="text-3xl font-black tracking-tighter text-primary">
+                  {audit.total_mentioned}
+                </p>
+              </GlassCard>
+              <GlassCard padding="md">
+                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
+                  Engines Tested
+                </p>
+                <p className="text-3xl font-black tracking-tighter text-on-surface">
+                  {audit.engines?.length}
+                </p>
+              </GlassCard>
 
-                        return (
-                          <tr
-                            key={entry.id}
-                            className={`border-b border-gray-100 ${entry.id === id ? "bg-blue-50" : "hover:bg-gray-50"}`}
-                          >
-                            <td className="py-3 pr-4 font-medium">
-                              <button
-                                onClick={() => router.push(`/audits/${entry.id}`)}
-                                className="text-blue-600 hover:underline"
-                              >
-                                v{entry.version}
-                              </button>
-                            </td>
-                            <td className="py-3 pr-4 text-gray-600">
-                              {entry.completed_at
-                                ? new Date(entry.completed_at).toLocaleDateString("en-AU", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  })
-                                : "In progress"}
-                            </td>
-                            <td className="py-3 pr-4 font-semibold">
-                              {entry.visibility_rate != null ? `${entry.visibility_rate}%` : "—"}
-                            </td>
-                            <td className="py-3 pr-4">
-                              {delta != null ? (
-                                <span
-                                  className={`inline-flex items-center gap-1 font-semibold ${
-                                    delta > 0
-                                      ? "text-green-600"
-                                      : delta < 0
-                                        ? "text-red-600"
-                                        : "text-gray-400"
-                                  }`}
-                                >
-                                  {delta > 0 ? "+" : ""}
-                                  {delta}%
-                                  {delta > 0 && <span>&#9650;</span>}
-                                  {delta < 0 && <span>&#9660;</span>}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">&mdash;</span>
-                              )}
-                            </td>
-                            <td className="py-3 pr-4 text-gray-700">
-                              {entry.total_mentioned != null
-                                ? `${entry.total_mentioned} / ${entry.total_queries}`
-                                : "—"}
-                            </td>
-                            <td className="py-3">
+              {/* Competitors list */}
+              {audit.competitors?.length > 0 && (
+                <GlassCard padding="md" className="col-span-2 md:col-span-3">
+                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3">
+                    Competitors Tracked
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {audit.competitors.map((c) => (
+                      <span
+                        key={c}
+                        className="px-3 py-1 bg-surface-container-high rounded-full text-xs font-medium text-on-surface"
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </GlassCard>
+              )}
+            </div>
+          </div>
+
+          {/* Engine Performance */}
+          {engineBreakdown && (
+            <GlassCard padding="lg">
+              <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-3">
+                <span className="material-symbols-outlined text-primary">bar_chart</span>
+                Engine Performance
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(engineBreakdown).map(([key, stats]) => (
+                  <div
+                    key={key}
+                    className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-bold text-on-surface">{stats.display_name}</span>
+                      <span
+                        className={`text-xl font-black tracking-tighter ${visibilityTone(stats.visibility_rate)}`}
+                      >
+                        {stats.visibility_rate}%
+                      </span>
+                    </div>
+                    <div className="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden mb-2">
+                      <div
+                        className={`h-full ${visibilityBar(stats.visibility_rate)} rounded-full`}
+                        style={{ width: `${stats.visibility_rate}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-on-surface-variant">
+                      {stats.brand_mentioned} / {stats.total_queries} mentions
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          )}
+
+          {/* Score History */}
+          {history.length > 1 && (
+            <GlassCard padding="lg">
+              <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-3">
+                <span className="material-symbols-outlined text-primary">timeline</span>
+                Audit History &mdash; Score Changes
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/5 text-left">
+                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                        Version
+                      </th>
+                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                        Date
+                      </th>
+                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                        Visibility
+                      </th>
+                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                        Change
+                      </th>
+                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                        Mentions
+                      </th>
+                      <th className="pb-3 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((entry, idx) => {
+                      const prev = idx > 0 ? history[idx - 1] : null;
+                      const delta =
+                        prev &&
+                        entry.visibility_rate != null &&
+                        prev.visibility_rate != null
+                          ? +(entry.visibility_rate - prev.visibility_rate).toFixed(1)
+                          : null;
+                      const isCurrent = entry.id === id;
+
+                      return (
+                        <tr
+                          key={entry.id}
+                          className={`border-b border-white/5 ${isCurrent ? "bg-primary/10" : "hover:bg-white/5"} transition-colors`}
+                        >
+                          <td className="py-4 pr-4">
+                            <button
+                              onClick={() => router.push(`/audits/${entry.id}`)}
+                              className="text-primary font-bold hover:underline"
+                            >
+                              v{entry.version}
+                            </button>
+                            {isCurrent && (
+                              <span className="ml-2 text-[9px] bg-primary text-on-primary-fixed px-1.5 py-0.5 rounded font-bold uppercase">
+                                Current
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 pr-4 text-on-surface-variant">
+                            {entry.completed_at
+                              ? new Date(entry.completed_at).toLocaleDateString("en-AU", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "In progress"}
+                          </td>
+                          <td className={`py-4 pr-4 font-black tracking-tighter ${visibilityTone(entry.visibility_rate)}`}>
+                            {entry.visibility_rate != null ? `${entry.visibility_rate}%` : "—"}
+                          </td>
+                          <td className="py-4 pr-4">
+                            {delta != null ? (
                               <span
-                                className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                                  entry.status === "completed"
-                                    ? "bg-green-100 text-green-700"
-                                    : entry.status === "running"
-                                      ? "bg-blue-100 text-blue-700"
-                                      : entry.status === "failed"
-                                        ? "bg-red-100 text-red-700"
-                                        : "bg-gray-100 text-gray-600"
+                                className={`inline-flex items-center gap-1 font-bold ${
+                                  delta > 0
+                                    ? "text-primary"
+                                    : delta < 0
+                                      ? "text-error"
+                                      : "text-on-surface-variant"
                                 }`}
                               >
-                                {entry.status}
+                                {delta > 0 ? "+" : ""}
+                                {delta}%
+                                {delta > 0 && <span>&#9650;</span>}
+                                {delta < 0 && <span>&#9660;</span>}
                               </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            )}
-
-            {/* Duration */}
-            {audit.duration_seconds && (
-              <p className="text-sm text-gray-500">
-                Completed in {Math.floor(audit.duration_seconds / 60)}m{" "}
-                {audit.duration_seconds % 60}s on{" "}
-                {new Date(audit.completed_at!).toLocaleDateString("en-AU", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </p>
-            )}
-          </>
-        )}
-      </main>
-    </div>
+                            ) : (
+                              <span className="text-on-surface-variant">—</span>
+                            )}
+                          </td>
+                          <td className="py-4 pr-4 text-on-surface-variant">
+                            {entry.total_mentioned != null
+                              ? `${entry.total_mentioned} / ${entry.total_queries}`
+                              : "—"}
+                          </td>
+                          <td className="py-4">
+                            <Badge tone={STATUS_TONE[entry.status] || "neutral"}>
+                              {entry.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </GlassCard>
+          )}
+        </div>
+      )}
+    </>
   );
 }

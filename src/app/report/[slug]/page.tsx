@@ -168,16 +168,16 @@ const ENGINE_LABELS: Record<string, string> = {
 };
 
 function rateColor(rate: number) {
-  if (rate >= 50) return { text: "text-[#1D9E75]", bar: "bg-[#1D9E75]", badge: "bg-[#E1F5EE] text-[#1D9E75]" };
-  if (rate >= 25) return { text: "text-[#E8890C]", bar: "bg-[#E8890C]", badge: "bg-[#FFF3E0] text-[#E8890C]" };
-  return { text: "text-[#DC2626]", bar: "bg-[#DC2626]", badge: "bg-[#FEF2F2] text-[#DC2626]" };
+  if (rate >= 50) return { text: "text-primary", bar: "bg-primary", badge: "bg-primary/10 text-primary" };
+  if (rate >= 25) return { text: "text-secondary", bar: "bg-secondary", badge: "bg-secondary/10 text-secondary" };
+  return { text: "text-error", bar: "bg-error", badge: "bg-error/10 text-error" };
 }
 
 function priorityLabel(gap: number) {
-  if (gap >= 70) return { label: "Critical", cls: "bg-[#FEF2F2] text-[#DC2626]" };
-  if (gap >= 50) return { label: "High", cls: "bg-[#FFF3E0] text-[#E8890C]" };
-  if (gap >= 30) return { label: "Medium", cls: "bg-[#FFF3E0] text-[#E8890C]" };
-  return { label: "Low", cls: "bg-[#E1F5EE] text-[#1D9E75]" };
+  if (gap >= 70) return { label: "Critical", cls: "bg-error text-on-primary-fixed" };
+  if (gap >= 50) return { label: "High", cls: "bg-secondary text-on-primary-fixed" };
+  if (gap >= 30) return { label: "Medium", cls: "bg-secondary/80 text-on-primary-fixed" };
+  return { label: "Low", cls: "bg-primary text-on-primary-fixed" };
 }
 
 export default function ReportPage() {
@@ -320,20 +320,23 @@ export default function ReportPage() {
   }, [audit?.id, audit?.status]);
 
   const brandedHeader = (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-[#E2E8F0]">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div>
-          <span className="font-['DM_Sans'] text-xs font-black tracking-[0.12em] uppercase text-[#0F172A]">
-            AI <span className="text-[#004AAD]">Economy</span>
-          </span>
-          <p className="text-[11px] text-[#64748B] uppercase tracking-wider mt-0.5">
-            AI Visibility Audit Report
-          </p>
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-outline-variant">
+      <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
+            <span className="material-symbols-outlined text-on-primary text-[20px]">radar</span>
+          </div>
+          <div>
+            <span className="text-sm font-black tracking-tighter text-primary">GEO Audit Pro</span>
+            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">
+              AI Visibility Report
+            </p>
+          </div>
         </div>
         {client && (
           <div className="text-right">
-            <p className="text-sm font-bold text-[#0F172A]">{client.name}</p>
-            <p className="text-xs text-[#64748B]">{client.url}</p>
+            <p className="text-sm font-bold text-on-surface">{client.name}</p>
+            <p className="text-xs text-on-surface-variant">{client.url}</p>
           </div>
         )}
       </div>
@@ -342,9 +345,9 @@ export default function ReportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F1F5F9]">
+      <div className="theme-light min-h-screen bg-ambient">
         {brandedHeader}
-        <div className="text-center py-20 text-[#64748B]">
+        <div className="text-center py-20 text-on-surface-variant">
           Loading report...
         </div>
       </div>
@@ -353,13 +356,13 @@ export default function ReportPage() {
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-[#F1F5F9]">
+      <div className="theme-light min-h-screen bg-ambient">
         {brandedHeader}
         <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <h2 className="text-xl font-bold text-[#0F172A] mb-2">
+          <h2 className="text-xl font-bold text-on-surface mb-2">
             Report Not Found
           </h2>
-          <p className="text-[#64748B]">
+          <p className="text-on-surface-variant">
             This report link is invalid or has been removed.
           </p>
         </div>
@@ -424,17 +427,17 @@ export default function ReportPage() {
   const directoryActions = aliceBrief?.directory_actions || [];
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9]">
+    <div className="theme-light min-h-screen bg-ambient">
       {brandedHeader}
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
         {/* Awaiting intake */}
         {!audit && client?.status === "pending_intake" && (
           <div className="text-center py-16">
-            <h2 className="text-xl font-bold text-[#0F172A] mb-2">
+            <h2 className="text-xl font-bold text-on-surface mb-2">
               Audit Not Started
             </h2>
-            <p className="text-[#64748B]">
+            <p className="text-on-surface-variant">
               The intake form hasn&apos;t been submitted yet.
             </p>
           </div>
@@ -442,35 +445,35 @@ export default function ReportPage() {
 
         {/* In progress */}
         {isRunning && (
-          <section className="bg-white border border-[#E2E8F0] rounded-2xl p-8 text-center">
-            <h2 className="text-2xl font-bold text-[#0F172A] mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <section className="glass-card border border-white/5 rounded-3xl p-8 text-center">
+            <h2 className="text-2xl font-bold text-on-surface mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               Analysing AI Visibility
             </h2>
-            <p className="text-[#64748B] mb-6">
+            <p className="text-on-surface-variant mb-6">
               Querying {audit!.engines?.length || 7} AI search engines for{" "}
-              <strong className="text-[#0F172A]">{client?.name}</strong>...
+              <strong className="text-on-surface">{client?.name}</strong>...
             </p>
 
             <div className="max-w-md mx-auto">
-              <div className="w-full bg-[#E2E8F0] rounded-full h-3 mb-3">
+              <div className="w-full bg-surface-container-lowest rounded-full h-3 mb-3">
                 <div
-                  className="bg-[#E8890C] h-3 rounded-full transition-all duration-500"
+                  className="bg-primary h-3 rounded-full transition-all duration-500"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <div className="flex justify-between text-sm text-[#64748B]">
+              <div className="flex justify-between text-sm text-on-surface-variant">
                 <span>
                   {audit!.progress_current} / {audit!.progress_total} queries
                 </span>
                 <span>{progressPercent}%</span>
               </div>
               {audit!.progress_message && (
-                <p className="mt-3 text-sm text-[#94A3B8] font-mono">
+                <p className="mt-3 text-sm text-on-surface-variant font-mono">
                   {audit!.progress_message}
                 </p>
               )}
               {audit!.progress_current > 0 && (
-                <p className="mt-2 text-xs text-[#94A3B8]">
+                <p className="mt-2 text-xs text-on-surface-variant">
                   ~
                   {Math.ceil(
                     ((audit!.progress_total - audit!.progress_current) * 2) / 60
@@ -484,16 +487,16 @@ export default function ReportPage() {
 
         {/* Failed */}
         {isFailed && (
-          <section className="bg-[#FEF2F2] border border-[#DC2626]/20 rounded-2xl p-8 text-center">
-            <h2 className="text-xl font-bold text-[#DC2626] mb-2">
+          <section className="bg-error/10 border border-error/20 rounded-2xl p-8 text-center">
+            <h2 className="text-xl font-bold text-error mb-2">
               Audit Failed
             </h2>
-            <p className="text-[#64748B] mb-6">
+            <p className="text-on-surface-variant mb-6">
               Something went wrong during the audit. Our team has been notified.
             </p>
             <a
               href="https://balmeragency.com.au/contact"
-              className="inline-block px-8 py-3 bg-[#E8890C] text-white font-bold rounded-xl hover:bg-[#d07a0a] transition-colors uppercase tracking-wider text-sm"
+              className="inline-block px-8 py-3 bg-primary text-on-primary-fixed font-bold rounded-xl hover:opacity-90 transition-colors uppercase tracking-wider text-sm"
             >
               Contact Us to Re-Run
             </a>
@@ -504,34 +507,34 @@ export default function ReportPage() {
         {isCompleted && (
           <>
             {/* Visibility Score Hero */}
-            <section className="bg-white border border-[#E2E8F0] rounded-2xl p-10 text-center">
-              <p className="text-xs font-semibold text-[#0BA5C9] uppercase tracking-widest mb-2">
+            <section className="glass-card border border-white/5 rounded-3xl p-10 text-center">
+              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">
                 GEO Audit &amp; Action Plan
               </p>
-              <h1 className="text-3xl font-black text-[#0F172A] mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <h1 className="text-3xl font-black text-on-surface mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 Visibility Dashboard
               </h1>
-              <p className="text-[#64748B] mb-6 text-sm">How AI search engines see and recommend your business</p>
+              <p className="text-on-surface-variant mb-6 text-sm">How AI search engines see and recommend your business</p>
               <div className={`text-8xl font-black ${visColors.text}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 {Math.round(visRate)}%
               </div>
-              <div className="w-16 h-1 bg-[#E8890C] mx-auto my-4" />
-              <p className="text-[#64748B] text-base">
-                <strong className="text-[#0F172A]">{client?.name}</strong> was
+              <div className="w-16 h-1 bg-primary mx-auto my-4" />
+              <p className="text-on-surface-variant text-base">
+                <strong className="text-on-surface">{client?.name}</strong> was
                 mentioned in{" "}
-                <strong className="text-[#E8890C]">
+                <strong className="text-primary">
                   {audit!.total_mentioned}
                 </strong>{" "}
                 out of{" "}
-                <strong className="text-[#0F172A]">{audit!.total_queries}</strong>{" "}
+                <strong className="text-on-surface">{audit!.total_queries}</strong>{" "}
                 AI engine queries across{" "}
-                <strong className="text-[#0F172A]">
+                <strong className="text-on-surface">
                   {audit!.engines?.length}
                 </strong>{" "}
                 platforms.
               </p>
               {visRate < 25 && (
-                <p className="mt-4 text-[#E8890C] text-sm">
+                <p className="mt-4 text-primary text-sm">
                   Your brand has significant room for improvement in AI search visibility.
                   Scroll down to see how we can help.
                 </p>
@@ -545,35 +548,35 @@ export default function ReportPage() {
                   label: "Visibility Rate",
                   value: `${Math.round(visRate)}%`,
                   color: visColors.text,
-                  accent: "border-t-[#E8890C]",
+                  accent: "border-t-secondary",
                 },
                 {
                   label: "Brand Mentions",
                   value: audit!.total_mentioned,
-                  color: "text-[#1D9E75]",
-                  accent: "border-t-[#1D9E75]",
+                  color: "text-primary",
+                  accent: "border-t-primary",
                 },
                 {
                   label: "Total Queries",
                   value: audit!.total_queries,
-                  color: "text-[#004AAD]",
-                  accent: "border-t-[#004AAD]",
+                  color: "text-primary",
+                  accent: "border-t-primary",
                 },
                 {
                   label: "Engines Tested",
                   value: audit!.engines?.length,
-                  color: "text-[#0BA5C9]",
-                  accent: "border-t-[#0BA5C9]",
+                  color: "text-primary",
+                  accent: "border-t-tertiary",
                 },
               ].map((kpi) => (
                 <div
                   key={kpi.label}
-                  className={`bg-white border border-[#E2E8F0] border-t-4 ${kpi.accent} rounded-2xl p-5 text-center`}
+                  className={`glass-card border border-white/5 border-t-4 ${kpi.accent} rounded-2xl p-5 text-center`}
                 >
                   <div className={`text-3xl font-black ${kpi.color}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                     {kpi.value}
                   </div>
-                  <div className="text-xs text-[#64748B] mt-1 font-medium">
+                  <div className="text-xs text-on-surface-variant mt-1 font-medium">
                     {kpi.label}
                   </div>
                 </div>
@@ -586,7 +589,7 @@ export default function ReportPage() {
                 <button
                   onClick={handleReAudit}
                   disabled={reAuditLoading}
-                  className="px-8 py-3 bg-[#1D9E75] text-white font-bold rounded-xl hover:bg-[#178a65] disabled:opacity-50 disabled:cursor-not-allowed transition-colors uppercase tracking-wider text-sm"
+                  className="px-8 py-3 bg-primary text-on-primary-fixed font-bold rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors uppercase tracking-wider text-sm"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   {reAuditLoading ? "Starting Re-Audit..." : "Re-Audit This Brand"}
@@ -596,9 +599,9 @@ export default function ReportPage() {
 
             {/* Score History (shown when there are multiple versions) */}
             {history.length > 1 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-4"
+                  className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Audit History &mdash; Score Changes
@@ -606,7 +609,7 @@ export default function ReportPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-[#E2E8F0] text-[#94A3B8] uppercase text-xs">
+                      <tr className="border-b border-white/5 text-on-surface-variant uppercase text-xs">
                         <th className="text-left py-3 px-2">Version</th>
                         <th className="text-left py-3 px-2">Date</th>
                         <th className="text-center py-3 px-2">Visibility</th>
@@ -627,22 +630,22 @@ export default function ReportPage() {
                         return (
                           <tr
                             key={entry.id}
-                            className={`border-b border-[#F1F5F9] ${isCurrent ? "bg-[#FFF3E0]" : "hover:bg-[#F8FAFC]"}`}
+                            className={`border-b border-white/5 ${isCurrent ? "bg-primary/10" : "hover:bg-white/5"}`}
                           >
                             <td className="py-3 px-2 font-medium">
                               <button
                                 onClick={() => router.push(`/audits/${entry.id}`)}
-                                className="text-[#004AAD] hover:underline font-bold"
+                                className="text-primary hover:underline font-bold"
                               >
                                 v{entry.version}
                               </button>
                               {isCurrent && (
-                                <span className="ml-2 text-[10px] bg-[#E8890C] text-white px-1.5 py-0.5 rounded font-bold">
+                                <span className="ml-2 text-[10px] bg-primary text-on-primary-fixed px-1.5 py-0.5 rounded font-bold">
                                   Current
                                 </span>
                               )}
                             </td>
-                            <td className="py-3 px-2 text-[#64748B]">
+                            <td className="py-3 px-2 text-on-surface-variant">
                               {entry.completed_at
                                 ? new Date(entry.completed_at).toLocaleDateString("en-AU", {
                                     day: "numeric",
@@ -661,10 +664,10 @@ export default function ReportPage() {
                                 <span
                                   className={`inline-flex items-center gap-1 font-bold ${
                                     delta > 0
-                                      ? "text-[#1D9E75]"
+                                      ? "text-primary"
                                       : delta < 0
-                                        ? "text-[#DC2626]"
-                                        : "text-[#94A3B8]"
+                                        ? "text-error"
+                                        : "text-on-surface-variant"
                                   }`}
                                 >
                                   {delta > 0 ? "+" : ""}
@@ -673,10 +676,10 @@ export default function ReportPage() {
                                   {delta < 0 && <span>&#9660;</span>}
                                 </span>
                               ) : (
-                                <span className="text-[#94A3B8]">&mdash;</span>
+                                <span className="text-on-surface-variant">&mdash;</span>
                               )}
                             </td>
-                            <td className="py-3 px-2 text-center text-[#64748B]">
+                            <td className="py-3 px-2 text-center text-on-surface-variant">
                               {entry.total_mentioned != null
                                 ? `${entry.total_mentioned} / ${entry.total_queries}`
                                 : "—"}
@@ -685,12 +688,12 @@ export default function ReportPage() {
                               <span
                                 className={`text-xs px-2 py-1 rounded-full font-bold ${
                                   entry.status === "completed"
-                                    ? "bg-[#E1F5EE] text-[#1D9E75]"
+                                    ? "bg-primary/10 text-primary"
                                     : entry.status === "running"
                                       ? "bg-blue-100 text-blue-700"
                                       : entry.status === "failed"
-                                        ? "bg-[#FEF2F2] text-[#DC2626]"
-                                        : "bg-gray-100 text-gray-600"
+                                        ? "bg-error/10 text-error"
+                                        : "bg-surface-container-high text-on-surface-variant"
                                 }`}
                               >
                                 {entry.status}
@@ -707,9 +710,9 @@ export default function ReportPage() {
 
             {/* Performance by AI Engine */}
             {sortedEngines.length > 0 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-6"
+                  className="text-xl font-bold text-on-surface mb-6"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Performance by AI Engine
@@ -723,24 +726,24 @@ export default function ReportPage() {
                     return (
                       <div
                         key={key}
-                        className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4"
+                        className="bg-white/5 border border-white/5 rounded-xl p-4"
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-[#0F172A]">
+                          <span className="font-medium text-on-surface">
                             {stats.display_name || ENGINE_LABELS[key] || key}
                           </span>
                           <span className={`text-lg font-bold ${colors.text}`}>
                             {Math.round(rate)}%
                           </span>
                         </div>
-                        <div className="w-full bg-[#E2E8F0] rounded-full h-2 mb-2">
+                        <div className="w-full bg-surface-container-lowest rounded-full h-2 mb-2">
                           <div
                             className={`h-2 rounded-full ${colors.bar}`}
                             style={{ width: `${Math.max(rate, 2)}%` }}
                           />
                         </div>
                         <div className="flex items-center justify-between">
-                          <p className="text-xs text-[#64748B]">
+                          <p className="text-xs text-on-surface-variant">
                             {stats.brand_mentioned} / {stats.total_queries} mentions
                           </p>
                           <span
@@ -758,9 +761,9 @@ export default function ReportPage() {
 
             {/* Engine Gap Analysis Table */}
             {sortedEngines.length > 0 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-4"
+                  className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   AI Engine Gap Analysis
@@ -768,7 +771,7 @@ export default function ReportPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-[#E2E8F0] text-[#94A3B8] uppercase text-xs">
+                      <tr className="border-b border-white/5 text-on-surface-variant uppercase text-xs">
                         <th className="text-left py-3 px-2">AI Engine</th>
                         <th className="text-center py-3 px-2">Queries</th>
                         <th className="text-center py-3 px-2">Mentioned</th>
@@ -787,15 +790,15 @@ export default function ReportPage() {
                         return (
                           <tr
                             key={key}
-                            className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC]"
+                            className="border-b border-white/5 hover:bg-white/5"
                           >
-                            <td className="py-3 px-2 text-[#0F172A] font-medium">
+                            <td className="py-3 px-2 text-on-surface font-medium">
                               {stats.display_name || ENGINE_LABELS[key] || key}
                             </td>
-                            <td className="py-3 px-2 text-center text-[#64748B]">
+                            <td className="py-3 px-2 text-center text-on-surface-variant">
                               {stats.total_queries}
                             </td>
-                            <td className="py-3 px-2 text-center text-[#64748B]">
+                            <td className="py-3 px-2 text-center text-on-surface-variant">
                               {stats.brand_mentioned}
                             </td>
                             <td
@@ -803,7 +806,7 @@ export default function ReportPage() {
                             >
                               {Math.round(stats.visibility_rate)}%
                             </td>
-                            <td className="py-3 px-2 text-center text-red-400">
+                            <td className="py-3 px-2 text-center text-error">
                               {missed}
                             </td>
                             <td className="py-3 px-2 text-center">
@@ -824,9 +827,9 @@ export default function ReportPage() {
 
             {/* Category Performance */}
             {sortedCategories.length > 0 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-4"
+                  className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Category Performance
@@ -837,7 +840,7 @@ export default function ReportPage() {
                     return (
                       <div key={category}>
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm text-[#0F172A] font-medium">
+                          <span className="text-sm text-on-surface font-medium">
                             {category}
                           </span>
                           <span
@@ -846,7 +849,7 @@ export default function ReportPage() {
                             {Math.round(stats.visibility_rate)}%
                           </span>
                         </div>
-                        <div className="w-full bg-[#E2E8F0] rounded-full h-3">
+                        <div className="w-full bg-surface-container-lowest rounded-full h-3">
                           <div
                             className={`h-3 rounded-full ${colors.bar}`}
                             style={{
@@ -854,7 +857,7 @@ export default function ReportPage() {
                             }}
                           />
                         </div>
-                        <p className="text-xs text-[#64748B] mt-1">
+                        <p className="text-xs text-on-surface-variant mt-1">
                           {stats.brand_mentioned} / {stats.total_queries} queries
                           mentioned
                         </p>
@@ -867,23 +870,23 @@ export default function ReportPage() {
 
             {/* Competitor Analysis */}
             {sortedCompetitors.length > 0 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-4"
+                  className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Competitor Mentions
                 </h2>
                 <div className="space-y-3">
                   {/* Client row first */}
-                  <div className="flex items-center gap-3 bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
-                    <span className="text-sm font-bold text-orange-400 w-40 truncate">
+                  <div className="flex items-center gap-3 bg-primary/10 border border-primary/30 rounded-lg p-3">
+                    <span className="text-sm font-bold text-primary w-40 truncate">
                       {client?.name} (You)
                     </span>
                     <div className="flex-1">
-                      <div className="w-full bg-[#E2E8F0] rounded-full h-3">
+                      <div className="w-full bg-surface-container-lowest rounded-full h-3">
                         <div
-                          className="h-3 rounded-full bg-orange-500"
+                          className="h-3 rounded-full bg-primary"
                           style={{
                             width: `${Math.max(
                               ((audit!.total_mentioned || 0) /
@@ -895,7 +898,7 @@ export default function ReportPage() {
                         />
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-orange-400 w-16 text-right">
+                    <span className="text-sm font-bold text-primary w-16 text-right">
                       {audit!.total_mentioned}
                     </span>
                   </div>
@@ -908,15 +911,15 @@ export default function ReportPage() {
                     return (
                       <div
                         key={name}
-                        className="flex items-center gap-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3"
+                        className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl p-3"
                       >
-                        <span className="text-sm text-[#334155] w-40 truncate">
+                        <span className="text-sm text-on-surface w-40 truncate">
                           {name}
                         </span>
                         <div className="flex-1">
-                          <div className="w-full bg-[#E2E8F0] rounded-full h-3">
+                          <div className="w-full bg-surface-container-lowest rounded-full h-3">
                             <div
-                              className="h-3 rounded-full bg-[#94A3B8]"
+                              className="h-3 rounded-full bg-outline"
                               style={{
                                 width: `${Math.max(
                                   (count / maxMentions) * 100,
@@ -926,7 +929,7 @@ export default function ReportPage() {
                             />
                           </div>
                         </div>
-                        <span className="text-sm text-[#64748B] w-16 text-right">
+                        <span className="text-sm text-on-surface-variant w-16 text-right">
                           {count}
                         </span>
                       </div>
@@ -938,9 +941,9 @@ export default function ReportPage() {
 
             {/* Sentiment Breakdown */}
             {totalSentiment > 0 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-4"
+                  className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Sentiment Analysis
@@ -950,20 +953,20 @@ export default function ReportPage() {
                     {
                       label: "Positive",
                       value: sentimentBreakdown?.positive || 0,
-                      color: "text-green-400",
-                      bg: "bg-green-500",
+                      color: "text-primary",
+                      bg: "bg-primary",
                     },
                     {
                       label: "Neutral",
                       value: sentimentBreakdown?.neutral || 0,
-                      color: "text-[#64748B]",
-                      bg: "bg-[#94A3B8]",
+                      color: "text-on-surface-variant",
+                      bg: "bg-outline",
                     },
                     {
                       label: "Negative",
                       value: sentimentBreakdown?.negative || 0,
-                      color: "text-red-400",
-                      bg: "bg-red-500",
+                      color: "text-error",
+                      bg: "bg-error",
                     },
                   ].map((s) => {
                     const pct =
@@ -973,15 +976,15 @@ export default function ReportPage() {
                     return (
                       <div
                         key={s.label}
-                        className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center"
+                        className="bg-white/5 border border-white/5 rounded-xl p-4 text-center"
                       >
                         <div className={`text-2xl font-bold ${s.color}`}>
                           {pct}%
                         </div>
-                        <div className="text-xs text-[#64748B] mt-1 uppercase">
+                        <div className="text-xs text-on-surface-variant mt-1 uppercase">
                           {s.label}
                         </div>
-                        <div className="w-full bg-[#E2E8F0] rounded-full h-1.5 mt-2">
+                        <div className="w-full bg-surface-container-lowest rounded-full h-1.5 mt-2">
                           <div
                             className={`h-1.5 rounded-full ${s.bg}`}
                             style={{ width: `${Math.max(pct, 2)}%` }}
@@ -996,20 +999,20 @@ export default function ReportPage() {
 
             {/* Keyword Gap Analysis */}
             {keywordGaps.length > 0 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-2"
+                  className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Keyword Gap Analysis
                 </h2>
-                <p className="text-sm text-[#64748B] mb-6">
+                <p className="text-sm text-on-surface-variant mb-6">
                   Queries where competitors are being recommended but your brand is missing.
                 </p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-[#E2E8F0] text-[#94A3B8] uppercase text-xs">
+                      <tr className="border-b border-white/5 text-on-surface-variant uppercase text-xs">
                         <th className="text-left py-3 px-2">Query</th>
                         <th className="text-center py-3 px-2">Category</th>
                         <th className="text-center py-3 px-2">Engines Missed</th>
@@ -1020,19 +1023,19 @@ export default function ReportPage() {
                     <tbody>
                       {keywordGaps.slice(0, 10).map((gap) => {
                         const sevColors: Record<string, string> = {
-                          critical: "bg-[#FEF2F2] text-[#DC2626]",
-                          high: "bg-[#FFF3E0] text-[#E8890C]",
-                          medium: "bg-[#FFF3E0] text-[#E8890C]",
-                          low: "bg-[#E1F5EE] text-[#1D9E75]",
+                          critical: "bg-error/10 text-error",
+                          high: "bg-primary/10 text-primary",
+                          medium: "bg-primary/10 text-primary",
+                          low: "bg-primary/10 text-primary",
                         };
                         return (
-                          <tr key={gap.prompt_id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC]">
-                            <td className="py-3 px-2 text-[#334155] max-w-xs truncate">{gap.prompt_text}</td>
-                            <td className="py-3 px-2 text-center text-[#64748B]">{gap.category}</td>
-                            <td className="py-3 px-2 text-center text-red-400 font-bold">
+                          <tr key={gap.prompt_id} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="py-3 px-2 text-on-surface max-w-xs truncate">{gap.prompt_text}</td>
+                            <td className="py-3 px-2 text-center text-on-surface-variant">{gap.category}</td>
+                            <td className="py-3 px-2 text-center text-error font-bold">
                               {gap.engines_missed.length} / {gap.engines_tested}
                             </td>
-                            <td className="py-3 px-2 text-center text-[#64748B]">
+                            <td className="py-3 px-2 text-center text-on-surface-variant">
                               {gap.competitors_present.slice(0, 2).map((c) => c.name).join(", ") || "—"}
                             </td>
                             <td className="py-3 px-2 text-center">
@@ -1049,15 +1052,15 @@ export default function ReportPage() {
 
                 {/* Strengths */}
                 {keywordStrengths.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-[#E2E8F0]">
-                    <h3 className="text-sm font-bold text-green-400 uppercase tracking-wider mb-3">
+                  <div className="mt-6 pt-6 border-t border-white/5">
+                    <h3 className="text-sm font-bold text-primary uppercase tracking-wider mb-3">
                       Your Strengths ({keywordStrengths.length} queries with visibility)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {keywordStrengths.slice(0, 6).map((s) => (
-                        <div key={s.prompt_id} className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 flex items-center justify-between">
-                          <span className="text-sm text-[#334155] truncate flex-1 mr-2">{s.prompt_text}</span>
-                          <span className="text-xs font-bold text-green-400 whitespace-nowrap">{s.coverage_rate}%</span>
+                        <div key={s.prompt_id} className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between">
+                          <span className="text-sm text-on-surface truncate flex-1 mr-2">{s.prompt_text}</span>
+                          <span className="text-xs font-bold text-primary whitespace-nowrap">{s.coverage_rate}%</span>
                         </div>
                       ))}
                     </div>
@@ -1066,15 +1069,15 @@ export default function ReportPage() {
 
                 {/* Low Competition Opportunities */}
                 {lowCompetition.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-[#E2E8F0]">
-                    <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wider mb-3">
+                  <div className="mt-6 pt-6 border-t border-white/5">
+                    <h3 className="text-sm font-bold text-tertiary uppercase tracking-wider mb-3">
                       Low-Competition Opportunities ({lowCompetition.length})
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {lowCompetition.slice(0, 4).map((opp) => (
-                        <div key={opp.prompt_id} className="bg-[#E6F1FB] border border-[#004AAD]/15 rounded-xl p-3">
-                          <p className="text-sm text-[#004AAD] truncate">{opp.prompt_text}</p>
-                          <p className="text-xs text-[#64748B] mt-1">{opp.opportunity}</p>
+                        <div key={opp.prompt_id} className="bg-primary/10 border border-primary/20 rounded-xl p-3">
+                          <p className="text-sm text-primary truncate">{opp.prompt_text}</p>
+                          <p className="text-xs text-on-surface-variant mt-1">{opp.opportunity}</p>
                         </div>
                       ))}
                     </div>
@@ -1085,14 +1088,14 @@ export default function ReportPage() {
 
             {/* Directory & Citation Check */}
             {directoryCitations.length > 0 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-2"
+                  className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Directory &amp; Citation Check
                 </h2>
-                <p className="text-sm text-[#64748B] mb-6">
+                <p className="text-sm text-on-surface-variant mb-6">
                   AI engines reference business directories when recommending brands. Being listed increases your visibility.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1101,34 +1104,34 @@ export default function ReportPage() {
                       key={dir.directory}
                       className={`border rounded-xl p-4 flex items-center gap-3 ${
                         dir.listed
-                          ? "bg-[#E1F5EE] border-[#1D9E75]/20"
-                          : "bg-[#FEF2F2] border-[#DC2626]/20"
+                          ? "bg-primary/10 border-primary/20"
+                          : "bg-error/10 border-error/20"
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-                        dir.listed ? "bg-[#1D9E75] text-white" : "bg-[#DC2626] text-white"
+                        dir.listed ? "bg-primary text-on-primary-fixed" : "bg-error text-on-primary-fixed"
                       }`}>
                         {dir.listed ? "✓" : "✗"}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#0F172A]">{dir.directory}</p>
+                        <p className="text-sm font-medium text-on-surface">{dir.directory}</p>
                         {dir.listed && dir.link ? (
-                          <a href={dir.link} target="_blank" rel="noopener noreferrer" className="text-xs text-green-400 hover:underline truncate block">
+                          <a href={dir.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">
                             Listed
                           </a>
                         ) : (
-                          <p className="text-xs text-red-400">Not found</p>
+                          <p className="text-xs text-error">Not found</p>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
                 {directoryActions.length > 0 && (
-                  <div className="mt-4 p-4 bg-[#FFF3E0] border border-[#E8890C]/20 rounded-xl">
-                    <p className="text-sm font-bold text-[#E8890C] mb-2">
+                  <div className="mt-4 p-4 bg-primary/10 border border-secondary/20 rounded-xl">
+                    <p className="text-sm font-bold text-primary mb-2">
                       Action Required: {directoryActions.filter((d) => d.action === "claim").length} directories to claim
                     </p>
-                    <p className="text-xs text-[#64748B]">
+                    <p className="text-xs text-on-surface-variant">
                       Claiming these listings improves your chances of being cited by AI engines.
                     </p>
                   </div>
@@ -1138,29 +1141,29 @@ export default function ReportPage() {
 
             {/* AI vs SEO Visibility */}
             {serpComparisons.length > 0 && serpAnalysis && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-2"
+                  className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   AI vs SEO Visibility
                 </h2>
-                <p className="text-sm text-[#64748B] mb-6">
+                <p className="text-sm text-on-surface-variant mb-6">
                   How your AI engine visibility compares to your traditional Google organic rankings.
                 </p>
 
                 {/* Summary cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {[
-                    { label: "SEO Strong, AI Weak", value: serpAnalysis.summary.seo_strong_ai_weak, color: "text-orange-400", desc: "Priority GEO targets" },
-                    { label: "AI Strong, SEO Weak", value: serpAnalysis.summary.ai_strong_seo_weak, color: "text-blue-400", desc: "AI advantage" },
-                    { label: "Both Strong", value: serpAnalysis.summary.both_strong, color: "text-green-400", desc: "Well positioned" },
-                    { label: "Both Weak", value: serpAnalysis.summary.both_weak, color: "text-red-400", desc: "Needs content" },
+                    { label: "SEO Strong, AI Weak", value: serpAnalysis.summary.seo_strong_ai_weak, color: "text-primary", desc: "Priority GEO targets" },
+                    { label: "AI Strong, SEO Weak", value: serpAnalysis.summary.ai_strong_seo_weak, color: "text-tertiary", desc: "AI advantage" },
+                    { label: "Both Strong", value: serpAnalysis.summary.both_strong, color: "text-primary", desc: "Well positioned" },
+                    { label: "Both Weak", value: serpAnalysis.summary.both_weak, color: "text-error", desc: "Needs content" },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center">
+                    <div key={stat.label} className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
                       <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-                      <div className="text-xs text-[#64748B] mt-1 uppercase">{stat.label}</div>
-                      <div className="text-[10px] text-[#94A3B8] mt-1">{stat.desc}</div>
+                      <div className="text-xs text-on-surface-variant mt-1 uppercase">{stat.label}</div>
+                      <div className="text-[10px] text-on-surface-variant mt-1">{stat.desc}</div>
                     </div>
                   ))}
                 </div>
@@ -1169,7 +1172,7 @@ export default function ReportPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-[#E2E8F0] text-[#94A3B8] uppercase text-xs">
+                      <tr className="border-b border-white/5 text-on-surface-variant uppercase text-xs">
                         <th className="text-left py-3 px-2">Query</th>
                         <th className="text-center py-3 px-2">Google Rank</th>
                         <th className="text-center py-3 px-2">AI Mentioned</th>
@@ -1179,10 +1182,10 @@ export default function ReportPage() {
                     <tbody>
                       {serpComparisons.slice(0, 10).map((comp) => {
                         const gapColors: Record<string, string> = {
-                          seo_strong_ai_weak: "bg-[#FFF3E0] text-[#E8890C]",
-                          ai_strong_seo_weak: "bg-[#E6F1FB] text-[#004AAD]",
-                          both_strong: "bg-[#E1F5EE] text-[#1D9E75]",
-                          both_weak: "bg-[#FEF2F2] text-[#DC2626]",
+                          seo_strong_ai_weak: "bg-primary/10 text-primary",
+                          ai_strong_seo_weak: "bg-primary/10 text-primary",
+                          both_strong: "bg-primary/10 text-primary",
+                          both_weak: "bg-error/10 text-error",
                         };
                         const gapLabels: Record<string, string> = {
                           seo_strong_ai_weak: "SEO > AI",
@@ -1191,24 +1194,24 @@ export default function ReportPage() {
                           both_weak: "Weak",
                         };
                         return (
-                          <tr key={comp.prompt_id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC]">
-                            <td className="py-3 px-2 text-[#334155] max-w-xs truncate">{comp.prompt_text}</td>
+                          <tr key={comp.prompt_id} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="py-3 px-2 text-on-surface max-w-xs truncate">{comp.prompt_text}</td>
                             <td className="py-3 px-2 text-center">
                               {comp.organic_rank ? (
-                                <span className="text-green-400 font-bold">#{comp.organic_rank}</span>
+                                <span className="text-primary font-bold">#{comp.organic_rank}</span>
                               ) : (
-                                <span className="text-[#94A3B8]">Not ranked</span>
+                                <span className="text-on-surface-variant">Not ranked</span>
                               )}
                             </td>
                             <td className="py-3 px-2 text-center">
                               {comp.ai_mentioned ? (
-                                <span className="text-green-400">Yes</span>
+                                <span className="text-primary">Yes</span>
                               ) : (
-                                <span className="text-red-400">No</span>
+                                <span className="text-error">No</span>
                               )}
                             </td>
                             <td className="py-3 px-2 text-center">
-                              <span className={`text-xs px-2 py-1 rounded-full font-bold ${gapColors[comp.gap_type] || "bg-[#E2E8F0] text-[#64748B]"}`}>
+                              <span className={`text-xs px-2 py-1 rounded-full font-bold ${gapColors[comp.gap_type] || "bg-surface-container-lowest text-on-surface-variant"}`}>
                                 {gapLabels[comp.gap_type] || comp.gap_type}
                               </span>
                             </td>
@@ -1221,9 +1224,9 @@ export default function ReportPage() {
 
                 {/* Site index info */}
                 {serpAnalysis.site_indexed && serpAnalysis.site_indexed.indexed_count > 0 && (
-                  <div className="mt-4 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl">
-                    <p className="text-sm text-[#64748B]">
-                      <span className="text-[#0F172A] font-bold">{serpAnalysis.site_indexed.indexed_count.toLocaleString()}</span> pages indexed on Google
+                  <div className="mt-4 p-3 bg-white/5 border border-white/5 rounded-xl">
+                    <p className="text-sm text-on-surface-variant">
+                      <span className="text-on-surface font-bold">{serpAnalysis.site_indexed.indexed_count.toLocaleString()}</span> pages indexed on Google
                     </p>
                   </div>
                 )}
@@ -1232,35 +1235,35 @@ export default function ReportPage() {
 
             {/* Content Recommendations (Alice Brief) */}
             {contentRecs.length > 0 && (
-              <section className="bg-white border border-[#E2E8F0] rounded-2xl p-6">
+              <section className="glass-card border border-white/5 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-2"
+                  className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Content Recommendations
                 </h2>
-                <p className="text-sm text-[#64748B] mb-6">
+                <p className="text-sm text-on-surface-variant mb-6">
                   AI-generated action plan to improve your visibility across AI search engines.
                 </p>
 
                 {/* Summary stats */}
                 {aliceBrief?.summary_stats && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center">
-                      <div className="text-2xl font-bold text-[#0F172A]">{aliceBrief.summary_stats.total_recommendations}</div>
-                      <div className="text-xs text-[#64748B] mt-1 uppercase">Total Recommendations</div>
+                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                      <div className="text-2xl font-bold text-on-surface">{aliceBrief.summary_stats.total_recommendations}</div>
+                      <div className="text-xs text-on-surface-variant mt-1 uppercase">Total Recommendations</div>
                     </div>
-                    <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center">
-                      <div className="text-2xl font-bold text-red-400">{aliceBrief.summary_stats.critical_count}</div>
-                      <div className="text-xs text-[#64748B] mt-1 uppercase">Critical Priority</div>
+                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                      <div className="text-2xl font-bold text-error">{aliceBrief.summary_stats.critical_count}</div>
+                      <div className="text-xs text-on-surface-variant mt-1 uppercase">Critical Priority</div>
                     </div>
-                    <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center">
-                      <div className="text-2xl font-bold text-orange-400">{aliceBrief.summary_stats.directories_to_claim}</div>
-                      <div className="text-xs text-[#64748B] mt-1 uppercase">Directories to Claim</div>
+                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                      <div className="text-2xl font-bold text-primary">{aliceBrief.summary_stats.directories_to_claim}</div>
+                      <div className="text-xs text-on-surface-variant mt-1 uppercase">Directories to Claim</div>
                     </div>
-                    <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center">
-                      <div className="text-2xl font-bold text-blue-400">{aliceBrief.summary_stats.content_pieces_needed}</div>
-                      <div className="text-xs text-[#64748B] mt-1 uppercase">Content Pieces Needed</div>
+                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                      <div className="text-2xl font-bold text-tertiary">{aliceBrief.summary_stats.content_pieces_needed}</div>
+                      <div className="text-xs text-on-surface-variant mt-1 uppercase">Content Pieces Needed</div>
                     </div>
                   </div>
                 )}
@@ -1269,43 +1272,43 @@ export default function ReportPage() {
                 <div className="space-y-3">
                   {contentRecs.slice(0, 8).map((rec) => {
                     const typeColors: Record<string, string> = {
-                      landing_page: "bg-[#E6F1FB] text-[#004AAD]",
-                      comparison_article: "bg-[#E0F5FA] text-[#0BA5C9]",
-                      blog_post: "bg-[#E1F5EE] text-[#1D9E75]",
-                      faq_page: "bg-[#FFF3E0] text-[#E8890C]",
-                      case_study: "bg-[#E6F1FB] text-[#004AAD]",
-                      directory_listing: "bg-[#FFF3E0] text-[#E8890C]",
+                      landing_page: "bg-primary/10 text-primary",
+                      comparison_article: "bg-tertiary/10 text-primary",
+                      blog_post: "bg-primary/10 text-primary",
+                      faq_page: "bg-primary/10 text-primary",
+                      case_study: "bg-primary/10 text-primary",
+                      directory_listing: "bg-primary/10 text-primary",
                     };
                     const sevBorder: Record<string, string> = {
-                      critical: "border-l-red-500",
-                      high: "border-l-orange-500",
-                      medium: "border-l-yellow-500",
-                      low: "border-l-green-500",
-                      opportunity: "border-l-blue-500",
+                      critical: "border-l-error",
+                      high: "border-l-secondary",
+                      medium: "border-l-secondary",
+                      low: "border-l-primary",
+                      opportunity: "border-l-tertiary",
                     };
                     return (
                       <div
                         key={rec.id}
-                        className={`bg-white border border-[#E2E8F0] border-l-4 ${sevBorder[rec.severity] || "border-l-[#94A3B8]"} rounded-xl p-4`}
+                        className={`bg-white/5 border border-white/5 border-l-4 ${sevBorder[rec.severity] || "border-l-white/20"} rounded-xl p-4`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <h4 className="text-sm font-bold text-[#0F172A] flex-1">{rec.title}</h4>
+                          <h4 className="text-sm font-bold text-on-surface flex-1">{rec.title}</h4>
                           <div className="flex gap-1.5 shrink-0">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${typeColors[rec.type] || "bg-[#E2E8F0] text-[#64748B]"}`}>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${typeColors[rec.type] || "bg-surface-container-lowest text-on-surface-variant"}`}>
                               {rec.type.replace(/_/g, " ")}
                             </span>
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                              rec.severity === "critical" ? "bg-[#FEF2F2] text-[#DC2626]" :
-                              rec.severity === "high" ? "bg-[#FFF3E0] text-[#E8890C]" :
-                              "bg-[#E2E8F0] text-[#64748B]"
+                              rec.severity === "critical" ? "bg-error/10 text-error" :
+                              rec.severity === "high" ? "bg-primary/10 text-primary" :
+                              "bg-surface-container-lowest text-on-surface-variant"
                             }`}>
                               {rec.severity}
                             </span>
                           </div>
                         </div>
-                        <p className="text-xs text-[#64748B] mb-2">{rec.rationale}</p>
+                        <p className="text-xs text-on-surface-variant mb-2">{rec.rationale}</p>
                         {rec.competitors_to_beat.length > 0 && (
-                          <p className="text-xs text-orange-400">
+                          <p className="text-xs text-primary">
                             Competitors to beat: {rec.competitors_to_beat.join(", ")}
                           </p>
                         )}
@@ -1317,15 +1320,15 @@ export default function ReportPage() {
             )}
 
             {/* ── Tab navigation ── */}
-            <div className="flex gap-1 border-b border-[#E2E8F0] pb-0">
+            <div className="flex gap-1 border-b border-white/5 pb-0">
               {(["overview", "prioritise"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors -mb-px ${
                     activeTab === tab
-                      ? "border-orange-500 text-orange-400"
-                      : "border-transparent text-[#64748B] hover:text-[#0F172A]"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-on-surface-variant hover:text-on-surface"
                   }`}
                 >
                   {tab === "overview" ? "Overview" : "Prioritise & Activate"}
@@ -1353,14 +1356,14 @@ export default function ReportPage() {
 
             {/* Test More Queries */}
             {audit!.status === "completed" && (
-              <section className="bg-white border-2 border-dashed border-[#E8890C]/40 rounded-2xl p-6">
+              <section className="glass-card border-2 border-dashed border-primary/30 rounded-3xl p-6">
                 <h2
-                  className="text-xl font-bold text-[#0F172A] mb-2"
+                  className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   Test More Queries
                 </h2>
-                <p className="text-sm text-[#64748B] mb-4">
+                <p className="text-sm text-on-surface-variant mb-4">
                   Want to check more queries? Add them below and we&apos;ll run
                   them against the same AI engines.
                 </p>
@@ -1376,7 +1379,7 @@ export default function ReportPage() {
                           setAdditionalQueries(updated);
                         }}
                         placeholder="e.g. best digital marketing agency in Sydney"
-                        className="flex-1 px-4 py-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl text-[#0F172A] placeholder-[#94A3B8] focus:ring-2 focus:ring-[#004AAD] focus:outline-none"
+                        className="flex-1 px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all"
                       />
                       {additionalQueries.length > 1 && (
                         <button
@@ -1386,7 +1389,7 @@ export default function ReportPage() {
                               additionalQueries.filter((_, i) => i !== idx)
                             )
                           }
-                          className="px-3 text-red-400 hover:text-red-300 text-sm"
+                          className="px-3 text-error hover:opacity-80 text-sm"
                         >
                           Remove
                         </button>
@@ -1400,7 +1403,7 @@ export default function ReportPage() {
                     onClick={() =>
                       setAdditionalQueries([...additionalQueries, ""])
                     }
-                    className="text-sm text-orange-400 hover:text-orange-300 underline"
+                    className="text-sm text-primary hover:opacity-80 underline"
                   >
                     + Add another query
                   </button>
@@ -1411,34 +1414,34 @@ export default function ReportPage() {
                       additionalQueries.filter((q) => q.trim()).length === 0
                     }
                     onClick={handleAddQueries}
-                    className="px-6 py-3 bg-orange-500 text-black font-bold rounded-lg hover:bg-orange-400 disabled:opacity-50 transition-colors uppercase tracking-wider text-sm"
+                    className="px-6 py-3 bg-primary text-on-primary-fixed font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors uppercase tracking-wider text-sm"
                   >
                     {addingQueries ? "Adding..." : "Run These Queries"}
                   </button>
                 </div>
                 {addQueryError && (
-                  <p className="mt-3 text-red-400 text-sm">{addQueryError}</p>
+                  <p className="mt-3 text-error text-sm">{addQueryError}</p>
                 )}
               </section>
             )}
 
             {/* CTA: Agent Alice */}
-            <section className="bg-white border border-[#E2E8F0] rounded-2xl overflow-hidden">
+            <section className="glass-card border border-white/5 rounded-3xl overflow-hidden">
               {/* Header */}
-              <div className="px-10 pt-10 pb-8 text-center border-b border-[#E2E8F0]">
-                <p className="text-xs font-bold text-[#0BA5C9] uppercase tracking-widest mb-3">
+              <div className="px-10 pt-10 pb-8 text-center border-b border-white/5">
+                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-3">
                   Part 1 Complete
                 </p>
                 <h2
-                  className="text-4xl md:text-5xl font-black text-[#0F172A] mb-4"
+                  className="text-4xl md:text-5xl font-black text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
                   There&apos;s a Part 2 to This Report
                 </h2>
-                <div className="w-16 h-1 bg-[#E8890C] mx-auto my-4" />
-                <p className="text-[#64748B] text-lg max-w-2xl mx-auto">
+                <div className="w-16 h-1 bg-primary mx-auto my-4" />
+                <p className="text-on-surface-variant text-lg max-w-2xl mx-auto">
                   You&apos;ve seen where you stand. Now discover exactly{" "}
-                  <strong className="text-[#0F172A]">what you need to rank for</strong>{" "}
+                  <strong className="text-on-surface">what you need to rank for</strong>{" "}
                   in order to succeed in AI search.
                 </p>
               </div>
@@ -1463,27 +1466,27 @@ export default function ReportPage() {
                       desc: "Our AI agents implement the plan for you. Activate it, and watch your visibility climb.",
                     },
                   ].map((item) => (
-                    <div key={item.title} className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-6 text-center">
-                      <div className="w-12 h-12 bg-[#E8890C] rounded-full flex items-center justify-center mx-auto mb-3">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div key={item.title} className="bg-white/5 border border-white/5 rounded-2xl p-6 text-center">
+                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-on-primary-fixed" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                         </svg>
                       </div>
-                      <h3 className="text-[#0F172A] font-bold mb-2 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                      <h3 className="text-on-surface font-bold mb-2 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                         {item.title}
                       </h3>
-                      <p className="text-[#64748B] text-sm leading-relaxed">{item.desc}</p>
+                      <p className="text-on-surface-variant text-sm leading-relaxed">{item.desc}</p>
                     </div>
                   ))}
                 </div>
 
                 {/* Agent Alice callout */}
-                <div className="bg-[#FFF3E0] border border-[#E8890C]/20 rounded-2xl p-8 text-center mb-8">
-                  <p className="text-base text-[#0F172A] mb-2">
+                <div className="bg-primary/10 border border-secondary/20 rounded-2xl p-8 text-center mb-8">
+                  <p className="text-base text-on-surface mb-2">
                     We&apos;ve built{" "}
-                    <strong className="text-[#E8890C]">Agent Alice</strong> to do exactly this.
+                    <strong className="text-primary">Agent Alice</strong> to do exactly this.
                   </p>
-                  <p className="text-[#64748B] text-sm max-w-xl mx-auto leading-relaxed">
+                  <p className="text-on-surface-variant text-sm max-w-xl mx-auto leading-relaxed">
                     She analyses your gaps, creates the content plan, and writes on-brand content that gets you mentioned by AI search engines. Not generic AI slop &mdash; content designed to rank.
                   </p>
                 </div>
@@ -1494,12 +1497,12 @@ export default function ReportPage() {
                     href="https://balmeragency.com.au/contact"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block px-10 py-4 bg-[#E8890C] text-white font-bold rounded-xl hover:bg-[#d07a0a] transition-colors text-base uppercase tracking-wider"
+                    className="inline-block px-10 py-4 bg-primary text-on-primary-fixed font-bold rounded-xl hover:opacity-90 transition-colors text-base uppercase tracking-wider"
                     style={{ fontFamily: "'DM Sans', sans-serif" }}
                   >
                     Activate the Plan
                   </a>
-                  <p className="text-[#94A3B8] text-sm mt-3">
+                  <p className="text-on-surface-variant text-sm mt-3">
                     Talk to us about Part 2 &mdash; your AI visibility action plan
                   </p>
                 </div>
@@ -1512,13 +1515,13 @@ export default function ReportPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-black border-t border-gray-800 py-6 mt-12">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-gray-500">
+      <footer className="bg-surface-container-high border-t border-outline-variant py-6 mt-12">
+        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-on-surface-variant">
           <p>
             Powered by{" "}
             <a
               href="https://balmeragency.com.au"
-              className="text-orange-400 hover:underline"
+              className="text-primary hover:underline"
             >
               Balmer Agency
             </a>

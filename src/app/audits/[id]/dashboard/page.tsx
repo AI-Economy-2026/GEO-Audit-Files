@@ -16,10 +16,6 @@ export default function DashboardPage() {
       const data = await res.json();
       if (data.audit?.dashboard_url) {
         setDashboardUrl(data.audit.dashboard_url);
-
-        // Fetch the actual HTML content so we can use srcdoc
-        // (Supabase Storage may serve HTML with wrong Content-Type,
-        //  causing the browser to show raw source instead of rendering it)
         try {
           const htmlRes = await fetch(data.audit.dashboard_url);
           const html = await htmlRes.text();
@@ -32,44 +28,60 @@ export default function DashboardPage() {
     }
     load();
   }, [id]);
- console.log("dashboard URL", dashboardUrl)
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading dashboard...</p>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#F1F5F9" }}
+      >
+        <p style={{ color: "#64748B" }}>Loading dashboard...</p>
       </div>
     );
   }
 
   if (!dashboardUrl) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Dashboard not available yet.</p>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#F1F5F9" }}
+      >
+        <p style={{ color: "#64748B" }}>Dashboard not available yet.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Toolbar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+    <div className="min-h-screen" style={{ background: "#F1F5F9" }}>
+      <div
+        className="px-6 py-3 flex items-center justify-between sticky top-0 z-50"
+        style={{
+          background: "#FFFFFF",
+          borderBottom: "1px solid #E2E8F0",
+        }}
+      >
         <button
           onClick={() => router.push(`/audits/${id}`)}
-          className="text-sm text-gray-500 hover:text-gray-700"
+          className="text-sm inline-flex items-center gap-2 transition-colors"
+          style={{ color: "#334155" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#004AAD")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#334155")}
         >
-          &larr; Back to Audit
+          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          Back to Audit
         </button>
         <a
           href={dashboardUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm inline-flex items-center gap-2 font-bold transition-opacity hover:opacity-80"
+          style={{ color: "#004AAD" }}
         >
           Open in New Tab
+          <span className="material-symbols-outlined text-[18px]">open_in_new</span>
         </a>
       </div>
 
-      {/* Dashboard iframe — use srcdoc to bypass Supabase Content-Type issues */}
       {dashboardHtml ? (
         <iframe
           srcDoc={dashboardHtml}

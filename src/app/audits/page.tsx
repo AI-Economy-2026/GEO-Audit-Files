@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import AppShell from "@/components/ui/AppShell";
+import TopNav from "@/components/ui/TopNav";
+import GlassCard from "@/components/ui/GlassCard";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
 interface Audit {
   id: string;
@@ -16,14 +20,18 @@ interface Audit {
   created_at: string;
   completed_at: string | null;
   duration_seconds: number | null;
+  parent_audit_id?: string | null;
+  version?: number;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  running: "bg-blue-100 text-blue-800",
-  completed: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
-  cancelled: "bg-gray-100 text-gray-600",
+type Tone = "primary" | "secondary" | "error" | "neutral" | "success";
+
+const STATUS_TONE: Record<string, Tone> = {
+  pending: "secondary",
+  running: "primary",
+  completed: "success",
+  failed: "error",
+  cancelled: "neutral",
 };
 
 export default function AuditsPage() {
@@ -42,14 +50,6 @@ export default function AuditsPage() {
     setLoading(false);
   }
 
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-    console.log("a")
-  }
-
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("en-AU", {
       day: "numeric",
@@ -61,126 +61,188 @@ export default function AuditsPage() {
   }
 
   function formatDuration(seconds: number | null) {
-    if (!seconds) return "-";
+    if (!seconds) return "—";
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
   }
 
+  function visibilityTone(rate: number | null): string {
+    if (rate == null) return "text-on-surface-variant";
+    if (rate >= 50) return "text-primary";
+    if (rate >= 25) return "text-secondary";
+    return "text-error";
+  }
+
+  const totalAudits = audits.length;
+  const completed = audits.filter((a) => a.status === "completed").length;
+  const running = audits.filter((a) => a.status === "running" || a.status === "pending").length;
+  const avgVisibility = audits
+    .filter((a) => a.visibility_rate != null)
+    .reduce((sum, a, _, arr) => sum + (a.visibility_rate || 0) / arr.length, 0);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppShell
+      topNav={
+        <TopNav
+          brand="GEO Audit Pro"
+          tabs={[
+            { href: "/audits", label: "Audits", match: (p) => p.startsWith("/audits") },
+            { href: "/clients", label: "Clients", match: (p) => p.startsWith("/clients") },
+          ]}
+          right={
+            <>
+              <div className="bg-surface-container-lowest px-4 py-2 rounded-full border border-white/5 flex items-center gap-2">
+                <span className="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
+                <input
+                  type="text"
+                  placeholder="Search audits..."
+                  className="bg-transparent border-0 focus:ring-0 text-sm text-on-surface placeholder:text-on-surface-variant/50 w-48 outline-none"
+                />
+              </div>
+              <button className="p-2 text-on-surface-variant hover:bg-white/5 rounded-full transition-all">
+                <span className="material-symbols-outlined">notifications</span>
+              </button>
+            </>
+          }
+        />
+      }
+    >
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">GEO Audit</h1>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push("/clients")}
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              Clients
-            </button>
-            <button
-              onClick={() => router.push("/audits/new")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-            >
-              + New Audit
-            </button>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              Sign out
-            </button>
-          </div>
+      <div className="flex justify-between items-end mb-12">
+        <div>
+          <h2 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-2">
+            Your Audits
+          </h2>
+          <p className="text-on-surface-variant text-lg max-w-2xl">
+            Track AI visibility across your brand portfolio. Every audit is a fresh lens on how
+            generative engines see your business.
+          </p>
         </div>
-      </header>
+        <div className="hidden md:flex gap-4">
+          <Button variant="secondary" icon="download">
+            Export
+          </Button>
+          <Button icon="add" onClick={() => router.push("/audits/new")}>
+            New Audit
+          </Button>
+        </div>
+      </div>
+
+      {/* Stat strip */}
+      {!loading && totalAudits > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
+          <GlassCard padding="md">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
+              Total Audits
+            </p>
+            <p className="text-3xl font-black tracking-tighter text-on-surface">{totalAudits}</p>
+          </GlassCard>
+          <GlassCard padding="md">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
+              Completed
+            </p>
+            <p className="text-3xl font-black tracking-tighter text-primary">{completed}</p>
+          </GlassCard>
+          <GlassCard padding="md">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
+              Running
+            </p>
+            <p className="text-3xl font-black tracking-tighter text-secondary">{running}</p>
+          </GlassCard>
+          <GlassCard padding="md">
+            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
+              Avg. Visibility
+            </p>
+            <p className={`text-3xl font-black tracking-tighter ${visibilityTone(avgVisibility)}`}>
+              {completed > 0 ? `${Math.round(avgVisibility)}%` : "—"}
+            </p>
+          </GlassCard>
+        </div>
+      )}
 
       {/* Content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Your Audits</h2>
-
-        {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading...</div>
-        ) : audits.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No audits yet
-            </h3>
-            <p className="text-gray-500 mb-6">
-              Run your first AI visibility audit to see how your brand appears
-              across AI search engines.
-            </p>
-            <button
-              onClick={() => router.push("/audits/new")}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-            >
-              Create Your First Audit
-            </button>
+      {loading ? (
+        <GlassCard className="text-center" padding="xl">
+          <p className="text-on-surface-variant">Loading audits...</p>
+        </GlassCard>
+      ) : audits.length === 0 ? (
+        <GlassCard className="text-center" padding="xl">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary text-3xl">radar</span>
           </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <h3 className="text-2xl font-bold text-on-surface mb-2">No audits yet</h3>
+          <p className="text-on-surface-variant mb-8 max-w-md mx-auto">
+            Run your first AI visibility audit to see how your brand appears across ChatGPT,
+            Claude, Gemini, Perplexity and more.
+          </p>
+          <Button icon="add" size="lg" onClick={() => router.push("/audits/new")}>
+            Create Your First Audit
+          </Button>
+        </GlassCard>
+      ) : (
+        <GlassCard padding="none" className="overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">
+              <thead>
+                <tr className="border-b border-white/5">
+                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Brand
                   </th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">
+                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Status
                   </th>
-                  <th className="text-center px-6 py-3 text-sm font-medium text-gray-500">
+                  <th className="text-center px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Visibility
                   </th>
-                  <th className="text-center px-6 py-3 text-sm font-medium text-gray-500">
+                  <th className="text-center px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Engines
                   </th>
-                  <th className="text-center px-6 py-3 text-sm font-medium text-gray-500">
+                  <th className="text-center px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Duration
                   </th>
-                  <th className="text-right px-6 py-3 text-sm font-medium text-gray-500">
+                  <th className="text-right px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Date
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {audits.map((audit) => (
                   <tr
                     key={audit.id}
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className="hover:bg-white/5 cursor-pointer transition-colors"
                     onClick={() => router.push(`/audits/${audit.id}`)}
                   >
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">
-                        {audit.brand_name}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-on-surface">{audit.brand_name}</p>
+                        {audit.version && audit.version > 1 && (
+                          <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-bold">
+                            v{audit.version}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {audit.brand_url}
-                      </div>
+                      <p className="text-xs text-on-surface-variant mt-0.5">{audit.brand_url}</p>
                     </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[audit.status] || "bg-gray-100 text-gray-600"}`}
-                      >
-                        {audit.status}
-                      </span>
+                    <td className="px-6 py-5">
+                      <Badge tone={STATUS_TONE[audit.status] || "neutral"}>{audit.status}</Badge>
                     </td>
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-6 py-5 text-center">
                       {audit.visibility_rate != null ? (
-                        <span className="text-lg font-bold text-gray-900">
+                        <span className={`text-xl font-black tracking-tighter ${visibilityTone(audit.visibility_rate)}`}>
                           {audit.visibility_rate}%
                         </span>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-on-surface-variant">—</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
+                    <td className="px-6 py-5 text-center text-sm text-on-surface-variant">
                       {audit.engines?.length || 0}
                     </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
+                    <td className="px-6 py-5 text-center text-sm text-on-surface-variant">
                       {formatDuration(audit.duration_seconds)}
                     </td>
-                    <td className="px-6 py-4 text-right text-sm text-gray-500">
+                    <td className="px-6 py-5 text-right text-sm text-on-surface-variant">
                       {formatDate(audit.created_at)}
                     </td>
                   </tr>
@@ -188,8 +250,8 @@ export default function AuditsPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </main>
-    </div>
+        </GlassCard>
+      )}
+    </AppShell>
   );
 }

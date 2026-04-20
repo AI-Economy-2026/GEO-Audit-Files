@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import AuthShell from "@/components/ui/AuthShell";
+import GlassCard from "@/components/ui/GlassCard";
+import Button from "@/components/ui/Button";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,10 +21,7 @@ export default function LoginPage() {
     setError("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setError(error.message);
@@ -31,63 +32,67 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">GEO Audit</h1>
-          <p className="text-gray-500 mt-2">
-            AI Visibility Auditing Platform
-          </p>
-        </div>
+  const inputCls =
+    "w-full px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
 
-        <form onSubmit={handleLogin} className="space-y-4">
+  return (
+    <AuthShell>
+      <div className="text-center mb-8">
+        <div className="w-14 h-14 rounded-2xl bg-primary mx-auto mb-4 flex items-center justify-center shadow-[0_0_30px_rgba(68,216,241,0.3)]">
+          <span className="material-symbols-outlined text-on-primary-fixed text-3xl">radar</span>
+        </div>
+        <h1 className="text-3xl font-extrabold tracking-tighter text-on-surface">GEO Audit Pro</h1>
+        <p className="text-on-surface-variant mt-2 text-sm">AI Visibility Auditing Platform</p>
+      </div>
+
+      <GlassCard padding="lg">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
               Email
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={inputCls}
               required
+              autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
               Password
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className={inputCls}
               required
             />
           </div>
 
           {error && (
-            <p className="text-red-600 text-sm">{error}</p>
+            <div className="flex items-start gap-3 p-3 bg-error/10 border border-error/30 rounded-xl">
+              <span className="material-symbols-outlined text-error">error</span>
+              <p className="text-error text-sm">{error}</p>
+            </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
+          <Button type="submit" size="lg" disabled={loading} className="w-full">
             {loading ? "Signing in..." : "Sign In"}
-          </button>
+          </Button>
         </form>
+      </GlassCard>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Don&apos;t have an account?{" "}
-          <a href="/signup" className="text-blue-600 hover:underline">
-            Sign up
-          </a>
-        </p>
-      </div>
-    </div>
+      <p className="text-center text-sm text-on-surface-variant mt-6">
+        Don&apos;t have an account?{" "}
+        <Link href="/signup" className="text-primary font-bold hover:opacity-80 transition-opacity">
+          Sign up
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

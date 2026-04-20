@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import GlassCard from "@/components/ui/GlassCard";
+import Button from "@/components/ui/Button";
 
 interface ClientInfo {
   name: string;
@@ -17,7 +19,6 @@ export default function IntakePage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [reportSlug, setReportSlug] = useState("");
 
-  // Form fields
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [competitors, setCompetitors] = useState<string[]>([""]);
   const [keywordInput, setKeywordInput] = useState("");
@@ -89,19 +90,22 @@ export default function IntakePage() {
     }
   }
 
-  // Branded header
+  const inputCls =
+    "w-full px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
+
   const header = (
-    <header className="bg-black text-white py-8 border-b-4 border-orange-500">
+    <header className="border-b border-outline-variant bg-white/95 backdrop-blur-sm py-6">
       <div className="max-w-2xl mx-auto px-4 text-center">
-        <h1
-          className="text-4xl font-bold tracking-widest uppercase"
-          style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-        >
-          BALMER AGENCY
-        </h1>
-        <div className="w-16 h-1 bg-orange-500 mx-auto my-3" />
-        <p className="text-gray-400 text-sm uppercase tracking-wider">
-          AI Visibility Audit
+        <div className="inline-flex items-center gap-2 mb-2">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+            <span className="material-symbols-outlined text-on-primary">radar</span>
+          </div>
+          <span className="text-xl font-black tracking-tighter text-primary">
+            GEO Audit Pro
+          </span>
+        </div>
+        <p className="text-on-surface-variant text-[10px] uppercase tracking-widest font-bold mt-2">
+          AI Visibility Intake
         </p>
       </div>
     </header>
@@ -109,20 +113,23 @@ export default function IntakePage() {
 
   if (pageState === "loading") {
     return (
-      <div className="min-h-screen bg-gray-950">
+      <div className="theme-light bg-ambient min-h-screen">
         {header}
-        <div className="text-center py-20 text-gray-500">Loading...</div>
+        <div className="text-center py-20 text-on-surface-variant">Loading...</div>
       </div>
     );
   }
 
   if (pageState === "error") {
     return (
-      <div className="min-h-screen bg-gray-950">
+      <div className="theme-light bg-ambient min-h-screen">
         {header}
-        <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <h2 className="text-xl font-bold text-white mb-2">Link Not Found</h2>
-          <p className="text-gray-400">{errorMsg}</p>
+        <div className="max-w-lg mx-auto px-4 py-16">
+          <GlassCard padding="lg" className="text-center border-error/30">
+            <span className="material-symbols-outlined text-error text-4xl mb-3">error</span>
+            <h2 className="text-xl font-bold text-on-surface mb-2">Link Not Found</h2>
+            <p className="text-on-surface-variant">{errorMsg}</p>
+          </GlassCard>
         </div>
       </div>
     );
@@ -130,16 +137,18 @@ export default function IntakePage() {
 
   if (pageState === "already_done") {
     return (
-      <div className="min-h-screen bg-gray-950">
+      <div className="theme-light bg-ambient min-h-screen">
         {header}
-        <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <h2 className="text-xl font-bold text-white mb-2">
-            Already Submitted
-          </h2>
-          <p className="text-gray-400">
-            This intake form has already been completed. Your audit is in
-            progress.
-          </p>
+        <div className="max-w-lg mx-auto px-4 py-16">
+          <GlassCard padding="lg" className="text-center">
+            <span className="material-symbols-outlined text-primary text-4xl mb-3">
+              check_circle
+            </span>
+            <h2 className="text-xl font-bold text-on-surface mb-2">Already Submitted</h2>
+            <p className="text-on-surface-variant">
+              This intake form has already been completed. Your audit is in progress.
+            </p>
+          </GlassCard>
         </div>
       </div>
     );
@@ -148,147 +157,117 @@ export default function IntakePage() {
   if (pageState === "success") {
     const reportUrl = `${window.location.origin}/report/${reportSlug}`;
     return (
-      <div className="min-h-screen bg-gray-950">
+      <div className="theme-light bg-ambient min-h-screen">
         {header}
-        <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8">
-            <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-black"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={3}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+        <div className="max-w-lg mx-auto px-4 py-16">
+          <GlassCard padding="xl" className="text-center">
+            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(68,216,241,0.4)]">
+              <span className="material-symbols-outlined text-on-primary-fixed text-3xl">
+                rocket_launch
+              </span>
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">
+            <h2 className="text-2xl font-extrabold tracking-tighter text-on-surface mb-2">
               Audit Started
             </h2>
-            <p className="text-gray-400 mb-6">
+            <p className="text-on-surface-variant mb-6 leading-relaxed">
               We&apos;re analysing{" "}
-              <strong className="text-white">{client?.name}</strong>&apos;s
-              visibility across 8 AI search engines. This typically takes 3-5
-              minutes.
+              <strong className="text-on-surface">{client?.name}</strong>&apos;s visibility across
+              8 AI search engines. This typically takes 3–5 minutes.
             </p>
-            <a
-              href={reportUrl}
-              className="inline-block px-8 py-4 bg-orange-500 text-black font-bold rounded-lg hover:bg-orange-400 transition-colors uppercase tracking-wider"
-            >
-              View Your Report
+            <a href={reportUrl}>
+              <Button icon="arrow_forward" size="lg" className="w-full">
+                View Your Report
+              </Button>
             </a>
-          </div>
+          </GlassCard>
         </div>
       </div>
     );
   }
 
-  // Form state
   return (
-    <div className="min-h-screen bg-gray-950">
-      <link
-        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap"
-        rel="stylesheet"
-      />
+    <div className="theme-light bg-ambient min-h-screen">
       {header}
 
-      <main className="max-w-2xl mx-auto px-4 py-8">
+      <main className="max-w-2xl mx-auto px-4 py-10 relative z-10">
         <div className="mb-8 text-center">
-          <h2
-            className="text-3xl font-bold text-white uppercase tracking-wider"
-            style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-          >
+          <h2 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-3">
             {client?.name}
           </h2>
-          <p className="text-gray-400 mt-2">
-            Tell us what you want to be found for and we&apos;ll check your
-            visibility across every major AI search engine.
+          <p className="text-on-surface-variant max-w-lg mx-auto">
+            Tell us what you want to be found for and we&apos;ll check your visibility across every
+            major AI search engine.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Your Website */}
-          <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-            <h3
-              className="text-lg font-bold text-white uppercase tracking-wider border-b border-gray-800 pb-3"
-              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-            >
+          {/* Website */}
+          <GlassCard padding="lg">
+            <h3 className="text-lg font-bold text-on-surface mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">public</span>
               Your Website
             </h3>
             <div>
-              <label className="block text-sm font-bold text-white uppercase tracking-wider mb-1">
-                URL <span className="text-orange-400">*</span>
+              <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
+                URL <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
                 value={websiteUrl}
                 onChange={(e) => setWebsiteUrl(e.target.value)}
                 placeholder="yourcompany.com"
-                className="w-full px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                className={inputCls}
                 required
               />
             </div>
-          </section>
+          </GlassCard>
 
-          {/* What do you want to be found for */}
-          <section className="bg-gray-900 border-2 border-orange-500 rounded-xl p-6 space-y-4">
-            <h3
-              className="text-lg font-bold text-white uppercase tracking-wider border-b border-gray-800 pb-3"
-              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-            >
-              What Do You Want To Be Found For?
+          {/* Keywords */}
+          <GlassCard padding="lg" className="border-primary/30">
+            <h3 className="text-lg font-bold text-on-surface mb-2 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">
+                target
+              </span>
+              What do you want to be found for?
             </h3>
-            <div>
-              <p className="text-sm text-gray-400 mb-3">
-                Type the exact questions or phrases you want AI engines like
-                ChatGPT, Claude, and Gemini to recommend you for.
-              </p>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addKeyword();
-                    }
-                  }}
-                  placeholder="e.g. best digital marketing agency in Sydney"
-                  className="flex-1 px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                />
-                <button
-                  type="button"
-                  onClick={addKeyword}
-                  className="px-4 py-3 bg-orange-500 text-black font-bold rounded-lg hover:bg-orange-400 transition-colors"
+            <p className="text-sm text-on-surface-variant mb-4">
+              Type the exact questions or phrases you want AI engines like ChatGPT, Claude, and
+              Gemini to recommend you for.
+            </p>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={keywordInput}
+                onChange={(e) => setKeywordInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addKeyword();
+                  }
+                }}
+                placeholder="e.g. best digital marketing agency in Sydney"
+                className={`flex-1 ${inputCls}`}
+              />
+              <Button type="button" onClick={addKeyword} icon="add">
+                Add
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {keywords.map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-sm"
                 >
-                  +
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {keywords.map((item) => (
-                  <span
-                    key={item}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-gray-800 text-orange-400 border border-gray-700 rounded-full text-sm"
+                  {item}
+                  <button
+                    type="button"
+                    onClick={() => setKeywords(keywords.filter((k) => k !== item))}
+                    className="hover:opacity-70"
                   >
-                    {item}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setKeywords(keywords.filter((k) => k !== item))
-                      }
-                      className="text-gray-500 hover:text-red-400 ml-1"
-                    >
-                      x
-                    </button>
-                  </span>
-                ))}
-              </div>
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </button>
+                </span>
+              ))}
             </div>
             {websiteUrl && (
               <button
@@ -300,32 +279,28 @@ export default function IntakePage() {
                     );
                     const data = await res.json();
                     if (data.keywords?.length) {
-                      setKeywords((prev) => [
-                        ...new Set([...prev, ...data.keywords]),
-                      ]);
+                      setKeywords((prev) => [...new Set([...prev, ...data.keywords])]);
                     }
                   } catch {
                     /* ignore */
                   }
                 }}
-                className="text-sm text-orange-400 hover:text-orange-300 underline"
+                className="text-sm text-primary hover:opacity-80 font-bold mt-4 inline-flex items-center gap-1"
               >
+                <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
                 Auto-suggest queries from your website
               </button>
             )}
-          </section>
+          </GlassCard>
 
           {/* Competitors */}
-          <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-            <h3
-              className="text-lg font-bold text-white uppercase tracking-wider border-b border-gray-800 pb-3"
-              style={{ fontFamily: "'Bebas Neue', sans-serif" }}
-            >
+          <GlassCard padding="lg">
+            <h3 className="text-lg font-bold text-on-surface mb-2 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">groups</span>
               Competitors
             </h3>
-            <p className="text-sm text-gray-400">
-              Who are your main competitors? We&apos;ll compare your AI
-              visibility against theirs.
+            <p className="text-sm text-on-surface-variant mb-4">
+              Who are your main competitors? We&apos;ll compare your AI visibility against theirs.
             </p>
             <div className="space-y-2">
               {competitors.map((comp, idx) => (
@@ -339,17 +314,13 @@ export default function IntakePage() {
                       setCompetitors(updated);
                     }}
                     placeholder={`Competitor ${idx + 1}`}
-                    className="flex-1 px-4 py-3 bg-gray-950 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    className={`flex-1 ${inputCls}`}
                   />
                   {competitors.length > 1 && (
                     <button
                       type="button"
-                      onClick={() =>
-                        setCompetitors(
-                          competitors.filter((_, i) => i !== idx)
-                        )
-                      }
-                      className="px-3 py-3 text-red-400 hover:text-red-300 text-sm"
+                      onClick={() => setCompetitors(competitors.filter((_, i) => i !== idx))}
+                      className="px-3 text-error hover:opacity-80 text-xs font-bold uppercase tracking-wider"
                     >
                       Remove
                     </button>
@@ -360,46 +331,48 @@ export default function IntakePage() {
             <button
               type="button"
               onClick={() => setCompetitors([...competitors, ""])}
-              className="text-sm text-orange-400 hover:text-orange-300 underline"
+              className="text-sm text-primary hover:opacity-80 font-bold mt-4 inline-flex items-center gap-1"
             >
-              + Add competitor
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Add competitor
             </button>
-          </section>
+          </GlassCard>
 
           {errorMsg && (
-            <p className="text-red-400 text-sm bg-red-950 border border-red-900 rounded-lg p-3">
-              {errorMsg}
-            </p>
+            <div className="flex items-start gap-3 p-3 bg-error/10 border border-error/30 rounded-xl">
+              <span className="material-symbols-outlined text-error">error</span>
+              <p className="text-error text-sm">{errorMsg}</p>
+            </div>
           )}
 
-          <button
+          <Button
             type="submit"
+            size="lg"
+            icon="rocket_launch"
             disabled={
-              pageState === "submitting" ||
-              !websiteUrl ||
-              keywords.length === 0
+              pageState === "submitting" || !websiteUrl || keywords.length === 0
             }
-            className="w-full px-8 py-4 bg-orange-500 text-black font-bold rounded-lg hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg uppercase tracking-wider"
+            className="w-full"
           >
             {pageState === "submitting"
               ? "Starting Audit..."
               : "Start My AI Visibility Audit"}
-          </button>
+          </Button>
 
-          <p className="text-xs text-gray-500 text-center">
-            Your audit will analyse visibility across ChatGPT, Claude, Gemini,
-            Perplexity, Grok, Google AI, and Bing Copilot.
+          <p className="text-xs text-on-surface-variant text-center opacity-70">
+            Your audit will analyse visibility across ChatGPT, Claude, Gemini, Perplexity, Grok,
+            Google AI, and Bing Copilot.
           </p>
         </form>
       </main>
 
-      <footer className="bg-black border-t border-gray-800 py-6 mt-12">
-        <div className="max-w-2xl mx-auto px-4 text-center text-sm text-gray-500">
+      <footer className="border-t border-white/5 py-6 mt-12">
+        <div className="max-w-2xl mx-auto px-4 text-center text-sm text-on-surface-variant">
           <p>
             Powered by{" "}
             <a
               href="https://aieconomy.ai"
-              className="text-orange-400 hover:underline"
+              className="text-primary hover:opacity-80 font-bold"
             >
               AI Economy
             </a>{" "}

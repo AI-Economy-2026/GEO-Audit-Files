@@ -35,7 +35,7 @@ export default function PromptTable({ prompts }: Props) {
     return (
       <button
         onClick={() => toggleSort(col)}
-        className="ml-1 text-gray-400 hover:text-gray-600"
+        className="ml-1 text-on-surface-variant hover:text-on-surface-variant"
       >
         {active ? (sortAsc ? "↑" : "↓") : "↕"}
       </button>
@@ -44,9 +44,9 @@ export default function PromptTable({ prompts }: Props) {
 
   function DiffBadge({ label }: { label: DerivedPromptData["difficulty"]["label"] }) {
     const styles = {
-      Easier: "bg-green-50 text-green-700 border border-green-100",
-      Medium: "bg-amber-50 text-amber-700 border border-amber-100",
-      Hard: "bg-red-50 text-red-700 border border-red-100",
+      Easier: "bg-primary/10 text-primary border border-primary/20",
+      Medium: "bg-secondary/10 text-secondary border border-secondary/20",
+      Hard: "bg-error/10 text-error border border-error/20",
     };
     return (
       <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold ${styles[label]}`}>
@@ -57,22 +57,22 @@ export default function PromptTable({ prompts }: Props) {
 
   function VisBar({ ratio }: { ratio: number }) {
     const pct = Math.round(ratio * 100);
-    const color = ratio > 0.5 ? "bg-green-600" : ratio > 0 ? "bg-amber-500" : "bg-red-500";
+    const color = ratio > 0.5 ? "bg-primary" : ratio > 0 ? "bg-secondary" : "bg-error";
     return (
       <div className="flex items-center gap-2">
-        <div className="w-14 h-1.5 rounded bg-gray-100 overflow-hidden">
+        <div className="w-14 h-1.5 rounded bg-surface-container-high overflow-hidden">
           <div className={`h-full rounded ${color}`} style={{ width: `${pct}%` }} />
         </div>
-        <span className="text-xs text-gray-500">{pct}%</span>
+        <span className="text-xs text-on-surface-variant">{pct}%</span>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-white/5 glass-card shadow-sm">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200">
+          <tr className="border-b border-white/5">
             {[
               { label: "Prompt", col: null },
               { label: "Your Result", col: "client_ratio" as SortKey },
@@ -84,7 +84,7 @@ export default function PromptTable({ prompts }: Props) {
             ].map(({ label, col }) => (
               <th
                 key={label}
-                className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-400"
+                className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-on-surface-variant"
               >
                 {label}
                 {col && <SortBtn col={col} />}
@@ -94,31 +94,31 @@ export default function PromptTable({ prompts }: Props) {
         </thead>
         <tbody>
           {sorted.map((p) => (
-            <tr key={p.prompt_id} className="border-b border-gray-100 hover:bg-gray-50">
+            <tr key={p.prompt_id} className="border-b border-white/5 hover:bg-white/5">
               <td className="px-4 py-4 max-w-[260px]">
-                <div className="font-medium text-gray-900 leading-snug">{p.prompt_text}</div>
-                <span className="mt-1 inline-block px-1.5 py-0 rounded text-[10px] font-bold uppercase tracking-wide bg-gray-100 text-gray-500">
+                <div className="font-medium text-on-surface leading-snug">{p.prompt_text}</div>
+                <span className="mt-1 inline-block px-1.5 py-0 rounded text-[10px] font-bold uppercase tracking-wide bg-surface-container-high text-on-surface-variant">
                   {p.prompt_type}
                 </span>
               </td>
               <td className="px-4 py-4">
-                <div className="text-xs font-semibold text-gray-700 mb-1">
+                <div className="text-xs font-semibold text-on-surface mb-1">
                   {p.client_mentions}/{p.total_engines} engines
                 </div>
                 <VisBar ratio={p.client_ratio} />
-                <div className="text-[11px] text-gray-400 mt-1">{p.visibility_label}</div>
+                <div className="text-[11px] text-on-surface-variant mt-1">{p.visibility_label}</div>
               </td>
               <td className="px-4 py-4">
                 {p.top_competitors.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {p.top_competitors.map((c) => (
-                      <span key={c} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                      <span key={c} className="text-xs bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded">
                         {c}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-400">None detected</span>
+                  <span className="text-xs text-on-surface-variant">None detected</span>
                 )}
               </td>
               <td className="px-4 py-4">
@@ -128,24 +128,24 @@ export default function PromptTable({ prompts }: Props) {
                 <span
                   className={`font-mono font-bold text-base ${
                     p.activation_score >= 60
-                      ? "text-green-700"
+                      ? "text-primary"
                       : p.activation_score >= 35
-                        ? "text-amber-600"
-                        : "text-gray-400"
+                        ? "text-secondary"
+                        : "text-on-surface-variant"
                   }`}
                 >
                   {p.activation_score}
                 </span>
               </td>
               <td className="px-4 py-4">
-                <span className="text-xs font-semibold px-2 py-1 rounded-md bg-[#E6F1FB] text-[#004AAD] border border-[#004AAD]/10">
+                <span className="text-xs font-semibold px-2 py-1 rounded-md bg-primary/10 text-primary border border-[#004AAD]/10">
                   {p.content_suggestion}
                 </span>
               </td>
               <td className="px-4 py-4">
                 <ul className="space-y-0.5">
                   {p.actions.map((a) => (
-                    <li key={a} className="text-xs text-gray-500 list-disc ml-3">
+                    <li key={a} className="text-xs text-on-surface-variant list-disc ml-3">
                       {a}
                     </li>
                   ))}

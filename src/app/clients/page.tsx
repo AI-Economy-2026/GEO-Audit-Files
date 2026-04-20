@@ -2,7 +2,11 @@
 
 import { Fragment, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import AppShell from "@/components/ui/AppShell";
+import TopNav from "@/components/ui/TopNav";
+import GlassCard from "@/components/ui/GlassCard";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 
 interface Client {
   id: string;
@@ -28,12 +32,14 @@ interface AuditVersion {
   completed_at: string | null;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pending_intake: "bg-yellow-100 text-yellow-800",
-  intake_completed: "bg-blue-100 text-blue-800",
-  auditing: "bg-purple-100 text-purple-800",
-  completed: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
+type Tone = "primary" | "secondary" | "error" | "neutral" | "success";
+
+const STATUS_TONE: Record<string, Tone> = {
+  pending_intake: "secondary",
+  intake_completed: "primary",
+  auditing: "primary",
+  completed: "success",
+  failed: "error",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -44,13 +50,20 @@ const STATUS_LABELS: Record<string, string> = {
   failed: "Failed",
 };
 
-const AUDIT_STATUS_COLORS: Record<string, string> = {
-  completed: "bg-green-100 text-green-700",
-  running: "bg-blue-100 text-blue-700",
-  pending: "bg-yellow-100 text-yellow-700",
-  failed: "bg-red-100 text-red-700",
-  cancelled: "bg-gray-100 text-gray-600",
+const AUDIT_STATUS_TONE: Record<string, Tone> = {
+  completed: "success",
+  running: "primary",
+  pending: "secondary",
+  failed: "error",
+  cancelled: "neutral",
 };
+
+function visibilityTone(rate: number | null): string {
+  if (rate == null) return "text-on-surface-variant";
+  if (rate >= 50) return "text-primary";
+  if (rate >= 25) return "text-secondary";
+  return "text-error";
+}
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -72,21 +85,24 @@ export default function ClientsPage() {
     setLoading(false);
   }
 
-  const fetchVersions = useCallback(async (auditId: string, clientId: string) => {
-    if (versions[clientId]) return; // already loaded
-    setVersionsLoading(clientId);
-    try {
-      const res = await fetch(`/api/geo-audits/${auditId}/history`);
-      const data = await res.json();
-      if (data.history) {
-        setVersions((prev) => ({ ...prev, [clientId]: data.history }));
+  const fetchVersions = useCallback(
+    async (auditId: string, clientId: string) => {
+      if (versions[clientId]) return;
+      setVersionsLoading(clientId);
+      try {
+        const res = await fetch(`/api/geo-audits/${auditId}/history`);
+        const data = await res.json();
+        if (data.history) {
+          setVersions((prev) => ({ ...prev, [clientId]: data.history }));
+        }
+      } catch {
+        // ignore
+      } finally {
+        setVersionsLoading(null);
       }
-    } catch {
-      // ignore
-    } finally {
-      setVersionsLoading(null);
-    }
-  }, [versions]);
+    },
+    [versions]
+  );
 
   function toggleExpand(client: Client) {
     if (expandedClient === client.id) {
@@ -97,13 +113,6 @@ export default function ClientsPage() {
         fetchVersions(client.audit_id, client.id);
       }
     }
-  }
-
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
   }
 
   function copyIntakeLink(token: string) {
@@ -122,76 +131,77 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">GEO Audit</h1>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.push("/audits")}
-              className="text-sm text-gray-600 hover:text-gray-900"
-            >
-              Audits
-            </button>
-            <button
-              onClick={() => router.push("/clients/new")}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-            >
-              + Add Client
-            </button>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              Sign out
-            </button>
-          </div>
+    <AppShell
+      topNav={
+        <TopNav
+          brand="GEO Audit Pro"
+          tabs={[
+            { href: "/audits", label: "Audits", match: (p) => p.startsWith("/audits") },
+            { href: "/clients", label: "Clients", match: (p) => p.startsWith("/clients") },
+          ]}
+          right={
+            <Button icon="add" onClick={() => router.push("/clients/new")}>
+              New Client
+            </Button>
+          }
+        />
+      }
+    >
+      <div className="flex justify-between items-end mb-10 gap-4 flex-wrap">
+        <div>
+          <h2 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-2">
+            Clients
+          </h2>
+          <p className="text-on-surface-variant text-lg max-w-2xl">
+            Manage your client roster and track each brand&apos;s audit history in one place.
+          </p>
         </div>
-      </header>
+        <Button icon="add" size="lg" onClick={() => router.push("/clients/new")}>
+          New Client
+        </Button>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Clients</h2>
-
-        {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading...</div>
-        ) : clients.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No clients yet
-            </h3>
-            <p className="text-gray-500 mb-6">
-              Add a client to generate their AI visibility audit intake link.
-            </p>
-            <button
-              onClick={() => router.push("/clients/new")}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
-            >
-              Add Your First Client
-            </button>
+      {loading ? (
+        <GlassCard padding="xl" className="text-center">
+          <p className="text-on-surface-variant">Loading...</p>
+        </GlassCard>
+      ) : clients.length === 0 ? (
+        <GlassCard padding="xl" className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary text-3xl">groups</span>
           </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <h3 className="text-2xl font-bold text-on-surface mb-2">No clients yet</h3>
+          <p className="text-on-surface-variant mb-8 max-w-md mx-auto">
+            Add a client to generate their AI visibility audit intake link.
+          </p>
+          <Button icon="add" size="lg" onClick={() => router.push("/clients/new")}>
+            Add Your First Client
+          </Button>
+        </GlassCard>
+      ) : (
+        <GlassCard padding="none" className="overflow-hidden">
+          <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">
+              <thead>
+                <tr className="border-b border-white/5">
+                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Client
                   </th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">
+                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Status
                   </th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">
-                    Intake Link
+                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                    Intake
                   </th>
-                  <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">
+                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
                     Report
                   </th>
-                  <th className="text-right px-6 py-3 text-sm font-medium text-gray-500">
-                    Date
+                  <th className="text-right px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                    Added
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {clients.map((client) => {
                   const isExpanded = expandedClient === client.id;
                   const clientVersions = versions[client.id] || [];
@@ -199,169 +209,157 @@ export default function ClientsPage() {
 
                   return (
                     <Fragment key={client.id}>
-                      <tr className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            {hasAudit && (
+                      <tr className="hover:bg-white/5 transition-colors border-t border-white/5">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            {hasAudit ? (
                               <button
                                 onClick={() => toggleExpand(client)}
-                                className="text-gray-400 hover:text-gray-600 transition-transform"
-                                title="Show audit versions"
+                                className="text-on-surface-variant hover:text-primary transition-all"
                               >
-                                <svg
-                                  className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
+                                <span
+                                  className={`material-symbols-outlined transition-transform ${isExpanded ? "rotate-90" : ""}`}
                                 >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                </svg>
+                                  chevron_right
+                                </span>
                               </button>
+                            ) : (
+                              <span className="w-6" />
                             )}
                             <div>
-                              <div className="font-medium text-gray-900">
-                                {client.name}
-                              </div>
-                              <div className="text-sm text-gray-500">{client.url}</div>
+                              <p className="font-bold text-on-surface">{client.name}</p>
+                              <p className="text-xs text-on-surface-variant mt-0.5">
+                                {client.url}
+                              </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[client.status] || "bg-gray-100 text-gray-600"}`}
-                          >
+                        <td className="px-6 py-5">
+                          <Badge tone={STATUS_TONE[client.status] || "neutral"}>
                             {STATUS_LABELS[client.status] || client.status}
-                          </span>
+                          </Badge>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-5">
                           <button
                             onClick={() => copyIntakeLink(client.intake_token)}
-                            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                            className="text-sm text-primary hover:opacity-80 font-bold inline-flex items-center gap-1 transition-opacity"
                           >
-                            {copied === client.intake_token
-                              ? "Copied!"
-                              : "Copy Link"}
+                            <span className="material-symbols-outlined text-[16px]">
+                              {copied === client.intake_token ? "check" : "content_copy"}
+                            </span>
+                            {copied === client.intake_token ? "Copied" : "Copy Link"}
                           </button>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-5">
                           {client.status === "completed" ? (
                             <a
                               href={`/report/${client.report_slug}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-green-600 hover:text-green-800 font-medium"
+                              className="text-sm text-primary hover:opacity-80 font-bold inline-flex items-center gap-1 transition-opacity"
                             >
                               View Report
+                              <span className="material-symbols-outlined text-[16px]">
+                                open_in_new
+                              </span>
                             </a>
                           ) : client.status === "auditing" ? (
-                            <span className="text-sm text-purple-500">
-                              In progress...
+                            <span className="text-sm text-secondary inline-flex items-center gap-2">
+                              <span className="w-2 h-2 bg-secondary rounded-full animate-pulse" />
+                              In progress
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-400">-</span>
+                            <span className="text-sm text-on-surface-variant">—</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-right text-sm text-gray-500">
+                        <td className="px-6 py-5 text-right text-sm text-on-surface-variant">
                           {formatDate(client.created_at)}
                         </td>
                       </tr>
 
                       {/* Expanded audit versions */}
                       {isExpanded && (
-                        <tr>
-                          <td colSpan={5} className="px-0 py-0">
-                            <div className="bg-gray-50 border-t border-b border-gray-200 px-6 py-4 ml-10">
+                        <tr className="bg-surface-container-lowest/50">
+                          <td colSpan={5} className="px-6 py-5">
+                            <div className="ml-9">
                               {versionsLoading === client.id ? (
-                                <p className="text-sm text-gray-400">Loading versions...</p>
+                                <p className="text-sm text-on-surface-variant">
+                                  Loading versions...
+                                </p>
                               ) : clientVersions.length === 0 ? (
-                                <p className="text-sm text-gray-400">No audit versions found.</p>
+                                <p className="text-sm text-on-surface-variant">
+                                  No audit versions found.
+                                </p>
                               ) : (
                                 <div>
-                                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                                  <p className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-3">
                                     Audit Versions ({clientVersions.length})
                                   </p>
                                   <div className="space-y-2">
                                     {clientVersions.map((v, idx) => {
                                       const prev = idx > 0 ? clientVersions[idx - 1] : null;
                                       const delta =
-                                        prev && v.visibility_rate != null && prev.visibility_rate != null
-                                          ? +(v.visibility_rate - prev.visibility_rate).toFixed(1)
+                                        prev &&
+                                        v.visibility_rate != null &&
+                                        prev.visibility_rate != null
+                                          ? +(
+                                              v.visibility_rate - prev.visibility_rate
+                                            ).toFixed(1)
                                           : null;
 
                                       return (
                                         <div
                                           key={v.id}
-                                          className="flex items-center gap-4 bg-white border border-gray-200 rounded-lg px-4 py-3"
+                                          className="flex items-center gap-4 bg-white/5 border border-white/5 rounded-xl px-4 py-3 hover:bg-white/10 transition-colors"
                                         >
-                                          {/* Version badge */}
-                                          <span className="text-sm font-bold text-blue-600 w-8">
+                                          <span className="text-sm font-black text-primary w-10">
                                             v{v.version}
                                           </span>
-
-                                          {/* Status */}
-                                          <span
-                                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${AUDIT_STATUS_COLORS[v.status] || "bg-gray-100 text-gray-600"}`}
+                                          <Badge
+                                            tone={AUDIT_STATUS_TONE[v.status] || "neutral"}
                                           >
                                             {v.status}
+                                          </Badge>
+                                          <span
+                                            className={`text-base font-black tracking-tighter w-16 text-right ${visibilityTone(v.visibility_rate)}`}
+                                          >
+                                            {v.visibility_rate != null
+                                              ? `${v.visibility_rate}%`
+                                              : "—"}
                                           </span>
-
-                                          {/* Visibility */}
-                                          <span className="text-sm text-gray-700 w-16 text-right">
-                                            {v.visibility_rate != null ? (
-                                              <span className={
-                                                v.visibility_rate >= 50
-                                                  ? "text-green-600 font-bold"
-                                                  : v.visibility_rate >= 25
-                                                    ? "text-orange-500 font-bold"
-                                                    : "text-red-500 font-bold"
-                                              }>
-                                                {v.visibility_rate}%
-                                              </span>
-                                            ) : (
-                                              <span className="text-gray-400">&mdash;</span>
-                                            )}
-                                          </span>
-
-                                          {/* Delta */}
-                                          <span className="text-sm w-16 text-right">
+                                          <span className="w-16 text-right text-sm">
                                             {delta != null ? (
                                               <span
-                                                className={`font-semibold ${
+                                                className={`font-bold ${
                                                   delta > 0
-                                                    ? "text-green-600"
+                                                    ? "text-primary"
                                                     : delta < 0
-                                                      ? "text-red-600"
-                                                      : "text-gray-400"
+                                                      ? "text-error"
+                                                      : "text-on-surface-variant"
                                                 }`}
                                               >
                                                 {delta > 0 ? "+" : ""}
                                                 {delta}%
                                               </span>
                                             ) : (
-                                              <span className="text-gray-300">&mdash;</span>
+                                              <span className="text-on-surface-variant">—</span>
                                             )}
                                           </span>
-
-                                          {/* Mentions */}
-                                          <span className="text-xs text-gray-500 flex-1">
+                                          <span className="text-xs text-on-surface-variant flex-1">
                                             {v.total_mentioned != null
                                               ? `${v.total_mentioned} / ${v.total_queries} mentions`
                                               : ""}
                                           </span>
-
-                                          {/* Date */}
-                                          <span className="text-xs text-gray-400">
+                                          <span className="text-xs text-on-surface-variant">
                                             {v.completed_at
                                               ? formatDate(v.completed_at)
                                               : v.status === "running" || v.status === "pending"
                                                 ? "Running..."
                                                 : ""}
                                           </span>
-
-                                          {/* Link to audit detail */}
                                           <button
                                             onClick={() => router.push(`/audits/${v.id}`)}
-                                            className="text-xs text-blue-500 hover:text-blue-700 font-medium"
+                                            className="text-xs text-primary hover:opacity-80 font-bold uppercase tracking-wider transition-opacity"
                                           >
                                             View
                                           </button>
@@ -381,8 +379,8 @@ export default function ClientsPage() {
               </tbody>
             </table>
           </div>
-        )}
-      </main>
-    </div>
+        </GlassCard>
+      )}
+    </AppShell>
   );
 }

@@ -77,20 +77,20 @@ export default function AskSarah({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 h-full flex flex-col">
+    <div className="glass-card rounded-xl border border-white/5 shadow-sm p-6 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm"
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-on-primary-fixed font-bold text-sm"
           style={{ background: "linear-gradient(135deg, #004AAD, #0BA5C9)" }}>
           S
         </div>
         <div>
-          <h4 className="text-base font-bold text-gray-900 leading-none">Ask Sarah</h4>
-          <span className="text-xs text-gray-400">Guided report assistant</span>
+          <h4 className="text-base font-bold text-on-surface leading-none">Ask Sarah</h4>
+          <span className="text-xs text-on-surface-variant">Guided report assistant</span>
         </div>
       </div>
 
-      <p className="text-sm text-gray-500 mb-4 leading-relaxed">
+      <p className="text-sm text-on-surface-variant mb-4 leading-relaxed">
         Get a plain-English explanation of your results, what to do next, and which content to create first.
       </p>
 
@@ -103,8 +103,8 @@ export default function AskSarah({
             disabled={loading}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left text-sm font-semibold transition-all
               ${activePreset === preset && (loading || response)
-                ? "bg-[#E6F1FB] border-[#004AAD]/30 text-[#004AAD]"
-                : "bg-[#F8FAFC] border-[#E2E8F0] text-[#0F172A] hover:bg-[#E6F1FB] hover:border-[#004AAD]/30 hover:text-[#004AAD] hover:translate-x-1"
+                ? "bg-primary/10 border-primary/30 text-primary"
+                : "bg-white/5 border-white/5 text-on-surface hover:bg-primary/10 hover:border-primary/30 hover:text-primary hover:translate-x-1"
               }
               disabled:opacity-60 disabled:cursor-wait`}
           >
@@ -116,13 +116,13 @@ export default function AskSarah({
 
       {/* Response */}
       {(loading || response || error) && (
-        <div className="mt-4 p-4 rounded-xl bg-[#E6F1FB] border border-[#004AAD]/15 text-sm text-[#0F172A] leading-relaxed animate-in fade-in duration-300">
+        <div className="mt-4 p-4 rounded-xl bg-primary/10 border border-primary/20 text-sm text-on-surface leading-relaxed animate-in fade-in duration-300">
           {loading && (
-            <div className="flex items-center gap-2 text-[#004AAD] font-medium">
+            <div className="flex items-center gap-2 text-primary font-medium">
               <span className="animate-spin">⟳</span> Sarah is thinking…
             </div>
           )}
-          {error && <p className="text-red-600">{error}</p>}
+          {error && <p className="text-error">{error}</p>}
           {response && (
             <div className="whitespace-pre-wrap">{response}</div>
           )}

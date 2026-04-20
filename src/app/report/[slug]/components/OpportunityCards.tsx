@@ -29,9 +29,9 @@ function buildCards(
   if (notMentioned.length > 0) {
     cards.push({
       tags: [
-        { label: "Critical", style: "bg-red-50 text-red-700 border border-red-100" },
-        { label: "High impact", style: "bg-amber-50 text-amber-700 border border-amber-100" },
-        { label: "Quick win", style: "bg-green-50 text-green-700 border border-green-100" },
+        { label: "Critical", style: "bg-error/10 text-error border border-error/20" },
+        { label: "High impact", style: "bg-secondary/10 text-secondary border border-secondary/20" },
+        { label: "Quick win", style: "bg-primary/10 text-primary border border-primary/20" },
       ],
       title: "AI engine visibility gap",
       description: `${brandName} is absent from ${notMentioned.length} prompt${notMentioned.length > 1 ? "s" : ""} entirely — missing key answer surfaces.`,
@@ -52,9 +52,9 @@ function buildCards(
   if (commercialMissed.length > 0) {
     cards.push({
       tags: [
-        { label: "Critical", style: "bg-red-50 text-red-700 border border-red-100" },
-        { label: "High impact", style: "bg-amber-50 text-amber-700 border border-amber-100" },
-        { label: "30-day play", style: "bg-blue-50 text-blue-700 border border-blue-100" },
+        { label: "Critical", style: "bg-error/10 text-error border border-error/20" },
+        { label: "High impact", style: "bg-secondary/10 text-secondary border border-secondary/20" },
+        { label: "30-day play", style: "bg-primary/10 text-tertiary border border-tertiary/20" },
       ],
       title: "Buyer-intent content opportunity",
       description: "Missing from high-intent prompts where buyers ask for services. Fixing this unlocks visibility before prospects know your brand.",
@@ -75,8 +75,8 @@ function buildCards(
   if (compPresent.length > 0) {
     cards.push({
       tags: [
-        { label: "Medium", style: "bg-blue-50 text-blue-700 border border-blue-100" },
-        { label: "Quick win", style: "bg-green-50 text-green-700 border border-green-100" },
+        { label: "Medium", style: "bg-primary/10 text-tertiary border border-tertiary/20" },
+        { label: "Quick win", style: "bg-primary/10 text-primary border border-primary/20" },
       ],
       title: "Comparison-page capture",
       description: "Already showing up on comparison prompts — strong chance to own VS and alternative-style queries.",
@@ -97,8 +97,8 @@ function buildCards(
   if (weakPresence.length > 0) {
     cards.push({
       tags: [
-        { label: "Medium", style: "bg-blue-50 text-blue-700 border border-blue-100" },
-        { label: "30-day play", style: "bg-blue-50 text-blue-700 border border-blue-100" },
+        { label: "Medium", style: "bg-primary/10 text-tertiary border border-tertiary/20" },
+        { label: "30-day play", style: "bg-primary/10 text-tertiary border border-tertiary/20" },
       ],
       title: "Citation and authority building",
       description: "AI engines need more trusted external signals to confidently cite your brand in broad recommendation prompts.",
@@ -122,8 +122,8 @@ function buildCards(
     const rate = bestEngineRate;
     cards.push({
       tags: [
-        { label: "Leverage", style: "bg-purple-100 text-purple-700" },
-        { label: "Quick win", style: "bg-green-50 text-green-700 border border-green-100" },
+        { label: "Leverage", style: "bg-secondary/10 text-secondary border border-secondary/20" },
+        { label: "Quick win", style: "bg-primary/10 text-primary border border-primary/20" },
       ],
       title: `Replicate ${bestEngine} success patterns`,
       description: `${bestEngine} is the strongest engine — existing content patterns are already resonating and can be reused elsewhere.`,
@@ -140,8 +140,8 @@ function buildCards(
   // Card 6 — Technical / structured data (always recommended)
   cards.push({
     tags: [
-      { label: "Technical", style: "bg-gray-100 text-gray-600" },
-      { label: "Quick win", style: "bg-green-50 text-green-700 border border-green-100" },
+      { label: "Technical", style: "bg-surface-container-high text-on-surface-variant" },
+      { label: "Quick win", style: "bg-primary/10 text-primary border border-primary/20" },
     ],
     title: "Structured data and indexability cleanup",
     description: "Technical hygiene makes it easier for AI systems to understand, trust, and retrieve the right pages.",
@@ -163,7 +163,7 @@ export default function OpportunityCards({ prompts, brandName, engineBreakdown }
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {cards.map((card, i) => (
-        <div key={i} className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col p-6 gap-3">
+        <div key={i} className="glass-card rounded-xl border border-white/5 shadow-sm flex flex-col p-6 gap-3">
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5">
             {card.tags.map((t) => (
@@ -174,32 +174,32 @@ export default function OpportunityCards({ prompts, brandName, engineBreakdown }
           </div>
 
           {/* Title + description */}
-          <h4 className="text-[15px] font-bold text-gray-900 leading-snug">{card.title}</h4>
-          <p className="text-sm text-gray-500 leading-relaxed">{card.description}</p>
+          <h4 className="text-[15px] font-bold text-on-surface leading-snug">{card.title}</h4>
+          <p className="text-sm text-on-surface-variant leading-relaxed">{card.description}</p>
 
           {/* Evidence */}
-          <div className="px-3 py-2 rounded-lg bg-gray-50 border border-dashed border-gray-200 font-mono text-xs text-gray-500 leading-relaxed">
+          <div className="px-3 py-2 rounded-lg bg-white/5 border border-dashed border-white/5 font-mono text-xs text-on-surface-variant leading-relaxed">
             {card.evidence}
           </div>
 
           {/* Fix list */}
           <ul className="space-y-1">
             {card.fixes.map((fix) => (
-              <li key={fix} className="text-sm text-gray-700 flex gap-2">
-                <span className="mt-0.5 text-teal-600 shrink-0">•</span>
+              <li key={fix} className="text-sm text-on-surface flex gap-2">
+                <span className="mt-0.5 text-tertiary shrink-0">•</span>
                 {fix}
               </li>
             ))}
           </ul>
 
           {/* Footer */}
-          <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between">
-            <span className="text-xs text-gray-400">{card.effort}</span>
+          <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between">
+            <span className="text-xs text-on-surface-variant">{card.effort}</span>
             <div className="flex gap-2">
-              <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">
+              <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/5 text-on-surface-variant hover:bg-white/5">
                 View fixes
               </button>
-              <button className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#004AAD] text-white hover:bg-[#003A8C] transition-colors">
+              <button className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-on-primary-fixed hover:opacity-90 transition-colors">
                 Add to sprint
               </button>
             </div>

@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import AppShell from "@/components/ui/AppShell";
+import TopNav from "@/components/ui/TopNav";
+import GlassCard from "@/components/ui/GlassCard";
+import Button from "@/components/ui/Button";
 
 export default function NewClientPage() {
   const router = useRouter();
@@ -53,116 +57,137 @@ export default function NewClientPage() {
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/intake/${result.intake_token}`
     : "";
 
+  const inputCls =
+    "w-full px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => router.push("/clients")}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            &larr; Back
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">Add New Client</h1>
+    <AppShell
+      topNav={
+        <TopNav
+          brand="GEO Audit Pro"
+          tabs={[
+            { href: "/audits", label: "Audits", match: (p) => p.startsWith("/audits") },
+            { href: "/clients", label: "Clients", match: (p) => p.startsWith("/clients") },
+          ]}
+          right={
+            <Button variant="ghost" size="sm" icon="arrow_back" onClick={() => router.push("/clients")}>
+              Back
+            </Button>
+          }
+        />
+      }
+    >
+      <div className="max-w-xl mx-auto">
+        <div className="mb-10">
+          <h2 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-2">
+            Add a new client
+          </h2>
+          <p className="text-on-surface-variant text-lg">
+            Generate an intake link and send it to your client to kick off their audit.
+          </p>
         </div>
-      </header>
 
-      <main className="max-w-lg mx-auto px-4 py-8">
         {!result ? (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <section className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Client Details
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Company Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Acme Corp"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Website URL *
-                  </label>
-                  <input
-                    type="text"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="e.g. acmecorp.com"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
+          <form onSubmit={handleSubmit}>
+            <GlassCard padding="lg" className="space-y-5">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Acme Corp"
+                  className={inputCls}
+                  required
+                  autoFocus
+                />
               </div>
-            </section>
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
+                  Website URL
+                </label>
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="e.g. acmecorp.com"
+                  className={inputCls}
+                  required
+                />
+              </div>
 
-            {error && (
-              <p className="text-red-600 text-sm bg-red-50 rounded-lg p-3">
-                {error}
-              </p>
-            )}
+              {error && (
+                <div className="flex items-start gap-3 p-3 bg-error/10 border border-error/30 rounded-xl">
+                  <span className="material-symbols-outlined text-error">error</span>
+                  <p className="text-error text-sm">{error}</p>
+                </div>
+              )}
 
-            <button
-              type="submit"
-              disabled={submitting || !name || !url}
-              className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? "Creating..." : "Generate Intake Link"}
-            </button>
+              <Button
+                type="submit"
+                size="lg"
+                icon="link"
+                disabled={submitting || !name || !url}
+                className="w-full"
+              >
+                {submitting ? "Creating..." : "Generate Intake Link"}
+              </Button>
+            </GlassCard>
           </form>
         ) : (
           <div className="space-y-6">
-            <section className="bg-green-50 border border-green-200 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-green-900 mb-2">
-                Client Added Successfully
-              </h2>
-              <p className="text-green-700 mb-4">
-                Share this link with <strong>{name}</strong> to start their AI
-                visibility audit:
-              </p>
+            <GlassCard padding="lg" className="border-primary/30">
+              <div className="flex items-start gap-4 mb-5">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-primary">check_circle</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-on-surface mb-1">
+                    Client Added Successfully
+                  </h3>
+                  <p className="text-on-surface-variant text-sm">
+                    Share this link with <strong className="text-on-surface">{name}</strong> to
+                    start their audit.
+                  </p>
+                </div>
+              </div>
 
-              <div className="flex items-center gap-2 bg-white rounded-lg border border-green-200 p-3">
-                <code className="flex-1 text-sm text-gray-800 break-all">
+              <div className="flex items-center gap-2 bg-surface-container-lowest rounded-xl border border-white/5 p-3">
+                <code className="flex-1 text-sm text-on-surface break-all font-mono">
                   {intakeLink}
                 </code>
-                <button
-                  onClick={copyLink}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 whitespace-nowrap"
-                >
-                  {copied ? "Copied!" : "Copy"}
-                </button>
+                <Button onClick={copyLink} size="sm" icon={copied ? "check" : "content_copy"}>
+                  {copied ? "Copied" : "Copy"}
+                </Button>
               </div>
-            </section>
+            </GlassCard>
 
             <div className="flex gap-4">
-              <button
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
                 onClick={() => {
                   setResult(null);
                   setName("");
                   setUrl("");
                 }}
-                className="flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
               >
                 Add Another
-              </button>
-              <button
+              </Button>
+              <Button
+                size="lg"
+                className="flex-1"
                 onClick={() => router.push("/clients")}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
               >
                 View All Clients
-              </button>
+              </Button>
             </div>
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

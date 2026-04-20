@@ -71,7 +71,7 @@ export default function PrioritiseTab({
 
   if (keywordGaps.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
+      <div className="text-center py-12 text-on-surface-variant">
         No prompt data available yet. Run an audit to see the Opportunity Map.
       </div>
     );
@@ -90,11 +90,11 @@ export default function PrioritiseTab({
       {/* Hero summary */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* Left: summary + stats */}
-        <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-2 leading-snug">
+        <div className="lg:col-span-3 glass-card rounded-3xl border border-white/5 p-6">
+          <h2 className="text-xl font-bold text-on-surface mb-2 leading-snug">
             Turn your visibility gaps into a prioritised action plan.
           </h2>
-          <p className="text-sm text-gray-500 mb-5 leading-relaxed">
+          <p className="text-sm text-on-surface-variant mb-5 leading-relaxed">
             Each prompt has been scored for difficulty and activation potential using a deterministic rules engine.
             No AI model — just your audit data.
           </p>
@@ -105,9 +105,9 @@ export default function PrioritiseTab({
               { value: quickWins, label: "Quick wins" },
               { value: "30–60d", label: "Execution window" },
             ].map(({ value, label }) => (
-              <div key={label} className="bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] px-4 py-3">
-                <div className="text-2xl font-extrabold text-[#0F172A] leading-none mb-1">{value}</div>
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-[#94A3B8]">{label}</div>
+              <div key={label} className="bg-white/5 rounded-xl border border-white/5 px-4 py-3">
+                <div className="text-2xl font-extrabold text-on-surface leading-none mb-1">{value}</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">{label}</div>
               </div>
             ))}
           </div>
@@ -115,10 +115,10 @@ export default function PrioritiseTab({
 
         {/* Right: opportunity score */}
         <div className="lg:col-span-2 flex flex-col gap-3">
-          <div className="flex-1 bg-white border border-[#E2E8F0] border-t-4 border-t-[#004AAD] rounded-2xl p-6 flex flex-col justify-center">
-            <div className="text-5xl font-extrabold leading-none tracking-tight text-[#004AAD]" style={{ fontFamily: "'DM Sans', sans-serif" }}>{avgActivation}</div>
-            <div className="text-sm font-semibold text-[#0F172A] mt-2">Avg. Opportunity Score</div>
-            <div className="text-xs text-[#94A3B8] mt-1 leading-relaxed">
+          <div className="flex-1 glass-card border border-outline-variant border-t-4 border-t-primary rounded-2xl p-6 flex flex-col justify-center">
+            <div className="text-5xl font-extrabold leading-none tracking-tight text-primary" style={{ fontFamily: "'DM Sans', sans-serif" }}>{avgActivation}</div>
+            <div className="text-sm font-semibold text-on-surface mt-2">Avg. Opportunity Score</div>
+            <div className="text-xs text-on-surface-variant mt-1 leading-relaxed">
               Based on {derivedPrompts.length} scored prompts · {Math.round(overallVisibility)}% current visibility
             </div>
           </div>
@@ -131,10 +131,10 @@ export default function PrioritiseTab({
                   const rate = stats.visibility_rate;
                   const style =
                     rate === 0
-                      ? "bg-red-50 text-red-700 border border-red-100"
+                      ? "bg-error/10 text-error border border-error/20"
                       : rate < 30
-                        ? "bg-amber-50 text-amber-700 border border-amber-100"
-                        : "bg-green-50 text-green-700 border border-green-100";
+                        ? "bg-secondary/10 text-secondary border border-secondary/20"
+                        : "bg-primary/10 text-primary border border-primary/20";
                   return (
                     <span key={key} className={`text-xs font-bold px-2.5 py-1 rounded-full ${style}`}>
                       {Math.round(rate)}% {stats.display_name}
@@ -147,8 +147,8 @@ export default function PrioritiseTab({
 
       {/* Prompt table */}
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-1">Prompt-level opportunities</h3>
-        <p className="text-sm text-gray-500 mb-4">
+        <h3 className="text-lg font-bold text-on-surface mb-1">Prompt-level opportunities</h3>
+        <p className="text-sm text-on-surface-variant mb-4">
           Each prompt scored by difficulty and activation potential. Derived from your audit data using deterministic rules.
         </p>
         <PromptTable prompts={derivedPrompts} />
@@ -156,8 +156,8 @@ export default function PrioritiseTab({
 
       {/* Opportunity cards */}
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-1">Priority opportunities</h3>
-        <p className="text-sm text-gray-500 mb-4">
+        <h3 className="text-lg font-bold text-on-surface mb-1">Priority opportunities</h3>
+        <p className="text-sm text-on-surface-variant mb-4">
           Each gap converted into a practical plan your team can act on or hand over.
         </p>
         <OpportunityCards prompts={derivedPrompts} brandName={brandName} engineBreakdown={engineBreakdown} />
@@ -177,12 +177,12 @@ export default function PrioritiseTab({
       </div>
 
       {/* CTA banner */}
-      <div className="bg-[#E6F1FB] border border-[#004AAD]/20 rounded-2xl px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-5">
+      <div className="bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-5">
         <div>
-          <h4 className="text-base font-bold text-[#0F172A] mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <h4 className="text-base font-bold text-on-surface mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
             Ready to activate the plan?
           </h4>
-          <p className="text-sm text-[#64748B] max-w-md">
+          <p className="text-sm text-on-surface-variant max-w-md">
             Talk to Balmer Agency about running a GEO Fix Sprint — we implement the recommendations for you.
           </p>
         </div>
@@ -190,7 +190,7 @@ export default function PrioritiseTab({
           href="https://balmeragency.com.au/contact"
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 px-6 py-2.5 bg-[#004AAD] text-white font-bold rounded-xl hover:bg-[#003A8C] transition-colors text-sm"
+          className="shrink-0 px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm"
           style={{ fontFamily: "'DM Sans', sans-serif" }}
         >
           Start GEO Fix Sprint →
