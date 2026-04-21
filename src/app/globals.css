@@ -1,198 +1,631 @@
 @import "tailwindcss";
 
-/* ========================================================================
-   Obsidian Glass — Celestial Glass design system
-   ======================================================================== */
+/* ════════════════════════════════════════════════════════════════════
+   AI SEARCH VISIBILITY — DESIGN SYSTEM v5 (Sarah spec)
+
+   PALETTE (navy-safe)
+   Mint  #5EEAD4 — BRAND ONLY (logo, active nav, primary CTA, "you")
+   Sage  #4ADE80 — positive / good metric
+   Gold  #EAB308 — caution
+   Rose  #F87171 — critical
+   Sky   #7DD3FC — info
+   Slate #BFCADB — neutral meta
+
+   RULES
+   - Headlines never coloured (stay white/text)
+   - Every KPI has benchmark or delta beneath
+   - Mint reserved for brand — never as "good" indicator
+   - Sage (not mint) is the "good" color
+   ════════════════════════════════════════════════════════════════════ */
 :root {
-  /* Surface tiers (dark navy → lifted glass) */
-  --surface: #061423;
-  --surface-dim: #061423;
-  --surface-container-lowest: #020f1e;
-  --surface-container-low: #0f1c2c;
-  --surface-container: #132030;
-  --surface-container-high: #1e2b3b;
-  --surface-container-highest: #283646;
-  --surface-bright: #2d3a4a;
-  --surface-variant: #283646;
+  /* Fonts */
+  --font-display: 'Poppins', system-ui, sans-serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
-  /* Primary (cyan) */
-  --primary: #44d8f1;
-  --primary-fixed: #a1efff;
-  --primary-fixed-dim: #44d8f1;
-  --primary-container: #001e23;
-  --on-primary: #00363e;
-  --on-primary-fixed: #001f25;
-  --on-primary-container: #0090a3;
-  --on-primary-fixed-variant: #004e59;
+  /* Backgrounds */
+  --bg:         #060D1B;
+  --bg-grad-1:  #091529;
+  --surface:    #0E1A2D;
+  --surface-2:  #14223A;
+  --surface-3:  #1A2C48;
+  --inset:      #0A1321;
 
-  /* Secondary (amber) */
-  --secondary: #ffe2ab;
-  --secondary-container: #ffbf00;
-  --secondary-fixed: #ffdfa0;
-  --secondary-fixed-dim: #fbbc00;
-  --on-secondary: #402d00;
-  --on-secondary-fixed: #261a00;
-  --on-secondary-container: #6d5000;
-  --on-secondary-fixed-variant: #5c4300;
+  /* Borders */
+  --border:      #1D2F49;
+  --border-soft: #162644;
+  --border-hi:   #2A4268;
 
-  /* Tertiary */
-  --tertiary: #bbc6e2;
-  --tertiary-fixed: #d7e2ff;
-  --tertiary-fixed-dim: #bbc6e2;
-  --tertiary-container: #0f1a2e;
-  --on-tertiary: #263046;
-  --on-tertiary-fixed: #101b30;
-  --on-tertiary-container: #78839c;
-  --on-tertiary-fixed-variant: #3c475d;
+  /* Text */
+  --text:   #F3F6FB;
+  --text-2: #C4CEDD;
+  --text-3: #8593AB;
+  --text-4: #5E6B82;
 
-  /* On-surface */
-  --on-surface: #d6e4f9;
-  --on-surface-variant: #c4c6cc;
-  --on-background: #d6e4f9;
+  /* Brand (mint) */
+  --mint:       #5EEAD4;
+  --mint-2:     #2DD4BF;
+  --mint-weak:  rgba(94,234,212,.10);
+  --mint-line:  rgba(94,234,212,.28);
 
-  /* Outlines (used sparingly as ghost borders) */
-  --outline: #8e9196;
-  --outline-variant: #44474c;
+  /* Semantic — good (sage) */
+  --good:       #4ADE80;
+  --good-2:     #22C55E;
+  --good-weak:  rgba(74,222,128,.12);
+  --good-line:  rgba(74,222,128,.32);
 
-  /* Error */
-  --error: #ffb4ab;
-  --error-container: #93000a;
-  --on-error: #690005;
-  --on-error-container: #ffdad6;
+  /* Semantic — caution (gold) */
+  --warn:       #EAB308;
+  --warn-2:     #CA8A04;
+  --warn-weak:  rgba(234,179,8,.13);
+  --warn-line:  rgba(234,179,8,.32);
 
-  /* Inverse */
-  --inverse-surface: #d6e4f9;
-  --inverse-on-surface: #243141;
-  --inverse-primary: #006876;
+  /* Semantic — critical (rose) */
+  --crit:       #F87171;
+  --crit-2:     #EF4444;
+  --crit-weak:  rgba(248,113,113,.12);
+  --crit-line:  rgba(248,113,113,.32);
 
-  --surface-tint: #44d8f1;
-  --background: var(--surface);
-  --foreground: var(--on-surface);
+  /* Semantic — info (sky) */
+  --info:       #7DD3FC;
+  --info-weak:  rgba(125,211,252,.12);
+  --info-line:  rgba(125,211,252,.32);
+
+  /* Neutral */
+  --neutral-weak: rgba(196,206,221,.08);
+  --neutral-line: rgba(196,206,221,.18);
+
+  /* Effects */
+  --shadow-md:  0 6px 20px rgba(0,0,0,.32);
+  --shadow-lg:  0 18px 50px rgba(0,0,0,.42);
+  --glow-mint:  0 0 0 1px rgba(94,234,212,.16), 0 24px 60px rgba(94,234,212,.10);
+
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --ease: cubic-bezier(.2,.8,.2,1);
+
+  /* Legacy token bridge — preserves my earlier semantic tokens so existing pages
+     keep working while adopting Sarah's palette. Primary is now mint (brand). */
+  --primary:                    var(--mint);
+  --primary-fixed:              var(--mint);
+  --primary-fixed-dim:          var(--mint-2);
+  --primary-container:          var(--mint-weak);
+  --on-primary:                 #052822;
+  --on-primary-fixed:           #052822;
+  --on-primary-container:       var(--mint);
+  --on-primary-fixed-variant:   #052822;
+
+  --secondary:                  var(--warn);
+  --secondary-container:        var(--warn-weak);
+  --secondary-fixed:            var(--warn);
+  --secondary-fixed-dim:        var(--warn-2);
+  --on-secondary:               #2A1A00;
+  --on-secondary-fixed:         #2A1A00;
+  --on-secondary-container:     var(--warn);
+  --on-secondary-fixed-variant: var(--warn-2);
+
+  --tertiary:                   var(--info);
+  --tertiary-fixed:             var(--info);
+  --tertiary-fixed-dim:         var(--info);
+  --tertiary-container:         var(--info-weak);
+  --on-tertiary:                #052B3E;
+  --on-tertiary-fixed:          #052B3E;
+  --on-tertiary-container:      var(--info);
+  --on-tertiary-fixed-variant:  #2B6A8A;
+
+  --surface-dim:                var(--bg);
+  --surface-container-lowest:   var(--inset);
+  --surface-container-low:      var(--surface);
+  --surface-container:          var(--surface-2);
+  --surface-container-high:     var(--surface-3);
+  --surface-container-highest:  var(--border-hi);
+  --surface-bright:             var(--surface-3);
+  --surface-variant:            var(--surface-2);
+
+  --on-surface:                 var(--text);
+  --on-surface-variant:         var(--text-3);
+  --on-background:              var(--text);
+
+  --outline:                    var(--text-4);
+  --outline-variant:            var(--border);
+
+  --error:                      var(--crit);
+  --error-container:            var(--crit-weak);
+  --on-error:                   #3C0505;
+  --on-error-container:         var(--crit);
+
+  --inverse-surface:            var(--text);
+  --inverse-on-surface:         var(--bg);
+  --inverse-primary:            var(--mint-2);
+
+  --surface-tint:               var(--mint);
+  --background:                 var(--bg);
+  --foreground:                 var(--text);
   color-scheme: dark;
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   Tailwind @theme bridge — utilities like bg-surface, text-primary,
+   text-on-surface, bg-error, etc. resolve to the new palette at runtime.
+   ════════════════════════════════════════════════════════════════════ */
 @theme {
-  /* Map tokens into Tailwind's theme so utilities like bg-surface, text-primary work */
-  /* NOT using `inline` so utilities generate var(--color-*) references that allow runtime theme overrides */
-  --color-surface: var(--surface);
-  --color-surface-dim: var(--surface-dim);
-  --color-surface-container-lowest: var(--surface-container-lowest);
-  --color-surface-container-low: var(--surface-container-low);
-  --color-surface-container: var(--surface-container);
-  --color-surface-container-high: var(--surface-container-high);
-  --color-surface-container-highest: var(--surface-container-highest);
-  --color-surface-bright: var(--surface-bright);
-  --color-surface-variant: var(--surface-variant);
+  --color-surface:                    var(--surface);
+  --color-surface-dim:                var(--surface-dim);
+  --color-surface-container-lowest:   var(--surface-container-lowest);
+  --color-surface-container-low:      var(--surface-container-low);
+  --color-surface-container:          var(--surface-container);
+  --color-surface-container-high:     var(--surface-container-high);
+  --color-surface-container-highest:  var(--surface-container-highest);
+  --color-surface-bright:             var(--surface-bright);
+  --color-surface-variant:            var(--surface-variant);
 
-  --color-primary: var(--primary);
-  --color-primary-fixed: var(--primary-fixed);
-  --color-primary-fixed-dim: var(--primary-fixed-dim);
-  --color-primary-container: var(--primary-container);
-  --color-on-primary: var(--on-primary);
-  --color-on-primary-fixed: var(--on-primary-fixed);
-  --color-on-primary-container: var(--on-primary-container);
-  --color-on-primary-fixed-variant: var(--on-primary-fixed-variant);
+  --color-primary:                    var(--primary);
+  --color-primary-fixed:              var(--primary-fixed);
+  --color-primary-fixed-dim:          var(--primary-fixed-dim);
+  --color-primary-container:          var(--primary-container);
+  --color-on-primary:                 var(--on-primary);
+  --color-on-primary-fixed:           var(--on-primary-fixed);
+  --color-on-primary-container:       var(--on-primary-container);
+  --color-on-primary-fixed-variant:   var(--on-primary-fixed-variant);
 
-  --color-secondary: var(--secondary);
-  --color-secondary-container: var(--secondary-container);
-  --color-secondary-fixed: var(--secondary-fixed);
-  --color-secondary-fixed-dim: var(--secondary-fixed-dim);
-  --color-on-secondary: var(--on-secondary);
-  --color-on-secondary-fixed: var(--on-secondary-fixed);
-  --color-on-secondary-container: var(--on-secondary-container);
+  --color-secondary:                  var(--secondary);
+  --color-secondary-container:        var(--secondary-container);
+  --color-secondary-fixed:            var(--secondary-fixed);
+  --color-secondary-fixed-dim:        var(--secondary-fixed-dim);
+  --color-on-secondary:               var(--on-secondary);
+  --color-on-secondary-fixed:         var(--on-secondary-fixed);
+  --color-on-secondary-container:     var(--on-secondary-container);
   --color-on-secondary-fixed-variant: var(--on-secondary-fixed-variant);
 
-  --color-tertiary: var(--tertiary);
-  --color-tertiary-fixed: var(--tertiary-fixed);
-  --color-tertiary-fixed-dim: var(--tertiary-fixed-dim);
-  --color-tertiary-container: var(--tertiary-container);
-  --color-on-tertiary: var(--on-tertiary);
-  --color-on-tertiary-fixed: var(--on-tertiary-fixed);
-  --color-on-tertiary-container: var(--on-tertiary-container);
-  --color-on-tertiary-fixed-variant: var(--on-tertiary-fixed-variant);
+  --color-tertiary:                   var(--tertiary);
+  --color-tertiary-fixed:             var(--tertiary-fixed);
+  --color-tertiary-fixed-dim:         var(--tertiary-fixed-dim);
+  --color-tertiary-container:         var(--tertiary-container);
+  --color-on-tertiary:                var(--on-tertiary);
+  --color-on-tertiary-fixed:          var(--on-tertiary-fixed);
+  --color-on-tertiary-container:      var(--on-tertiary-container);
+  --color-on-tertiary-fixed-variant:  var(--on-tertiary-fixed-variant);
 
-  --color-on-surface: var(--on-surface);
-  --color-on-surface-variant: var(--on-surface-variant);
-  --color-on-background: var(--on-background);
+  --color-on-surface:                 var(--on-surface);
+  --color-on-surface-variant:         var(--on-surface-variant);
+  --color-on-background:              var(--on-background);
 
-  --color-outline: var(--outline);
-  --color-outline-variant: var(--outline-variant);
+  --color-outline:                    var(--outline);
+  --color-outline-variant:            var(--outline-variant);
 
-  --color-error: var(--error);
-  --color-error-container: var(--error-container);
-  --color-on-error: var(--on-error);
-  --color-on-error-container: var(--on-error-container);
+  --color-error:                      var(--error);
+  --color-error-container:            var(--error-container);
+  --color-on-error:                   var(--on-error);
+  --color-on-error-container:         var(--on-error-container);
 
-  --color-inverse-surface: var(--inverse-surface);
-  --color-inverse-on-surface: var(--inverse-on-surface);
-  --color-inverse-primary: var(--inverse-primary);
+  --color-inverse-surface:            var(--inverse-surface);
+  --color-inverse-on-surface:         var(--inverse-on-surface);
+  --color-inverse-primary:            var(--inverse-primary);
+
+  /* Direct semantic token access (new) */
+  --color-mint:   var(--mint);
+  --color-good:   var(--good);
+  --color-warn:   var(--warn);
+  --color-crit:   var(--crit);
+  --color-info:   var(--info);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  --font-sans: 'Manrope', sans-serif;
-  --font-display: 'Manrope', sans-serif;
-  --font-headline: 'Manrope', sans-serif;
-
-  /* Extended radius scale */
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
-  --radius-3xl: 1.5rem;
+  --font-sans:     'DM Sans', system-ui, sans-serif;
+  --font-display:  'Poppins', system-ui, sans-serif;
+  --font-headline: 'Poppins', system-ui, sans-serif;
+  --font-mono:     'JetBrains Mono', ui-monospace, monospace;
 }
 
-/* ========================================================================
+/* ════════════════════════════════════════════════════════════════════
    Base
-   ======================================================================== */
+   ════════════════════════════════════════════════════════════════════ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
 body {
-  background: var(--surface);
-  color: var(--on-surface);
-  font-family: 'Manrope', sans-serif;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+  overflow-x: hidden;
   min-height: 100vh;
 }
 
+/* Ambient layer 1 — soft radial gradients */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 1000px 700px at 80% -5%, rgba(94,234,212,.06), transparent 60%),
+    radial-gradient(ellipse 700px 500px at -5% 40%, rgba(125,211,252,.04), transparent 60%),
+    linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg) 65%);
+}
+
+/* Ambient layer 2 — subtle grid */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .4;
+  background-image:
+    linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Headlines NEVER coloured — always text-white */
 h1, h2, h3, h4 {
-  font-family: 'Manrope', sans-serif;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-weight: 700;
   letter-spacing: -0.02em;
+  color: var(--text);
 }
 
 input,
 textarea,
 select {
-  color: var(--on-surface);
-  background-color: var(--surface-container-lowest);
+  color: var(--text);
+  background-color: var(--inset);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: color-mix(in oklch, var(--on-surface-variant) 60%, transparent);
+  color: var(--text-4);
 }
 
 ::selection {
-  background: var(--primary);
-  color: var(--on-primary-fixed);
+  background: var(--mint);
+  color: #052822;
 }
 
-/* ========================================================================
-   Utilities
-   ======================================================================== */
+/* ════════════════════════════════════════════════════════════════════
+   Utility classes from the reference design
+   Composable building blocks — use alongside Tailwind
+   ════════════════════════════════════════════════════════════════════ */
 
-/* The signature glass card — 40% surface-variant + 20px backdrop blur */
+/* CHIPS */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.chip-good    { background: var(--good-weak);    color: var(--good);   border-color: var(--good-line); }
+.chip-warn    { background: var(--warn-weak);    color: var(--warn);   border-color: var(--warn-line); }
+.chip-crit    { background: var(--crit-weak);    color: var(--crit);   border-color: var(--crit-line); }
+.chip-info    { background: var(--info-weak);    color: var(--info);   border-color: var(--info-line); }
+.chip-mint    { background: var(--mint-weak);    color: var(--mint);   border-color: var(--mint-line); }
+.chip-neutral { background: var(--neutral-weak); color: var(--text-2); border-color: var(--neutral-line); }
+.chip-lg      { padding: 7px 14px; font-size: 12px; }
+
+/* TAGS */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--surface-3);
+  color: var(--text-3);
+  border: 1px solid var(--border-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md);
+}
+.card.pad    { padding: 24px; }
+.card.pad-lg { padding: 28px; }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--surface-3);
+  border-color: var(--border-hi);
+  color: var(--text);
+}
+.btn svg { width: 14px; height: 14px; }
+.btn-primary {
+  background: linear-gradient(180deg, var(--mint) 0%, var(--mint-2) 100%);
+  border-color: var(--mint-2);
+  color: #052822;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(94,234,212,.22);
+}
+.btn-primary:hover {
+  background: linear-gradient(180deg, #6EF0DB 0%, var(--mint) 100%);
+  color: #052822;
+  transform: translateY(-1px);
+}
+.btn-sm { padding: 7px 12px; font-size: 12px; }
+
+/* KPI BLOCK */
+.kpi {
+  padding: 20px 18px 18px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+.kpi-number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+.kpi-number .unit {
+  font-size: 18px;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-left: 3px;
+}
+.kpi-number.num-good { color: var(--good); }
+.kpi-number.num-warn { color: var(--warn); }
+.kpi-number.num-crit { color: var(--crit); }
+.kpi-number.num-mint { color: var(--mint); }
+.kpi-number.num-info { color: var(--info); }
+.kpi-sub { font-size: 12px; color: var(--text-3); }
+
+/* BENCHMARKS */
+.benchmark {
+  margin-top: 12px;
+  padding-top: 10px;
+  width: 100%;
+  border-top: 1px dashed var(--border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.benchmark-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-4);
+  font-weight: 600;
+}
+.benchmark-val {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-2);
+}
+.benchmark .delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 11px;
+}
+.benchmark .delta.up   { color: var(--good); }
+.benchmark .delta.down { color: var(--crit); }
+
+/* BARS */
+.bar {
+  width: 100%;
+  height: 8px;
+  background: var(--inset);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s var(--ease);
+}
+.bar-fill.good { background: linear-gradient(90deg, var(--good), var(--good-2)); }
+.bar-fill.warn { background: linear-gradient(90deg, var(--warn), var(--warn-2)); }
+.bar-fill.crit { background: linear-gradient(90deg, var(--crit), var(--crit-2)); }
+.bar-fill.mint { background: linear-gradient(90deg, var(--mint), var(--mint-2)); }
+.bar-fill.info { background: linear-gradient(90deg, var(--info), #38BDF8); }
+
+/* TABLES */
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.table-head-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.table-head-bar h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+.table-head-bar .sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+table.data thead th {
+  text-align: left;
+  padding: 14px 18px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+table.data thead th.center { text-align: center; }
+table.data tbody td {
+  padding: 18px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text-2);
+}
+table.data tbody td.center { text-align: center; vertical-align: middle; }
+table.data tbody tr:last-child td { border-bottom: none; }
+table.data tbody tr:hover td { background: rgba(30,48,74,.25); }
+
+/* Numeric displays */
+.num-big {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text);
+  display: inline-block;
+}
+.num-big.num-good { color: var(--good); }
+.num-big.num-warn { color: var(--warn); }
+.num-big.num-crit { color: var(--crit); }
+.num-xl {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  display: inline-block;
+}
+.num-xl.num-good { color: var(--good); }
+.num-xl.num-warn { color: var(--warn); }
+.num-xl.num-crit { color: var(--crit); }
+
+/* Small pulse dot (for "live" / engine status) */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3);
+  display: inline-block;
+}
+.dot.good { background: var(--good); box-shadow: 0 0 10px rgba(74,222,128,.5); }
+.dot.warn { background: var(--warn); box-shadow: 0 0 10px rgba(234,179,8,.5); }
+.dot.crit { background: var(--crit); box-shadow: 0 0 10px rgba(248,113,113,.5); }
+.dot.mint { background: var(--mint); box-shadow: 0 0 10px rgba(94,234,212,.5); }
+
+/* ════════════════════════════════════════════════════════════════════
+   Legacy utility class — kept for existing usage in components.
+   Now resolves to the navy-surface treatment instead of glass blur.
+   ════════════════════════════════════════════════════════════════════ */
 .glass-card {
-  background: rgba(40, 54, 70, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
 }
 
-/* ========================================================================
-   Light theme scope — applied to public-facing pages (reports, intake).
-   Overrides both raw and --color-* tokens because Tailwind v4's `@theme inline`
-   bakes values into utilities at build time; runtime overrides require the
-   --color-* indirection layer.
-   ======================================================================== */
+.glow-primary        { box-shadow: 0 6px 18px rgba(94,234,212,.22); }
+.glow-primary-strong { box-shadow: var(--glow-mint); }
+
+/* bg-ambient now opts out of any extra blobs (body already has them) */
+.bg-ambient { position: relative; isolation: isolate; }
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'liga';
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar        { width: 10px; height: 10px; }
+::-webkit-scrollbar-track  { background: var(--inset); }
+::-webkit-scrollbar-thumb  { background: var(--surface-3); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
+
+/* ════════════════════════════════════════════════════════════════════
+   .theme-light — LIGHT-THEME SCOPE (public report, embedded dashboard,
+   intake). Overrides raw and --color-* tokens locally.
+   ════════════════════════════════════════════════════════════════════ */
 .theme-light {
-  /* Raw palette */
   --surface: #F8FAFC;
   --surface-dim: #F1F5F9;
   --surface-container-lowest: #FFFFFF;
@@ -251,7 +684,6 @@ textarea::placeholder {
   --foreground: var(--on-surface);
   color-scheme: light;
 
-  /* --color-* overrides so Tailwind utilities (bg-primary, text-on-surface, etc.) pick up the light theme */
   --color-surface: #F8FAFC;
   --color-surface-dim: #F1F5F9;
   --color-surface-container-lowest: #FFFFFF;
@@ -312,123 +744,32 @@ textarea::placeholder {
   color: var(--on-surface);
 }
 
-/* In light theme, selection flips to blue-on-white */
-.theme-light ::selection {
-  background: var(--primary);
-  color: var(--on-primary);
-}
-
 /* Glass card becomes a clean elevated white card in light theme */
 .theme-light .glass-card {
   background: #FFFFFF;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.03);
 }
 
-/* Ambient blobs use the light-theme primary/secondary at lower opacity */
-.theme-light.bg-ambient::before,
-.theme-light .bg-ambient::before {
-  background: rgba(0, 74, 173, 0.06);
-}
-.theme-light.bg-ambient::after,
-.theme-light .bg-ambient::after {
-  background: rgba(232, 137, 12, 0.06);
+.theme-light ::selection {
+  background: var(--primary);
+  color: #FFFFFF;
 }
 
-/* Inputs in light theme */
 .theme-light input,
 .theme-light textarea,
 .theme-light select {
   color: var(--on-surface);
   background-color: #FFFFFF;
 }
+
 .theme-light input::placeholder,
 .theme-light textarea::placeholder {
   color: #94A3B8;
 }
 
-/* Light-theme scrollbar */
-.theme-light ::-webkit-scrollbar-track {
-  background: var(--surface-container);
-}
-.theme-light ::-webkit-scrollbar-thumb {
-  background: var(--surface-container-high);
-}
-.theme-light ::-webkit-scrollbar-thumb:hover {
-  background: var(--surface-container-highest);
-}
-
-/* Ambient illumination — replace drop shadows with a soft primary glow */
-.glow-primary {
-  box-shadow: 0 0 20px rgba(68, 216, 241, 0.3);
-}
-.glow-primary-strong {
-  box-shadow: 0 0 30px rgba(68, 216, 241, 0.5);
-}
-
-/* Background decorative blobs */
-.bg-ambient {
-  position: relative;
-  isolation: isolate;
-}
-.bg-ambient::before,
-.bg-ambient::after {
-  content: '';
-  position: fixed;
-  z-index: -10;
-  border-radius: 9999px;
-  filter: blur(120px);
-  pointer-events: none;
-}
-.bg-ambient::before {
-  bottom: 0;
-  right: 0;
-  width: 600px;
-  height: 600px;
-  background: rgba(68, 216, 241, 0.05);
-  transform: translate(50%, 50%);
-}
-.bg-ambient::after {
-  top: 0;
-  left: 0;
-  width: 400px;
-  height: 400px;
-  background: rgba(255, 191, 0, 0.05);
-  transform: translate(-50%, -50%);
-}
-
-/* Material Symbols base — ligatures turn "radar" text into the actual icon glyph */
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-feature-settings: 'liga';
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}
-
-/* Custom scrollbar, matching the palette */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: var(--surface-container-lowest);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--surface-container-high);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--surface-bright);
-}
+.theme-light ::-webkit-scrollbar-track { background: #F1F5F9; }
+.theme-light ::-webkit-scrollbar-thumb { background: #CBD5E1; }
+.theme-light ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }

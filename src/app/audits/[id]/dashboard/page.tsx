@@ -139,10 +139,16 @@ interface PromptData {
   engines: Record<string, { mentioned: boolean; excerpt: string }>;
 }
 
+/**
+ * Visibility rate colour. Mint green is reserved for ACTUALLY good performance (60%+).
+ * Between 35-60 is "ok" (navy/blue). 15-35 is weak (amber). <15 is critical (red).
+ * Never use green in headlines — only as a semantic indicator next to a metric.
+ */
 function rateColor(rate: number) {
-  if (rate >= 50) return { text: "#1D9E75", bar: "#1D9E75", light: "#E1F5EE" };
-  if (rate >= 25) return { text: "#E8890C", bar: "#E8890C", light: "#FFF3E0" };
-  return { text: "#DC2626", bar: "#DC2626", light: "#FEF2F2" };
+  if (rate >= 60) return { text: "#1D9E75", bar: "#1D9E75", light: "#E1F5EE", label: "Strong" };
+  if (rate >= 35) return { text: "#004AAD", bar: "#004AAD", light: "#E6F1FB", label: "Fair" };
+  if (rate >= 15) return { text: "#E8890C", bar: "#E8890C", light: "#FFF3E0", label: "Weak" };
+  return { text: "#DC2626", bar: "#DC2626", light: "#FEF2F2", label: "Critical" };
 }
 
 function priorityFor(gap: number) {
@@ -157,7 +163,7 @@ function sevColors(severity: string) {
     case "critical": return { bg: "#FEF2F2", text: "#DC2626" };
     case "high": return { bg: "#FFF3E0", text: "#E8890C" };
     case "medium": return { bg: "#FFF3E0", text: "#E8890C" };
-    default: return { bg: "#E1F5EE", text: "#1D9E75" };
+    default: return { bg: "#E6F1FB", text: "#004AAD" };
   }
 }
 
@@ -290,8 +296,12 @@ export default function DashboardPage() {
   const alice = summary?.alice_brief;
 
   const sortedEngines = Object.entries(engineBreakdown).sort((a, b) => b[1].visibility_rate - a[1].visibility_rate);
-  const strongEngines = sortedEngines.filter(([, s]) => s.visibility_rate > 0).slice(0, 3);
-  const gapEngines = [...sortedEngines].reverse().slice(0, 3);
+  // "Strong" = genuinely good: 50%+. "Gaps" = bottom performers with > 0 missed.
+  const strongEngines = sortedEngines.filter(([, s]) => s.visibility_rate >= 50).slice(0, 3);
+  const gapEngines = [...sortedEngines]
+    .filter(([, s]) => s.total_queries - s.brand_mentioned > 0)
+    .reverse()
+    .slice(0, 3);
   const sortedCategories = Object.entries(categoryPerf).sort((a, b) => b[1].visibility_rate - a[1].visibility_rate);
   const sortedCompetitors = Object.entries(competitorCounts).sort((a, b) => b[1] - a[1]);
 
@@ -340,7 +350,7 @@ export default function DashboardPage() {
           className="rounded-2xl p-10 text-center"
           style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
         >
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#0BA5C9" }}>
+          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#004AAD" }}>
             GEO Audit & Action Plan
           </p>
           <h1 className="text-4xl font-black mb-1" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
@@ -355,13 +365,23 @@ export default function DashboardPage() {
               </>
             )}
           </p>
-          <div className="text-7xl font-black" style={{ color: visColors.text, letterSpacing: "-0.02em" }}>
+          <div className="text-7xl font-black" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
             {Math.round(visRate)}%
           </div>
-          <div className="w-16 h-1 mx-auto my-4" style={{ background: "#E8890C" }} />
-          <p className="text-base" style={{ color: "#64748B" }}>
+          <div className="flex items-center justify-center gap-2 mt-2 mb-4">
+            <span
+              className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full"
+              style={{ background: visColors.light, color: visColors.text }}
+            >
+              {visColors.label}
+            </span>
+            <span className="text-xs uppercase tracking-widest" style={{ color: "#94A3B8" }}>
+              Visibility Score
+            </span>
+          </div>
+          <p className="text-base max-w-xl mx-auto" style={{ color: "#334155" }}>
             <strong style={{ color: "#0F172A" }}>{audit.brand_name}</strong> was mentioned in{" "}
-            <strong style={{ color: "#E8890C" }}>{audit.total_mentioned}</strong> out of{" "}
+            <strong style={{ color: "#0F172A" }}>{audit.total_mentioned}</strong> of{" "}
             <strong style={{ color: "#0F172A" }}>{audit.total_queries}</strong> AI engine queries across{" "}
             <strong style={{ color: "#0F172A" }}>{audit.engines?.length}</strong> platforms.
           </p>
@@ -430,23 +450,31 @@ export default function DashboardPage() {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
-              { label: "Total Prompts", value: meta?.total_prompts ?? promptsData.length, sub: `Across ${Object.keys(categoryPerf).length} categories` },
-              { label: "Visibility Rate", value: `${Math.round(visRate)}%`, sub: `${audit.total_mentioned} of ${audit.total_queries} queries` },
-              { label: "Intent Visibility", value: `${intentVis}%`, sub: `On ${intentResults.length / (audit.engines?.length || 1)} intent prompts` },
-              { label: "Ranking Visibility", value: `${rankingVis}%`, sub: `On ${rankingResults.length / (audit.engines?.length || 1)} ranking prompts` },
-              { label: "AI Engines", value: audit.engines?.length ?? 0, sub: audit.engines?.join(", ").slice(0, 40) + "..." },
-              { label: "Best Rank", value: `#${bestRank}`, sub: "Highest position" },
+              { label: "Total Prompts", value: meta?.total_prompts ?? promptsData.length, sub: `Across ${Object.keys(categoryPerf).length} categories`, accent: "#004AAD" },
+              { label: "Visibility Rate", value: `${Math.round(visRate)}%`, sub: `${audit.total_mentioned} of ${audit.total_queries} queries`, accent: visColors.text },
+              { label: "Intent Visibility", value: `${intentVis}%`, sub: `On intent prompts`, accent: rateColor(intentVis).text },
+              { label: "Ranking Visibility", value: `${rankingVis}%`, sub: `On ranking prompts`, accent: rateColor(rankingVis).text },
+              { label: "AI Engines", value: audit.engines?.length ?? 0, sub: "Platforms tested", accent: "#0BA5C9" },
+              { label: "Best Rank", value: `#${bestRank}`, sub: "Highest position", accent: "#0F172A" },
             ].map((kpi) => (
               <div
                 key={kpi.label}
-                className="rounded-xl p-6 text-center"
-                style={{ background: "#0F172A", color: "#FFFFFF" }}
+                className="rounded-xl p-5 text-center"
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid #E2E8F0",
+                  borderTop: `4px solid ${kpi.accent}`,
+                }}
               >
-                <div className="text-xs uppercase tracking-widest opacity-70 mb-3">{kpi.label}</div>
-                <div className="text-4xl font-black" style={{ letterSpacing: "0.02em" }}>
+                <div className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: "#64748B" }}>
+                  {kpi.label}
+                </div>
+                <div className="text-3xl font-black" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
                   {kpi.value}
                 </div>
-                <div className="text-xs mt-2 opacity-70 truncate">{kpi.sub}</div>
+                <div className="text-[11px] mt-2 truncate" style={{ color: "#94A3B8" }}>
+                  {kpi.sub}
+                </div>
               </div>
             ))}
           </div>
@@ -466,11 +494,11 @@ export default function DashboardPage() {
                 <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ background: "#0F172A", color: "#FFFFFF" }}>
-                        <th className="text-left p-4 text-xs font-bold uppercase tracking-wider">Rank</th>
-                        <th className="text-left p-4 text-xs font-bold uppercase tracking-wider">Brand</th>
-                        <th className="text-left p-4 text-xs font-bold uppercase tracking-wider">Mentions</th>
-                        <th className="text-left p-4 text-xs font-bold uppercase tracking-wider">Share of Voice</th>
+                      <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                        <th className="text-left p-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Rank</th>
+                        <th className="text-left p-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Brand</th>
+                        <th className="text-left p-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Mentions</th>
+                        <th className="text-left p-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Share of Voice</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -478,30 +506,41 @@ export default function DashboardPage() {
                         <tr
                           key={b.brand}
                           style={{
-                            background: b.isClient ? "#FFFACD" : "transparent",
+                            background: b.isClient ? "#E6F1FB" : "transparent",
                             borderBottom: "1px solid #F1F5F9",
                           }}
                         >
                           <td className="p-4">
                             <span
-                              className="inline-block px-3 py-1 font-bold min-w-[36px] text-center"
-                              style={{ background: "#0F172A", color: "#FFFFFF" }}
+                              className="inline-block px-3 py-1 font-bold min-w-[36px] text-center rounded-md text-xs"
+                              style={{
+                                background: b.isClient ? "#004AAD" : "#F1F5F9",
+                                color: b.isClient ? "#FFFFFF" : "#334155",
+                              }}
                             >
                               #{b.rank}
                             </span>
                           </td>
-                          <td className="p-4 font-semibold" style={{ color: "#0F172A" }}>
+                          <td className="p-4 font-semibold" style={{ color: b.isClient ? "#004AAD" : "#0F172A" }}>
                             {b.brand}
+                            {b.isClient && (
+                              <span className="ml-2 text-[10px] uppercase font-bold tracking-wider" style={{ color: "#004AAD" }}>
+                                (You)
+                              </span>
+                            )}
                           </td>
                           <td className="p-4" style={{ color: "#334155" }}>
                             {b.mentions}
                           </td>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex-1 max-w-[150px] h-5" style={{ background: "#E8E8E8" }}>
+                              <div className="flex-1 max-w-[150px] h-2 rounded-full" style={{ background: "#E2E8F0" }}>
                                 <div
-                                  className="h-full"
-                                  style={{ width: `${Math.min(b.sov, 100)}%`, background: "#FF9500" }}
+                                  className="h-full rounded-full"
+                                  style={{
+                                    width: `${Math.min(b.sov, 100)}%`,
+                                    background: b.isClient ? "#004AAD" : "#94A3B8",
+                                  }}
                                 />
                               </div>
                               <span className="font-bold text-sm" style={{ color: "#0F172A" }}>
@@ -525,29 +564,30 @@ export default function DashboardPage() {
             AI Engine Performance &amp; Opportunities
           </h2>
 
-          {/* Strong Performance */}
+          {/* Strong Performance — only show if engines actually hit 50%+ */}
           {strongEngines.length > 0 && (
             <>
-              <h3 className="text-lg font-bold mb-3" style={{ color: "#334155" }}>
+              <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: "#334155" }}>
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full"
+                  style={{ background: "#1D9E75" }}
+                />
                 Strong Performance
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 {strongEngines.map(([key, stats]) => (
                   <div
                     key={key}
-                    className="p-6 text-center rounded-xl"
-                    style={{ background: "#F0FAF0", border: "2px solid #2E7D32" }}
+                    className="p-5 rounded-xl"
+                    style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderLeft: "4px solid #1D9E75" }}
                   >
-                    <div className="text-sm font-semibold mb-2" style={{ color: "#666" }}>
+                    <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#64748B" }}>
                       {stats.display_name}
                     </div>
-                    <div className="text-5xl font-black" style={{ color: "#2E7D32" }}>
+                    <div className="text-4xl font-black" style={{ color: "#1D9E75", letterSpacing: "-0.02em" }}>
                       {Math.round(stats.visibility_rate)}%
                     </div>
-                    <div className="text-xs mt-1" style={{ color: "#999" }}>
-                      Mention Rate
-                    </div>
-                    <div className="text-xs mt-2" style={{ color: "#666" }}>
+                    <div className="text-xs mt-2" style={{ color: "#94A3B8" }}>
                       {stats.brand_mentioned} of {stats.total_queries} queries
                     </div>
                   </div>
@@ -559,7 +599,11 @@ export default function DashboardPage() {
           {/* Critical Gaps */}
           {gapEngines.length > 0 && (
             <>
-              <h3 className="text-lg font-bold mb-3" style={{ color: "#334155" }}>
+              <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: "#334155" }}>
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full"
+                  style={{ background: "#DC2626" }}
+                />
                 Critical Optimisation Gaps
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -569,19 +613,19 @@ export default function DashboardPage() {
                   return (
                     <div
                       key={key}
-                      className="p-6 text-center rounded-xl"
-                      style={{ background: "#FFF5F5", border: "2px solid #D32F2F" }}
+                      className="p-5 rounded-xl"
+                      style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderLeft: "4px solid #DC2626" }}
                     >
-                      <div className="text-sm font-semibold mb-2" style={{ color: "#666" }}>
+                      <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#64748B" }}>
                         {stats.display_name}
                       </div>
-                      <div className="text-5xl font-black" style={{ color: "#D32F2F" }}>
+                      <div className="text-4xl font-black" style={{ color: "#DC2626", letterSpacing: "-0.02em" }}>
                         {Math.round(gap)}%
                       </div>
-                      <div className="text-xs mt-1" style={{ color: "#999" }}>
+                      <div className="text-xs mt-1" style={{ color: "#94A3B8" }}>
                         Gap
                       </div>
-                      <div className="text-xs mt-2" style={{ color: "#666" }}>
+                      <div className="text-xs mt-2" style={{ color: "#64748B" }}>
                         {missed} missed opportunities
                       </div>
                     </div>
@@ -628,13 +672,13 @@ export default function DashboardPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: "#0F172A", color: "#FFFFFF" }}>
-                  <th className="text-left p-3 text-xs font-bold uppercase tracking-wider">AI Engine</th>
-                  <th className="text-center p-3 text-xs font-bold uppercase tracking-wider">Tested</th>
-                  <th className="text-center p-3 text-xs font-bold uppercase tracking-wider">Mentioned</th>
-                  <th className="text-center p-3 text-xs font-bold uppercase tracking-wider">Rate</th>
-                  <th className="text-center p-3 text-xs font-bold uppercase tracking-wider">Missed</th>
-                  <th className="text-center p-3 text-xs font-bold uppercase tracking-wider">Priority</th>
+                <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
+                  <th className="text-left p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>AI Engine</th>
+                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Tested</th>
+                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Mentioned</th>
+                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Rate</th>
+                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Missed</th>
+                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Priority</th>
                 </tr>
               </thead>
               <tbody>
@@ -918,11 +962,11 @@ export default function DashboardPage() {
                     setFilter(t.cat);
                     setCurrentPage(1);
                   }}
-                  className="px-5 py-2 text-sm font-semibold uppercase tracking-wide transition-all"
+                  className="px-4 py-2 text-sm font-semibold rounded-full transition-all"
                   style={{
-                    background: filter === t.cat ? "#0F172A" : "#FFFFFF",
-                    color: filter === t.cat ? "#FFFFFF" : "#0F172A",
-                    border: "2px solid #0F172A",
+                    background: filter === t.cat ? "#004AAD" : "#FFFFFF",
+                    color: filter === t.cat ? "#FFFFFF" : "#334155",
+                    border: filter === t.cat ? "1px solid #004AAD" : "1px solid #E2E8F0",
                   }}
                 >
                   {t.label}
@@ -943,9 +987,9 @@ export default function DashboardPage() {
                     key={p.id}
                     className="rounded-xl overflow-hidden transition-all cursor-pointer"
                     style={{
-                      background: hasMention ? "#FFFACD" : "#FFFFFF",
+                      background: "#FFFFFF",
                       border: "1px solid #E2E8F0",
-                      borderLeft: hasMention ? "5px solid #0F172A" : "1px solid #E2E8F0",
+                      borderLeft: hasMention ? "4px solid #1D9E75" : "4px solid #E2E8F0",
                     }}
                     onClick={() => setExpandedId(expanded ? null : p.id)}
                   >
@@ -955,8 +999,8 @@ export default function DashboardPage() {
                           {String(p.id).padStart(2, "0")}
                         </span>
                         <span
-                          className="text-xs px-2 py-1 font-bold uppercase"
-                          style={{ background: "#E0E0E0", color: "#333" }}
+                          className="text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded"
+                          style={{ background: "#F1F5F9", color: "#64748B" }}
                         >
                           {p.type}
                         </span>
@@ -967,20 +1011,20 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-3 flex-shrink-0">
                         {hasMention ? (
                           <span
-                            className="text-xs px-2 py-1 font-bold"
-                            style={{ background: "#D4F4DD", color: "#2E7D32" }}
+                            className="text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded-full"
+                            style={{ background: "#E1F5EE", color: "#1D9E75" }}
                           >
                             ✓ Mentioned
                           </span>
                         ) : (
                           <span
-                            className="text-xs px-2 py-1 font-bold"
-                            style={{ background: "#FFEAEA", color: "#D32F2F" }}
+                            className="text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded-full"
+                            style={{ background: "#FEF2F2", color: "#DC2626" }}
                           >
                             ✗ Not Mentioned
                           </span>
                         )}
-                        <span className="text-sm font-bold" style={{ color: "#004AAD" }}>
+                        <span className="text-sm font-bold" style={{ color: "#0F172A" }}>
                           {mentionCount}/{engineNames.length}
                         </span>
                         <span className="text-xs" style={{ color: "#94A3B8" }}>engines</span>
@@ -1001,10 +1045,15 @@ export default function DashboardPage() {
                           return (
                             <div
                               key={eName}
-                              className="p-3 rounded flex items-center justify-between"
+                              className="p-3 rounded-lg flex items-center justify-between"
                               style={{
-                                background: eData.mentioned && !isError ? "#D4F4DD" : "#F5F5F5",
-                                borderLeft: eData.mentioned && !isError ? "3px solid #2E7D32" : undefined,
+                                background: "#FFFFFF",
+                                border: "1px solid #E2E8F0",
+                                borderLeft: eData.mentioned && !isError
+                                  ? "3px solid #1D9E75"
+                                  : isError
+                                    ? "3px solid #CBD5E1"
+                                    : "3px solid #E2E8F0",
                                 cursor: eData.mentioned && !isError ? "pointer" : "default",
                               }}
                               onClick={(ev) => {
@@ -1016,11 +1065,11 @@ export default function DashboardPage() {
                             >
                               <span className="text-xs font-semibold" style={{ color: "#0F172A" }}>{eName}</span>
                               {isError ? (
-                                <span className="text-xs" style={{ color: "#999" }}>— Unavailable</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#94A3B8" }}>Unavailable</span>
                               ) : eData.mentioned ? (
-                                <span className="text-xs font-bold" style={{ color: "#2E7D32" }}>✓ MENTIONED</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#1D9E75" }}>✓ Mentioned</span>
                               ) : (
-                                <span className="text-xs" style={{ color: "#D32F2F" }}>✗ Not mentioned</span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#94A3B8" }}>Not mentioned</span>
                               )}
                             </div>
                           );
@@ -1037,19 +1086,19 @@ export default function DashboardPage() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage <= 1}
-                className="px-6 py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                style={{ background: "#FFFFFF", border: "2px solid #0F172A", color: "#0F172A" }}
+                className="px-5 py-2.5 text-sm font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", color: "#334155" }}
               >
                 ← Previous
               </button>
-              <span className="font-bold" style={{ color: "#0F172A" }}>
+              <span className="text-sm font-semibold" style={{ color: "#64748B" }}>
                 Page {currentPage} of {totalPages}
               </span>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage >= totalPages}
-                className="px-6 py-3 text-sm font-bold uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                style={{ background: "#FFFFFF", border: "2px solid #0F172A", color: "#0F172A" }}
+                className="px-5 py-2.5 text-sm font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                style={{ background: "#004AAD", border: "1px solid #004AAD", color: "#FFFFFF" }}
               >
                 Next →
               </button>
@@ -1076,31 +1125,31 @@ export default function DashboardPage() {
           onClick={() => setModal(null)}
         >
           <div
-            className="rounded-lg p-8 max-w-3xl w-full mt-16"
-            style={{ background: "#FFFFFF", border: "2px solid #0F172A" }}
+            className="rounded-xl p-8 max-w-3xl w-full mt-16"
+            style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", boxShadow: "0 20px 40px rgba(15,23,42,0.15)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between pb-4 mb-4" style={{ borderBottom: "2px solid #0F172A" }}>
-              <h3 className="text-2xl font-bold" style={{ color: "#0F172A" }}>
+            <div className="flex items-start justify-between pb-4 mb-4" style={{ borderBottom: "1px solid #E2E8F0" }}>
+              <h3 className="text-xl font-bold" style={{ color: "#0F172A" }}>
                 {modal.engine} — Mention Detail
               </h3>
-              <button onClick={() => setModal(null)} className="text-3xl leading-none" style={{ color: "#999" }}>×</button>
+              <button onClick={() => setModal(null)} className="text-2xl leading-none hover:opacity-80" style={{ color: "#94A3B8" }}>×</button>
             </div>
-            <div className="text-xs uppercase tracking-widest mb-3" style={{ color: "#666" }}>
+            <div className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: "#64748B" }}>
               Prompt: {modal.prompt}
             </div>
             <div
-              className="p-6 text-sm leading-relaxed"
+              className="p-5 text-sm leading-relaxed rounded-lg"
               style={{
-                background: "#FFFACD",
-                borderLeft: "4px solid #0F172A",
-                fontFamily: "Georgia, serif",
-                lineHeight: 1.9,
+                background: "#F8FAFC",
+                borderLeft: "4px solid #004AAD",
+                lineHeight: 1.8,
+                color: "#334155",
               }}
               dangerouslySetInnerHTML={{
                 __html: modal.excerpt.replace(
                   new RegExp(`(${audit.brand_name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
-                  '<mark style="background:#0F172A;color:#fff;padding:2px 6px;font-weight:bold;">$1</mark>'
+                  '<mark style="background:#E1F5EE;color:#1D9E75;padding:2px 6px;font-weight:bold;border-radius:3px;">$1</mark>'
                 ),
               }}
             />

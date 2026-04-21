@@ -167,10 +167,15 @@ const ENGINE_LABELS: Record<string, string> = {
   bing_copilot: "Bing Copilot",
 };
 
+/**
+ * Mint/success green reserved for 60%+ only. 35-60 is "fair" (blue/primary).
+ * 15-35 is weak (amber/secondary). <15 is critical (red). Never in headlines.
+ */
 function rateColor(rate: number) {
-  if (rate >= 50) return { text: "text-primary", bar: "bg-primary", badge: "bg-primary/10 text-primary" };
-  if (rate >= 25) return { text: "text-secondary", bar: "bg-secondary", badge: "bg-secondary/10 text-secondary" };
-  return { text: "text-error", bar: "bg-error", badge: "bg-error/10 text-error" };
+  if (rate >= 60) return { text: "text-on-surface", bar: "bg-[#1D9E75]", badge: "bg-[#E1F5EE] text-[#1D9E75]" };
+  if (rate >= 35) return { text: "text-on-surface", bar: "bg-primary", badge: "bg-primary/10 text-primary" };
+  if (rate >= 15) return { text: "text-on-surface", bar: "bg-secondary", badge: "bg-secondary/10 text-secondary" };
+  return { text: "text-on-surface", bar: "bg-error", badge: "bg-error/10 text-error" };
 }
 
 function priorityLabel(gap: number) {

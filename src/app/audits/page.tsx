@@ -67,10 +67,12 @@ export default function AuditsPage() {
     return `${mins}m ${secs}s`;
   }
 
+  // Green (success) reserved for 60%+ only. Dark theme uses cyan/amber/red tiers.
   function visibilityTone(rate: number | null): string {
     if (rate == null) return "text-on-surface-variant";
-    if (rate >= 50) return "text-primary";
-    if (rate >= 25) return "text-secondary";
+    if (rate >= 60) return "text-primary";
+    if (rate >= 35) return "text-on-surface";
+    if (rate >= 15) return "text-secondary";
     return "text-error";
   }
 
