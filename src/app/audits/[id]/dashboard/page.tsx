@@ -4,6 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+/* ════════════════════════════════════════════════════════════════════
+   BENCHMARKS — hardcoded defaults until Sarah provides industry numbers.
+   These become the "Industry avg" and "Top 25%" anchors on every KPI.
+   ════════════════════════════════════════════════════════════════════ */
+const BENCHMARKS = {
+  visibility: { industry: 30, top25: 50 },
+  engineVis: { industry: 28 },
+  prompts: { industry: 50 },
+  mentions: { top25: 42 },
+} as const;
+
+/* ════════════════════════════════════════════════════════════════════ */
+
 interface EngineStats {
   display_name: string;
   visibility_rate: number;
@@ -11,90 +24,18 @@ interface EngineStats {
   total_queries: number;
 }
 
-interface CategoryStats {
-  total_queries: number;
-  brand_mentioned: number;
-  visibility_rate: number;
-}
-
-interface KeywordGap {
-  prompt_id: number;
-  prompt_text: string;
-  category: string;
-  engines_missed: string[];
-  engines_hit: string[];
-  engines_tested: number;
-  gap_severity: string;
-  competitors_present: { name: string; count: number }[];
-}
-
-interface DirectoryCitation {
-  directory: string;
-  listed: boolean;
-  link: string | null;
-  error: string | null;
-}
-
-interface SerpComparison {
-  prompt_id: number;
-  prompt_text: string;
-  ai_mentioned: boolean;
-  organic_rank: number | null;
-  in_top_10: boolean;
-  gap_type: string;
-}
-
-interface ContentRec {
-  id: number;
-  type: string;
-  title: string;
-  target_query: string;
-  target_category: string;
-  priority_score: number;
-  severity: string;
-  rationale: string;
-  target_engines: string[];
-  competitors_to_beat: string[];
-  suggested_outline: string[];
-}
-
-interface AuditMetadata {
-  brand: string;
-  generated_at: string;
-  total_prompts: number;
-  total_queries: number;
-  errors: number;
-}
-
 interface SummaryJson {
-  audit_metadata?: AuditMetadata;
-  overall_visibility?: {
-    brand_mentioned_count: number;
-    visibility_rate_percent: number;
+  audit_metadata?: {
+    brand: string;
+    generated_at: string;
+    total_prompts: number;
+    total_queries: number;
+    errors: number;
   };
+  overall_visibility?: { brand_mentioned_count: number; visibility_rate_percent: number };
   engine_breakdown?: Record<string, EngineStats>;
-  category_performance?: Record<string, CategoryStats>;
-  competitor_analysis?: {
-    mention_counts: Record<string, number>;
-    most_mentioned: string | null;
-  };
-  sentiment_breakdown?: { positive: number; neutral: number; negative: number };
-  keyword_gap_analysis?: { keyword_gaps: KeywordGap[] };
-  directory_citations?: DirectoryCitation[];
-  serp_analysis?: {
-    site_indexed: { indexed_count: number };
-    organic_rankings: { prompt_id: number; prompt_text: string; organic_rank: number | null; in_top_10: boolean }[];
-    comparisons: SerpComparison[];
-    summary: { seo_strong_ai_weak: number; ai_strong_seo_weak: number; both_strong: number; both_weak: number; total_compared: number };
-  };
-  alice_brief?: {
-    content_recommendations: ContentRec[];
-    summary_stats: {
-      total_recommendations: number;
-      critical_count: number;
-      content_pieces_needed: number;
-    };
-  };
+  category_performance?: Record<string, { total_queries: number; brand_mentioned: number; visibility_rate: number }>;
+  competitor_analysis?: { mention_counts: Record<string, number>; most_mentioned: string | null };
 }
 
 interface AuditData {
@@ -109,7 +50,20 @@ interface AuditData {
   competitors: string[];
   keywords: string[];
   completed_at: string | null;
+  duration_seconds: number | null;
   summary_json: SummaryJson | null;
+  parent_audit_id: string | null;
+  version: number;
+}
+
+interface HistoryEntry {
+  id: string;
+  version: number;
+  status: string;
+  visibility_rate: number | null;
+  total_queries: number | null;
+  total_mentioned: number | null;
+  completed_at: string | null;
 }
 
 interface ResultRow {
@@ -119,158 +73,142 @@ interface ResultRow {
   engine: string;
   engine_display: string;
   brand_mentioned: boolean;
-  url_cited: boolean;
   competitor_mentions: string[];
-  sentiment: string;
   response_text: string | null;
   prompt_type: string | null;
 }
 
-interface CategoryRanking {
-  category: string;
-  brands: { rank: number; brand: string; mentions: number; sov: number; isClient: boolean }[];
+/* ════════════════════════════════════════════════════════════════════
+   Visibility tone — mint RESERVED for brand only; sage = good (60+),
+   gold = medium (30-60), rose = critical (<30).
+   ════════════════════════════════════════════════════════════════════ */
+function tone(rate: number): "good" | "warn" | "crit" {
+  if (rate >= 60) return "good";
+  if (rate >= 30) return "warn";
+  return "crit";
 }
 
-interface PromptData {
-  id: number;
-  prompt: string;
-  category: string;
-  type: string;
-  engines: Record<string, { mentioned: boolean; excerpt: string }>;
+function fmtDuration(seconds: number | null): string {
+  if (!seconds) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}m ${s}s`;
 }
 
-/**
- * Visibility rate colour. Mint green is reserved for ACTUALLY good performance (60%+).
- * Between 35-60 is "ok" (navy/blue). 15-35 is weak (amber). <15 is critical (red).
- * Never use green in headlines — only as a semantic indicator next to a metric.
- */
-function rateColor(rate: number) {
-  if (rate >= 60) return { text: "#1D9E75", bar: "#1D9E75", light: "#E1F5EE", label: "Strong" };
-  if (rate >= 35) return { text: "#004AAD", bar: "#004AAD", light: "#E6F1FB", label: "Fair" };
-  if (rate >= 15) return { text: "#E8890C", bar: "#E8890C", light: "#FFF3E0", label: "Weak" };
-  return { text: "#DC2626", bar: "#DC2626", light: "#FEF2F2", label: "Critical" };
+function Delta({ value, suffix = "" }: { value: number | null; suffix?: string }) {
+  if (value == null || isNaN(value)) return <span className="delta" style={{ color: "var(--text-4)" }}>—</span>;
+  if (value === 0) return <span className="delta" style={{ color: "var(--text-4)" }}>±0{suffix}</span>;
+  const up = value > 0;
+  return (
+    <span className={`delta ${up ? "up" : "down"}`}>
+      {up ? "▲" : "▼"} {Math.abs(value).toFixed(0)}{suffix}
+    </span>
+  );
 }
 
-function priorityFor(gap: number) {
-  if (gap >= 70) return { label: "Critical", bg: "#DC2626", color: "#FFFFFF" };
-  if (gap >= 50) return { label: "High", bg: "#E8890C", color: "#FFFFFF" };
-  if (gap >= 30) return { label: "Medium", bg: "#FFD740", color: "#333333" };
-  return { label: "Low", bg: "#D4F4DD", color: "#2E7D32" };
-}
-
-function sevColors(severity: string) {
-  switch (severity) {
-    case "critical": return { bg: "#FEF2F2", text: "#DC2626" };
-    case "high": return { bg: "#FFF3E0", text: "#E8890C" };
-    case "medium": return { bg: "#FFF3E0", text: "#E8890C" };
-    default: return { bg: "#E6F1FB", text: "#004AAD" };
-  }
-}
-
-const ITEMS_PER_PAGE = 5;
+/* ════════════════════════════════════════════════════════════════════ */
 
 export default function DashboardPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [audit, setAudit] = useState<AuditData | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [results, setResults] = useState<ResultRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filter, setFilter] = useState<string>("all");
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [modal, setModal] = useState<{ engine: string; prompt: string; excerpt: string } | null>(null);
 
   useEffect(() => {
     async function load() {
-      const res = await fetch(`/api/geo-audits/${id}`);
-      const data = await res.json();
-      if (data.audit) setAudit(data.audit);
-
-      const supabase = createClient();
-      const { data: rows } = await supabase
-        .from("geo_audit_results")
-        .select("prompt_id, category, prompt_text, engine, engine_display, brand_mentioned, url_cited, competitor_mentions, sentiment, response_text, prompt_type")
-        .eq("audit_id", id)
-        .order("prompt_id");
-      if (rows) setResults(rows as ResultRow[]);
-
+      const sb = createClient();
+      const [auditRes, histRes, resRes] = await Promise.all([
+        fetch(`/api/geo-audits/${id}`).then((r) => r.json()),
+        fetch(`/api/geo-audits/${id}/history`).then((r) => r.json()),
+        sb
+          .from("geo_audit_results")
+          .select("prompt_id, category, prompt_text, engine, engine_display, brand_mentioned, competitor_mentions, response_text, prompt_type")
+          .eq("audit_id", id)
+          .order("prompt_id"),
+      ]);
+      if (auditRes.audit) setAudit(auditRes.audit);
+      if (histRes.history) setHistory(histRes.history);
+      if (resRes.data) setResults(resRes.data as ResultRow[]);
       setLoading(false);
     }
     load();
   }, [id]);
 
-  // Compute category rankings client-side
-  const categoryRankings: CategoryRanking[] = useMemo(() => {
-    if (!audit || !results.length) return [];
+  /* ═══════════════ Derived values ═══════════════ */
+
+  const baseline = history[0] ?? null; // version 1 = baseline
+  const previous = useMemo(() => {
+    if (!audit || history.length < 2) return null;
+    const idx = history.findIndex((h) => h.id === audit.id);
+    return idx > 0 ? history[idx - 1] : null;
+  }, [audit, history]);
+
+  const visRate = audit?.visibility_rate ?? 0;
+  const isFirstAudit = !baseline || baseline.id === audit?.id;
+  const deltaVsLast = previous?.visibility_rate != null ? +(visRate - previous.visibility_rate).toFixed(1) : null;
+  const deltaVsBaseline = baseline?.visibility_rate != null && !isFirstAudit ? +(visRate - baseline.visibility_rate).toFixed(1) : null;
+  const deltaVsIndustry = +(visRate - BENCHMARKS.visibility.industry).toFixed(1);
+
+  const engineBreakdown = audit?.summary_json?.engine_breakdown || {};
+  const sortedEngines = Object.entries(engineBreakdown).sort((a, b) => b[1].visibility_rate - a[1].visibility_rate);
+
+  /* Category rankings with SOV — computed client-side */
+  const sovStats = useMemo(() => {
+    if (!audit || !results.length) return null;
     const valid = results.filter((r) => r.response_text && !r.response_text.startsWith("[ERROR]"));
-    const categories = Array.from(new Set(valid.map((r) => r.category)));
-    return categories.map((cat) => {
-      const catRows = valid.filter((r) => r.category === cat);
-      const clientMentions = catRows.filter((r) => r.brand_mentioned).length;
-      const compCounts: Record<string, number> = {};
-      catRows.forEach((r) => {
-        (r.competitor_mentions || []).forEach((c) => {
-          compCounts[c] = (compCounts[c] || 0) + 1;
-        });
-      });
-      const allBrands = [
-        { brand: audit.brand_name, mentions: clientMentions, isClient: true },
-        ...Object.entries(compCounts).map(([b, c]) => ({ brand: b, mentions: c, isClient: false })),
-      ].sort((a, b) => b.mentions - a.mentions);
-      const total = allBrands.reduce((s, b) => s + b.mentions, 0);
-      return {
-        category: cat,
-        brands: allBrands.slice(0, 8).map((b, i) => ({
-          rank: i + 1,
-          brand: b.brand,
-          mentions: b.mentions,
-          sov: total > 0 ? Math.round((b.mentions / total) * 100) : 0,
-          isClient: b.isClient,
-        })),
-      };
-    });
+    const clientMentions = valid.filter((r) => r.brand_mentioned).length;
+    const compCounts: Record<string, number> = {};
+    valid.forEach((r) => (r.competitor_mentions || []).forEach((c) => { compCounts[c] = (compCounts[c] || 0) + 1; }));
+    const totalMentions = clientMentions + Object.values(compCounts).reduce((s, n) => s + n, 0);
+    const sov = totalMentions > 0 ? Math.round((clientMentions / totalMentions) * 100) : 0;
+    const ranked = [
+      { brand: audit.brand_name, mentions: clientMentions, isClient: true },
+      ...Object.entries(compCounts).map(([b, c]) => ({ brand: b, mentions: c, isClient: false })),
+    ].sort((a, b) => b.mentions - a.mentions);
+    return { sov, totalMentions, clientMentions, ranked };
   }, [audit, results]);
 
-  // Compute prompt data client-side
-  const promptsData: PromptData[] = useMemo(() => {
-    const map = new Map<number, PromptData>();
-    results.forEach((r) => {
-      if (!map.has(r.prompt_id)) {
-        map.set(r.prompt_id, {
-          id: r.prompt_id,
-          prompt: r.prompt_text,
-          category: r.category,
-          type: (r.prompt_type || "ranking").toUpperCase(),
-          engines: {},
-        });
-      }
-      const p = map.get(r.prompt_id)!;
-      p.engines[r.engine_display || r.engine] = {
-        mentioned: !!r.brand_mentioned,
-        excerpt: r.response_text || "",
+  /* Prompt-type breakdown (intent vs ranking) with industry benchmark markers */
+  const promptTypeBreakdown = useMemo(() => {
+    if (!results.length) return [];
+    const types: Array<"intent" | "ranking"> = ["intent", "ranking"];
+    return types.map((t) => {
+      const rows = results.filter((r) => r.prompt_type === t);
+      const mentioned = rows.filter((r) => r.brand_mentioned).length;
+      const rate = rows.length > 0 ? Math.round((mentioned / rows.length) * 100) : 0;
+      return {
+        type: t,
+        label: t === "intent" ? "Informational / intent prompts" : "Ranking / commercial prompts",
+        rate,
+        mentioned,
+        total: rows.length,
+        // Rough industry markers per prompt type
+        industryAvg: t === "intent" ? 28 : 35,
       };
     });
-    return Array.from(map.values()).sort((a, b) => a.id - b.id);
   }, [results]);
 
-  // Filter + paginate
-  const filteredPrompts = useMemo(() => {
-    if (filter === "all") return promptsData;
-    if (filter === "mentioned") return promptsData.filter((p) => Object.values(p.engines).some((e) => e.mentioned));
-    if (filter === "intent") return promptsData.filter((p) => p.type === "INTENT");
-    if (filter === "ranking") return promptsData.filter((p) => p.type === "RANKING");
-    return promptsData.filter((p) => p.category === filter);
-  }, [promptsData, filter]);
+  /* Biggest gap & strength insights */
+  const insights = useMemo(() => {
+    if (!sortedEngines.length) return { gap: null, strength: null };
+    const worst = sortedEngines[sortedEngines.length - 1];
+    const best = sortedEngines[0];
+    return {
+      gap: worst ? { name: worst[1].display_name, rate: worst[1].visibility_rate } : null,
+      strength: best ? { name: best[1].display_name, rate: best[1].visibility_rate } : null,
+    };
+  }, [sortedEngines]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredPrompts.length / ITEMS_PER_PAGE));
-  const pagePrompts = filteredPrompts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  /* Opportunity score — rough: inverse of gap, 0-100 */
+  const opportunityScore = Math.min(100, Math.round((100 - visRate) * 0.85));
+
+  /* ═══════════════ Render ═══════════════ */
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F1F5F9", color: "#64748B" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ color: "var(--text-3)" }}>
         Loading dashboard...
       </div>
     );
@@ -278,884 +216,358 @@ export default function DashboardPage() {
 
   if (!audit) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#F1F5F9", color: "#64748B" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ color: "var(--text-3)" }}>
         Audit not found.
       </div>
     );
   }
 
-  const summary = audit.summary_json;
-  const meta = summary?.audit_metadata;
-  const engineBreakdown = summary?.engine_breakdown || {};
-  const categoryPerf = summary?.category_performance || {};
-  const competitorCounts = summary?.competitor_analysis?.mention_counts || {};
-  const keywordGaps = summary?.keyword_gap_analysis?.keyword_gaps || [];
-  const directories = summary?.directory_citations || [];
-  const sentiment = summary?.sentiment_breakdown;
-  const serp = summary?.serp_analysis;
-  const alice = summary?.alice_brief;
-
-  const sortedEngines = Object.entries(engineBreakdown).sort((a, b) => b[1].visibility_rate - a[1].visibility_rate);
-  // "Strong" = genuinely good: 50%+. "Gaps" = bottom performers with > 0 missed.
-  const strongEngines = sortedEngines.filter(([, s]) => s.visibility_rate >= 50).slice(0, 3);
-  const gapEngines = [...sortedEngines]
-    .filter(([, s]) => s.total_queries - s.brand_mentioned > 0)
-    .reverse()
-    .slice(0, 3);
-  const sortedCategories = Object.entries(categoryPerf).sort((a, b) => b[1].visibility_rate - a[1].visibility_rate);
-  const sortedCompetitors = Object.entries(competitorCounts).sort((a, b) => b[1] - a[1]);
-
-  const visRate = audit.visibility_rate ?? 0;
-  const visColors = rateColor(visRate);
-
-  const totalSent = (sentiment?.positive || 0) + (sentiment?.neutral || 0) + (sentiment?.negative || 0);
-
-  // Intent vs Ranking visibility
-  const intentResults = results.filter((r) => r.prompt_type === "intent");
-  const rankingResults = results.filter((r) => r.prompt_type === "ranking");
-  const intentMentioned = intentResults.filter((r) => r.brand_mentioned).length;
-  const rankingMentioned = rankingResults.filter((r) => r.brand_mentioned).length;
-  const intentVis = intentResults.length > 0 ? Math.round((intentMentioned / intentResults.length) * 100) : 0;
-  const rankingVis = rankingResults.length > 0 ? Math.round((rankingMentioned / rankingResults.length) * 100) : 0;
-  const bestRank = 1; // TODO: compute from position_rank column
-
-  const allCategories = Array.from(new Set(results.map((r) => r.category)));
+  const visTone = tone(visRate);
+  const sovTone = sovStats ? tone(sovStats.sov) : "crit";
+  const oppTone = "good"; // opportunity score always shown in mint as upside
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: "#F1F5F9", color: "#0F172A", fontFamily: "'Manrope', sans-serif" }}
-    >
-      {/* Toolbar */}
+    <div className="min-h-screen">
+      {/* TOP BAR */}
       <div
-        className="px-6 py-3 flex items-center justify-between sticky top-0 z-50"
-        style={{ background: "#FFFFFF", borderBottom: "1px solid #E2E8F0" }}
+        className="flex items-center justify-between sticky top-0 z-50"
+        style={{
+          padding: "14px 32px",
+          background: "rgba(14,26,45,.85)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          borderBottom: "1px solid var(--border-soft)",
+        }}
       >
-        <button
-          onClick={() => router.push(`/audits/${id}`)}
-          className="text-sm inline-flex items-center gap-2"
-          style={{ color: "#334155" }}
-        >
-          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          Back to Audit
-        </button>
-        <span className="text-xs" style={{ color: "#94A3B8" }}>
-          Live dashboard • rendered from latest data
-        </span>
+        <div className="flex items-center gap-3" style={{ fontSize: 13, color: "var(--text-3)" }}>
+          <button onClick={() => router.push(`/audits/${id}`)} className="flex items-center gap-2 hover:text-white transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="19" y1="12" x2="5" y2="12" />
+              <polyline points="12 19 5 12 12 5" />
+            </svg>
+            Audit detail
+          </button>
+          <span style={{ color: "var(--text-4)" }}>/</span>
+          <strong style={{ color: "var(--text-2)", fontWeight: 600 }}>{audit.brand_name}</strong>
+          <span style={{ color: "var(--text-4)" }}>/</span>
+          <span>
+            Visibility audit <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-4)" }}>#V-{audit.id.slice(0, 4).toUpperCase()}</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="btn btn-sm">Export PDF</button>
+          <button className="btn btn-sm">Share</button>
+          <button className="btn btn-sm btn-primary" onClick={() => router.push(`/audits/${id}`)}>
+            Re-audit
+          </button>
+        </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-        {/* Hero */}
-        <section
-          className="rounded-2xl p-10 text-center"
-          style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}
-        >
-          <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "#004AAD" }}>
-            GEO Audit & Action Plan
-          </p>
-          <h1 className="text-4xl font-black mb-1" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
-            {audit.brand_name}
-          </h1>
-          <p className="text-sm mb-6" style={{ color: "#64748B" }}>
-            {audit.brand_url}
-            {audit.completed_at && (
-              <>
-                {" • "}
-                {new Date(audit.completed_at).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" })}
-              </>
+      <main style={{ padding: "28px 36px 60px", maxWidth: 1320, margin: "0 auto" }}>
+        {/* PAGE HEAD */}
+        <div className="page-head">
+          <div>
+            <h1>{audit.brand_name}</h1>
+            <p>
+              Your AI Search Visibility Rank across {audit.engines?.length ?? 0} AI engines and {audit.summary_json?.audit_metadata?.total_prompts ?? "—"} buyer prompts.
+            </p>
+          </div>
+          <div className="actions">
+            <span className="chip chip-neutral chip-lg">Completed {fmtDuration(audit.duration_seconds)}</span>
+            {isFirstAudit ? (
+              <span className="chip chip-mint chip-lg">Baseline audit</span>
+            ) : (
+              <span className="chip chip-good chip-lg">Fresh data</span>
             )}
-          </p>
-          <div className="text-7xl font-black" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
-            {Math.round(visRate)}%
-          </div>
-          <div className="flex items-center justify-center gap-2 mt-2 mb-4">
-            <span
-              className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full"
-              style={{ background: visColors.light, color: visColors.text }}
-            >
-              {visColors.label}
-            </span>
-            <span className="text-xs uppercase tracking-widest" style={{ color: "#94A3B8" }}>
-              Visibility Score
-            </span>
-          </div>
-          <p className="text-base max-w-xl mx-auto" style={{ color: "#334155" }}>
-            <strong style={{ color: "#0F172A" }}>{audit.brand_name}</strong> was mentioned in{" "}
-            <strong style={{ color: "#0F172A" }}>{audit.total_mentioned}</strong> of{" "}
-            <strong style={{ color: "#0F172A" }}>{audit.total_queries}</strong> AI engine queries across{" "}
-            <strong style={{ color: "#0F172A" }}>{audit.engines?.length}</strong> platforms.
-          </p>
-        </section>
-
-        {/* Executive Summary */}
-        {meta && (
-          <section
-            className="rounded-2xl p-8"
-            style={{ background: "#F9F9F9", borderLeft: "5px solid #0F172A" }}
-          >
-            <h2 className="text-2xl font-bold mb-4" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              Executive Summary
-            </h2>
-            <p className="mb-4" style={{ color: "#334155", lineHeight: 1.8 }}>
-              This audit analyses <strong>{audit.brand_name}</strong>&apos;s visibility across{" "}
-              <strong>{meta.total_prompts}</strong> search prompts spanning{" "}
-              <strong>{Object.keys(categoryPerf).length || 1}</strong> categories. Testing was conducted
-              across <strong>{audit.engines?.length}</strong> leading AI engines —{" "}
-              {audit.engines?.join(", ")} — to measure how frequently {audit.brand_name} is surfaced in
-              generative AI responses.
-            </p>
-            <p style={{ color: "#334155", lineHeight: 1.8 }}>
-              {audit.brand_name} achieves a{" "}
-              <span className="px-2 py-0.5 font-bold" style={{ background: "#0F172A", color: "#FFFFFF" }}>
-                {Math.round(visRate)}% visibility rate
-              </span>{" "}
-              across{" "}
-              <span className="px-2 py-0.5 font-bold" style={{ background: "#0F172A", color: "#FFFFFF" }}>
-                {meta.total_prompts} search prompts
-              </span>
-              {sortedCategories[0] && (
-                <>
-                  , with strongest performance in {sortedCategories[0][0]} ({Math.round(sortedCategories[0][1].visibility_rate)}%)
-                </>
-              )}
-              .
-            </p>
-          </section>
-        )}
-
-        {/* Target Keywords */}
-        {audit.keywords?.length > 0 && (
-          <section className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-            <h3 className="text-sm font-bold uppercase tracking-widest mb-4" style={{ color: "#94A3B8" }}>
-              Target Keywords
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {audit.keywords.map((kw) => (
-                <span
-                  key={kw}
-                  className="text-sm px-3 py-1.5 rounded-full font-medium"
-                  style={{ background: "#F0F0F0", color: "#333", border: "1px solid #DDD" }}
-                >
-                  {kw}
-                </span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Performance Overview KPIs */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-            Performance Overview
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { label: "Total Prompts", value: meta?.total_prompts ?? promptsData.length, sub: `Across ${Object.keys(categoryPerf).length} categories`, accent: "#004AAD" },
-              { label: "Visibility Rate", value: `${Math.round(visRate)}%`, sub: `${audit.total_mentioned} of ${audit.total_queries} queries`, accent: visColors.text },
-              { label: "Intent Visibility", value: `${intentVis}%`, sub: `On intent prompts`, accent: rateColor(intentVis).text },
-              { label: "Ranking Visibility", value: `${rankingVis}%`, sub: `On ranking prompts`, accent: rateColor(rankingVis).text },
-              { label: "AI Engines", value: audit.engines?.length ?? 0, sub: "Platforms tested", accent: "#0BA5C9" },
-              { label: "Best Rank", value: `#${bestRank}`, sub: "Highest position", accent: "#0F172A" },
-            ].map((kpi) => (
-              <div
-                key={kpi.label}
-                className="rounded-xl p-5 text-center"
-                style={{
-                  background: "#FFFFFF",
-                  border: "1px solid #E2E8F0",
-                  borderTop: `4px solid ${kpi.accent}`,
-                }}
-              >
-                <div className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: "#64748B" }}>
-                  {kpi.label}
-                </div>
-                <div className="text-3xl font-black" style={{ color: "#0F172A", letterSpacing: "-0.02em" }}>
-                  {kpi.value}
-                </div>
-                <div className="text-[11px] mt-2 truncate" style={{ color: "#94A3B8" }}>
-                  {kpi.sub}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Rankings by Category */}
-        {categoryRankings.length > 0 && (
-          <section>
-            <h2 className="text-2xl font-bold mb-4" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              {audit.brand_name} Rankings by Category
-            </h2>
-            {categoryRankings.map((cat) => (
-              <div key={cat.category} className="mb-8">
-                <h3 className="text-lg font-bold mb-3" style={{ color: "#334155" }}>
-                  {cat.category}
-                </h3>
-                <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-                        <th className="text-left p-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Rank</th>
-                        <th className="text-left p-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Brand</th>
-                        <th className="text-left p-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Mentions</th>
-                        <th className="text-left p-4 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Share of Voice</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {cat.brands.map((b) => (
-                        <tr
-                          key={b.brand}
-                          style={{
-                            background: b.isClient ? "#E6F1FB" : "transparent",
-                            borderBottom: "1px solid #F1F5F9",
-                          }}
-                        >
-                          <td className="p-4">
-                            <span
-                              className="inline-block px-3 py-1 font-bold min-w-[36px] text-center rounded-md text-xs"
-                              style={{
-                                background: b.isClient ? "#004AAD" : "#F1F5F9",
-                                color: b.isClient ? "#FFFFFF" : "#334155",
-                              }}
-                            >
-                              #{b.rank}
-                            </span>
-                          </td>
-                          <td className="p-4 font-semibold" style={{ color: b.isClient ? "#004AAD" : "#0F172A" }}>
-                            {b.brand}
-                            {b.isClient && (
-                              <span className="ml-2 text-[10px] uppercase font-bold tracking-wider" style={{ color: "#004AAD" }}>
-                                (You)
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-4" style={{ color: "#334155" }}>
-                            {b.mentions}
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1 max-w-[150px] h-2 rounded-full" style={{ background: "#E2E8F0" }}>
-                                <div
-                                  className="h-full rounded-full"
-                                  style={{
-                                    width: `${Math.min(b.sov, 100)}%`,
-                                    background: b.isClient ? "#004AAD" : "#94A3B8",
-                                  }}
-                                />
-                              </div>
-                              <span className="font-bold text-sm" style={{ color: "#0F172A" }}>
-                                {b.sov}%
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-          </section>
-        )}
-
-        {/* AI Engine Performance & Opportunities */}
-        <section>
-          <h2 className="text-2xl font-bold mb-4" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-            AI Engine Performance &amp; Opportunities
-          </h2>
-
-          {/* Strong Performance — only show if engines actually hit 50%+ */}
-          {strongEngines.length > 0 && (
-            <>
-              <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: "#334155" }}>
-                <span
-                  className="inline-block w-2.5 h-2.5 rounded-full"
-                  style={{ background: "#1D9E75" }}
-                />
-                Strong Performance
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {strongEngines.map(([key, stats]) => (
-                  <div
-                    key={key}
-                    className="p-5 rounded-xl"
-                    style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderLeft: "4px solid #1D9E75" }}
-                  >
-                    <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#64748B" }}>
-                      {stats.display_name}
-                    </div>
-                    <div className="text-4xl font-black" style={{ color: "#1D9E75", letterSpacing: "-0.02em" }}>
-                      {Math.round(stats.visibility_rate)}%
-                    </div>
-                    <div className="text-xs mt-2" style={{ color: "#94A3B8" }}>
-                      {stats.brand_mentioned} of {stats.total_queries} queries
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Critical Gaps */}
-          {gapEngines.length > 0 && (
-            <>
-              <h3 className="text-lg font-bold mb-3 flex items-center gap-2" style={{ color: "#334155" }}>
-                <span
-                  className="inline-block w-2.5 h-2.5 rounded-full"
-                  style={{ background: "#DC2626" }}
-                />
-                Critical Optimisation Gaps
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {gapEngines.map(([key, stats]) => {
-                  const gap = 100 - stats.visibility_rate;
-                  const missed = stats.total_queries - stats.brand_mentioned;
-                  return (
-                    <div
-                      key={key}
-                      className="p-5 rounded-xl"
-                      style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", borderLeft: "4px solid #DC2626" }}
-                    >
-                      <div className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#64748B" }}>
-                        {stats.display_name}
-                      </div>
-                      <div className="text-4xl font-black" style={{ color: "#DC2626", letterSpacing: "-0.02em" }}>
-                        {Math.round(gap)}%
-                      </div>
-                      <div className="text-xs mt-1" style={{ color: "#94A3B8" }}>
-                        Gap
-                      </div>
-                      <div className="text-xs mt-2" style={{ color: "#64748B" }}>
-                        {missed} missed opportunities
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* Category Performance */}
-          {sortedCategories.length > 0 && (
-            <>
-              <h3 className="text-lg font-bold mb-3" style={{ color: "#334155" }}>
-                Category Performance
-              </h3>
-              <div className="rounded-2xl p-6 mb-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-                {sortedCategories.map(([cat, s]) => {
-                  const c = rateColor(s.visibility_rate);
-                  return (
-                    <div key={cat} className="flex items-center gap-4 mb-3 last:mb-0">
-                      <div className="min-w-[200px] text-sm font-semibold" style={{ color: "#334155" }}>
-                        {cat}
-                      </div>
-                      <div className="flex-1 h-7" style={{ background: "#E8E8E8" }}>
-                        <div
-                          className="h-full"
-                          style={{ width: `${s.visibility_rate}%`, background: c.bar }}
-                        />
-                      </div>
-                      <div className="min-w-[50px] text-right font-bold" style={{ color: "#0F172A" }}>
-                        {Math.round(s.visibility_rate)}%
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* Complete Engine Gap Analysis */}
-          <h3 className="text-lg font-bold mb-3" style={{ color: "#334155" }}>
-            Complete Engine Gap Analysis
-          </h3>
-          <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: "#F8FAFC", borderBottom: "1px solid #E2E8F0" }}>
-                  <th className="text-left p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>AI Engine</th>
-                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Tested</th>
-                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Mentioned</th>
-                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Rate</th>
-                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Missed</th>
-                  <th className="text-center p-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: "#64748B" }}>Priority</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedEngines.map(([key, stats]) => {
-                  const gap = 100 - stats.visibility_rate;
-                  const missed = stats.total_queries - stats.brand_mentioned;
-                  const p = priorityFor(gap);
-                  return (
-                    <tr key={key} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                      <td className="p-3 font-bold" style={{ color: "#0F172A" }}>
-                        {stats.display_name}
-                      </td>
-                      <td className="p-3 text-center" style={{ color: "#64748B" }}>
-                        {stats.total_queries}
-                      </td>
-                      <td className="p-3 text-center" style={{ color: "#64748B" }}>
-                        {stats.brand_mentioned}
-                      </td>
-                      <td className="p-3 text-center font-bold" style={{ color: rateColor(stats.visibility_rate).text }}>
-                        {Math.round(stats.visibility_rate)}%
-                      </td>
-                      <td className="p-3 text-center" style={{ color: "#D32F2F" }}>
-                        {missed}
-                      </td>
-                      <td className="p-3 text-center">
-                        <span
-                          className="px-3 py-1 text-xs font-bold"
-                          style={{ background: p.bg, color: p.color, letterSpacing: "0.5px" }}
-                        >
-                          {p.label}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {/* Competitor Mentions */}
-        {sortedCompetitors.length > 0 && (
-          <section className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-            <h2 className="text-xl font-bold mb-4" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              Competitor Mentions
-            </h2>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg p-3" style={{ background: "#FFF3E0", border: "1px solid #E8890C33" }}>
-                <span className="text-sm font-bold w-40 truncate" style={{ color: "#E8890C" }}>
-                  {audit.brand_name} (You)
-                </span>
-                <div className="flex-1">
-                  <div className="w-full rounded-full h-3" style={{ background: "#E2E8F0" }}>
-                    <div
-                      className="h-3 rounded-full"
-                      style={{
-                        width: `${Math.max(((audit.total_mentioned || 0) / Math.max(audit.total_queries || 1, 1)) * 100, 2)}%`,
-                        background: "#E8890C",
-                      }}
-                    />
-                  </div>
-                </div>
-                <span className="text-sm font-bold w-16 text-right" style={{ color: "#E8890C" }}>
-                  {audit.total_mentioned}
-                </span>
-              </div>
-              {sortedCompetitors.map(([name, count]) => {
-                const maxM = Math.max(audit.total_queries || 1, count, 1);
-                return (
-                  <div key={name} className="flex items-center gap-3 rounded-xl p-3" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                    <span className="text-sm w-40 truncate" style={{ color: "#334155" }}>{name}</span>
-                    <div className="flex-1">
-                      <div className="w-full rounded-full h-3" style={{ background: "#E2E8F0" }}>
-                        <div className="h-3 rounded-full" style={{ width: `${Math.max((count / maxM) * 100, 2)}%`, background: "#94A3B8" }} />
-                      </div>
-                    </div>
-                    <span className="text-sm w-16 text-right" style={{ color: "#64748B" }}>{count}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* Sentiment */}
-        {totalSent > 0 && sentiment && (
-          <section className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-            <h2 className="text-xl font-bold mb-4" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              Sentiment Analysis
-            </h2>
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: "Positive", value: sentiment.positive, color: "#1D9E75" },
-                { label: "Neutral", value: sentiment.neutral, color: "#64748B" },
-                { label: "Negative", value: sentiment.negative, color: "#DC2626" },
-              ].map((s) => {
-                const pct = Math.round((s.value / totalSent) * 100);
-                return (
-                  <div key={s.label} className="rounded-xl p-4 text-center" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                    <div className="text-2xl font-bold" style={{ color: s.color }}>{pct}%</div>
-                    <div className="text-xs mt-1 uppercase" style={{ color: "#64748B" }}>{s.label}</div>
-                    <div className="w-full rounded-full h-1.5 mt-2" style={{ background: "#E2E8F0" }}>
-                      <div className="h-1.5 rounded-full" style={{ width: `${Math.max(pct, 2)}%`, background: s.color }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* Keyword Gap Analysis */}
-        {keywordGaps.length > 0 && (
-          <section className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-            <h2 className="text-xl font-bold mb-2" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              Keyword Gap Analysis
-            </h2>
-            <p className="text-sm mb-4" style={{ color: "#64748B" }}>
-              Queries where competitors are being recommended but your brand is missing.
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: "1px solid #E2E8F0", color: "#94A3B8" }}>
-                    <th className="text-left py-3 px-2 text-xs uppercase">Query</th>
-                    <th className="text-center py-3 px-2 text-xs uppercase">Category</th>
-                    <th className="text-center py-3 px-2 text-xs uppercase">Engines Missed</th>
-                    <th className="text-center py-3 px-2 text-xs uppercase">Severity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {keywordGaps.slice(0, 10).map((gap) => {
-                    const sev = sevColors(gap.gap_severity);
-                    return (
-                      <tr key={gap.prompt_id} style={{ borderBottom: "1px solid #F1F5F9" }}>
-                        <td className="py-3 px-2 max-w-xs truncate" style={{ color: "#334155" }}>{gap.prompt_text}</td>
-                        <td className="py-3 px-2 text-center" style={{ color: "#64748B" }}>{gap.category}</td>
-                        <td className="py-3 px-2 text-center font-bold" style={{ color: "#DC2626" }}>
-                          {gap.engines_missed.length} / {gap.engines_tested}
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          <span className="text-xs px-2 py-1 rounded-full font-bold" style={{ background: sev.bg, color: sev.text }}>
-                            {gap.gap_severity.charAt(0).toUpperCase() + gap.gap_severity.slice(1)}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {/* Directory Citations */}
-        {directories.length > 0 && (
-          <section className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-            <h2 className="text-xl font-bold mb-2" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              Directory &amp; Citation Check
-            </h2>
-            <p className="text-sm mb-4" style={{ color: "#64748B" }}>
-              AI engines reference business directories when recommending brands.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {directories.map((dir) => (
-                <div
-                  key={dir.directory}
-                  className="rounded-xl p-4 flex items-center gap-3"
-                  style={{
-                    background: dir.listed ? "#E1F5EE" : "#FEF2F2",
-                    border: `1px solid ${dir.listed ? "#1D9E7533" : "#DC262633"}`,
-                  }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-lg"
-                    style={{ background: dir.listed ? "#1D9E75" : "#DC2626" }}
-                  >
-                    {dir.listed ? "✓" : "✗"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium" style={{ color: "#0F172A" }}>{dir.directory}</p>
-                    {dir.listed && dir.link ? (
-                      <a href={dir.link} target="_blank" rel="noopener noreferrer" className="text-xs hover:underline truncate block" style={{ color: "#1D9E75" }}>
-                        Listed
-                      </a>
-                    ) : (
-                      <p className="text-xs" style={{ color: "#DC2626" }}>Not found</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* SERP Analysis */}
-        {serp && serp.comparisons.length > 0 && (
-          <section className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-            <h2 className="text-xl font-bold mb-2" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              AI vs SEO Visibility
-            </h2>
-            <p className="text-sm mb-4" style={{ color: "#64748B" }}>
-              How your AI engine visibility compares to traditional Google organic rankings.
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-              {[
-                { label: "SEO Strong, AI Weak", value: serp.summary.seo_strong_ai_weak, color: "#E8890C" },
-                { label: "AI Strong, SEO Weak", value: serp.summary.ai_strong_seo_weak, color: "#004AAD" },
-                { label: "Both Strong", value: serp.summary.both_strong, color: "#1D9E75" },
-                { label: "Both Weak", value: serp.summary.both_weak, color: "#DC2626" },
-              ].map((s) => (
-                <div key={s.label} className="rounded-xl p-4 text-center" style={{ background: "#F8FAFC", border: "1px solid #E2E8F0" }}>
-                  <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-                  <div className="text-xs mt-1 uppercase" style={{ color: "#64748B" }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Alice Brief Content Recommendations */}
-        {alice && alice.content_recommendations && alice.content_recommendations.length > 0 && (
-          <section className="rounded-2xl p-6" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-            <h2 className="text-xl font-bold mb-2" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              Content Recommendations
-            </h2>
-            <p className="text-sm mb-4" style={{ color: "#64748B" }}>
-              AI-generated content strategy to close your visibility gaps.
-            </p>
-            <div className="space-y-3">
-              {alice.content_recommendations.slice(0, 6).map((rec) => {
-                const sev = sevColors(rec.severity);
-                return (
-                  <div
-                    key={rec.id}
-                    className="rounded-xl p-4"
-                    style={{
-                      background: "#F8FAFC",
-                      borderLeft: `4px solid ${sev.text}`,
-                      border: "1px solid #E2E8F0",
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <h4 className="font-bold" style={{ color: "#0F172A" }}>{rec.title}</h4>
-                      <span className="text-xs px-2 py-1 rounded-full font-bold" style={{ background: sev.bg, color: sev.text }}>
-                        {rec.severity.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-xs mb-2" style={{ color: "#64748B" }}>{rec.rationale}</p>
-                    {rec.competitors_to_beat.length > 0 && (
-                      <p className="text-xs" style={{ color: "#E8890C" }}>
-                        Competitors to beat: {rec.competitors_to_beat.slice(0, 3).join(", ")}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* Detailed Prompt Analysis */}
-        {promptsData.length > 0 && (
-          <section>
-            <h2 className="text-2xl font-bold mb-4" style={{ color: "#0F172A", letterSpacing: "-0.01em" }}>
-              Detailed Prompt Analysis
-            </h2>
-
-            {/* Tabs */}
-            <div className="flex gap-2 flex-wrap mb-6">
-              {[
-                { cat: "all", label: "All Prompts" },
-                ...allCategories.map((c) => ({ cat: c, label: c })),
-                { cat: "mentioned", label: `${audit.brand_name} Mentioned` },
-                { cat: "intent", label: "Intent Prompts" },
-                { cat: "ranking", label: "Ranking Prompts" },
-              ].map((t) => (
-                <button
-                  key={t.cat}
-                  onClick={() => {
-                    setFilter(t.cat);
-                    setCurrentPage(1);
-                  }}
-                  className="px-4 py-2 text-sm font-semibold rounded-full transition-all"
-                  style={{
-                    background: filter === t.cat ? "#004AAD" : "#FFFFFF",
-                    color: filter === t.cat ? "#FFFFFF" : "#334155",
-                    border: filter === t.cat ? "1px solid #004AAD" : "1px solid #E2E8F0",
-                  }}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Prompt List */}
-            <div className="space-y-3 mb-6">
-              {pagePrompts.map((p) => {
-                const engineNames = Object.keys(p.engines);
-                const mentionCount = engineNames.filter((e) => p.engines[e].mentioned).length;
-                const hasMention = mentionCount > 0;
-                const expanded = expandedId === p.id;
-
-                return (
-                  <div
-                    key={p.id}
-                    className="rounded-xl overflow-hidden transition-all cursor-pointer"
-                    style={{
-                      background: "#FFFFFF",
-                      border: "1px solid #E2E8F0",
-                      borderLeft: hasMention ? "4px solid #1D9E75" : "4px solid #E2E8F0",
-                    }}
-                    onClick={() => setExpandedId(expanded ? null : p.id)}
-                  >
-                    <div className="p-4 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <span className="font-bold text-lg min-w-[40px]" style={{ color: "#999" }}>
-                          {String(p.id).padStart(2, "0")}
-                        </span>
-                        <span
-                          className="text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded"
-                          style={{ background: "#F1F5F9", color: "#64748B" }}
-                        >
-                          {p.type}
-                        </span>
-                        <span className="text-sm flex-1 min-w-0 truncate" style={{ color: "#334155" }}>
-                          {p.prompt}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        {hasMention ? (
-                          <span
-                            className="text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded-full"
-                            style={{ background: "#E1F5EE", color: "#1D9E75" }}
-                          >
-                            ✓ Mentioned
-                          </span>
-                        ) : (
-                          <span
-                            className="text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded-full"
-                            style={{ background: "#FEF2F2", color: "#DC2626" }}
-                          >
-                            ✗ Not Mentioned
-                          </span>
-                        )}
-                        <span className="text-sm font-bold" style={{ color: "#0F172A" }}>
-                          {mentionCount}/{engineNames.length}
-                        </span>
-                        <span className="text-xs" style={{ color: "#94A3B8" }}>engines</span>
-                        <span
-                          className="text-lg transition-transform"
-                          style={{ color: "#94A3B8", transform: expanded ? "rotate(180deg)" : "rotate(0)" }}
-                        >
-                          ▼
-                        </span>
-                      </div>
-                    </div>
-
-                    {expanded && (
-                      <div className="px-4 pb-4 pt-2 border-t grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2" style={{ borderColor: "#E2E8F0" }}>
-                        {engineNames.map((eName) => {
-                          const eData = p.engines[eName];
-                          const isError = eData.excerpt?.startsWith("[ERROR]");
-                          return (
-                            <div
-                              key={eName}
-                              className="p-3 rounded-lg flex items-center justify-between"
-                              style={{
-                                background: "#FFFFFF",
-                                border: "1px solid #E2E8F0",
-                                borderLeft: eData.mentioned && !isError
-                                  ? "3px solid #1D9E75"
-                                  : isError
-                                    ? "3px solid #CBD5E1"
-                                    : "3px solid #E2E8F0",
-                                cursor: eData.mentioned && !isError ? "pointer" : "default",
-                              }}
-                              onClick={(ev) => {
-                                ev.stopPropagation();
-                                if (eData.mentioned && !isError) {
-                                  setModal({ engine: eName, prompt: p.prompt, excerpt: eData.excerpt });
-                                }
-                              }}
-                            >
-                              <span className="text-xs font-semibold" style={{ color: "#0F172A" }}>{eName}</span>
-                              {isError ? (
-                                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#94A3B8" }}>Unavailable</span>
-                              ) : eData.mentioned ? (
-                                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#1D9E75" }}>✓ Mentioned</span>
-                              ) : (
-                                <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#94A3B8" }}>Not mentioned</span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex items-center justify-center gap-6 py-4">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
-                className="px-5 py-2.5 text-sm font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", color: "#334155" }}
-              >
-                ← Previous
-              </button>
-              <span className="text-sm font-semibold" style={{ color: "#64748B" }}>
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages}
-                className="px-5 py-2.5 text-sm font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                style={{ background: "#004AAD", border: "1px solid #004AAD", color: "#FFFFFF" }}
-              >
-                Next →
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* Footer */}
-        <footer className="rounded-2xl p-6 text-center mt-12" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#0F172A" }}>
-            AI <span style={{ color: "#E8890C" }}>ECONOMY</span>
-          </p>
-          <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
-            Generative Engine Optimisation • Dashboard rendered from live audit data
-          </p>
-        </footer>
-      </main>
-
-      {/* Modal for mention detail */}
-      {modal && (
-        <div
-          className="fixed inset-0 z-[100] flex items-start justify-center p-6 overflow-auto"
-          style={{ background: "rgba(0,0,0,0.7)" }}
-          onClick={() => setModal(null)}
-        >
-          <div
-            className="rounded-xl p-8 max-w-3xl w-full mt-16"
-            style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", boxShadow: "0 20px 40px rgba(15,23,42,0.15)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between pb-4 mb-4" style={{ borderBottom: "1px solid #E2E8F0" }}>
-              <h3 className="text-xl font-bold" style={{ color: "#0F172A" }}>
-                {modal.engine} — Mention Detail
-              </h3>
-              <button onClick={() => setModal(null)} className="text-2xl leading-none hover:opacity-80" style={{ color: "#94A3B8" }}>×</button>
-            </div>
-            <div className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: "#64748B" }}>
-              Prompt: {modal.prompt}
-            </div>
-            <div
-              className="p-5 text-sm leading-relaxed rounded-lg"
-              style={{
-                background: "#F8FAFC",
-                borderLeft: "4px solid #004AAD",
-                lineHeight: 1.8,
-                color: "#334155",
-              }}
-              dangerouslySetInnerHTML={{
-                __html: modal.excerpt.replace(
-                  new RegExp(`(${audit.brand_name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
-                  '<mark style="background:#E1F5EE;color:#1D9E75;padding:2px 6px;font-weight:bold;border-radius:3px;">$1</mark>'
-                ),
-              }}
-            />
           </div>
         </div>
-      )}
+
+        {/* HERO */}
+        <div className="hero">
+          <div className="hero-left">
+            <div className="hero-label">Your AI Search Visibility Rank</div>
+            <div className="hero-headline">
+              {Math.round(visRate)}
+              <span className="slash">/ 100</span>
+              {deltaVsLast != null && (
+                <span className={`big-delta ${deltaVsLast > 0 ? "up" : deltaVsLast < 0 ? "down" : ""}`}>
+                  {deltaVsLast > 0 ? "▲" : deltaVsLast < 0 ? "▼" : "±"} {Math.abs(deltaVsLast)}
+                </span>
+              )}
+            </div>
+            <div className="hero-summary">
+              {audit.brand_name} appears in about {Math.round(visRate)}% of AI answers for your category.
+              {isFirstAudit
+                ? " This is your baseline — future audits will track movement from here."
+                : deltaVsLast != null && deltaVsLast > 0
+                  ? ` Up ${deltaVsLast} points since last audit — moving in the right direction.`
+                  : deltaVsLast != null && deltaVsLast < 0
+                    ? ` Down ${Math.abs(deltaVsLast)} points since last audit — needs attention.`
+                    : " Movement flat since last audit."}
+            </div>
+            <div className="hero-benchmarks">
+              <div className="hero-bm-item">
+                <div className="hero-bm-label">Industry avg</div>
+                <div className="hero-bm-value">
+                  <span className="num">{BENCHMARKS.visibility.industry}</span>
+                  <Delta value={deltaVsIndustry} />
+                </div>
+              </div>
+              <div className="hero-bm-item">
+                <div className="hero-bm-label">Top 25%</div>
+                <div className="hero-bm-value">
+                  <span className="num">{BENCHMARKS.visibility.top25}</span>
+                  <Delta value={+(visRate - BENCHMARKS.visibility.top25).toFixed(1)} />
+                </div>
+              </div>
+              {!isFirstAudit && baseline?.visibility_rate != null && (
+                <div className="hero-bm-item">
+                  <div className="hero-bm-label">Baseline (v1)</div>
+                  <div className="hero-bm-value">
+                    <span className="num">{Math.round(baseline.visibility_rate)}</span>
+                    <Delta value={deltaVsBaseline} />
+                  </div>
+                </div>
+              )}
+              {previous?.visibility_rate != null && (
+                <div className="hero-bm-item">
+                  <div className="hero-bm-label">Last audit</div>
+                  <div className="hero-bm-value">
+                    <span className="num">{Math.round(previous.visibility_rate)}</span>
+                    <Delta value={deltaVsLast} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="hero-right">
+            {insights.gap && (
+              <div className="hero-insight">
+                <div className="hero-insight-icon crit">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <div className="hero-insight-text">
+                  <div className="title">Biggest gap</div>
+                  <div className="body">
+                    {Math.round(insights.gap.rate)}% visibility on <strong style={{ color: "var(--text)" }}>{insights.gap.name}</strong>. This is where
+                    recovery effort has the highest leverage.
+                  </div>
+                </div>
+              </div>
+            )}
+            {insights.strength && (
+              <div className="hero-insight">
+                <div className="hero-insight-icon good">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <div className="hero-insight-text">
+                  <div className="title">Biggest strength</div>
+                  <div className="body">
+                    {insights.strength.name} cites you on {Math.round(insights.strength.rate)}% of prompts — your strongest engine.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* KPI STRIP */}
+        <div className="kpi-strip">
+          <div className="kpi">
+            <div className="kpi-label">Prompts tested</div>
+            <div className="kpi-number">{audit.summary_json?.audit_metadata?.total_prompts ?? "—"}</div>
+            <div className="kpi-sub">across {audit.engines?.length ?? 0} engines</div>
+            <div className="benchmark">
+              <span className="benchmark-label">Industry</span>
+              <span className="benchmark-val">{BENCHMARKS.prompts.industry}</span>
+            </div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">Brand mentions</div>
+            <div className={`kpi-number num-${tone(visRate)}`}>{audit.total_mentioned ?? 0}</div>
+            <div className="kpi-sub">of {audit.total_queries ?? 0} possible</div>
+            <div className="benchmark">
+              <span className="benchmark-label">Top 25%</span>
+              <span className="benchmark-val">{BENCHMARKS.mentions.top25}+</span>
+            </div>
+          </div>
+          {sovStats && (
+            <div className="kpi">
+              <div className="kpi-label">Share of voice</div>
+              <div className={`kpi-number num-${sovTone}`}>
+                {sovStats.sov}<span className="unit">%</span>
+              </div>
+              <div className="kpi-sub">{sovStats.clientMentions} of {sovStats.totalMentions} brand mentions</div>
+              <div className="benchmark">
+                <span className="benchmark-label">Category</span>
+                <span className="benchmark-val">Mid</span>
+              </div>
+            </div>
+          )}
+          <div className="kpi">
+            <div className="kpi-label">Opportunity</div>
+            <div className={`kpi-number num-${oppTone}`}>{opportunityScore}</div>
+            <div className="kpi-sub">upside score</div>
+            <div className="benchmark">
+              <span className="benchmark-label">Addressable gap</span>
+              <span className="benchmark-val">{Math.round(100 - visRate)} pts</span>
+            </div>
+          </div>
+        </div>
+
+        {/* WHERE YOU SHOW UP — prompt type bars with industry markers */}
+        {promptTypeBreakdown.length > 0 && (
+          <div className="section">
+            <div className="section-head">
+              <div>
+                <h2>Where you show up and where you don&rsquo;t</h2>
+                <div className="sub">Your rate by prompt type, with industry average markers for context.</div>
+              </div>
+            </div>
+            <div className="card pad-lg">
+              <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                {promptTypeBreakdown.map((pt) => {
+                  const t = tone(pt.rate);
+                  return (
+                    <div key={pt.type}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
+                        <span style={{ color: "var(--text-2)", fontWeight: 500 }}>{pt.label}</span>
+                        <span className={`num-big num-${t}`} style={{ fontSize: 16 }}>
+                          {pt.rate}
+                          <span style={{ fontSize: 12, color: "var(--text-3)", fontWeight: 500 }}>%</span>
+                        </span>
+                      </div>
+                      <div className="benchmark-bar">
+                        <div
+                          className="fill"
+                          style={{
+                            width: `${Math.max(pt.rate, 2)}%`,
+                            background:
+                              t === "good"
+                                ? "linear-gradient(90deg,var(--good),var(--good-2))"
+                                : t === "warn"
+                                  ? "linear-gradient(90deg,var(--warn),var(--warn-2))"
+                                  : "linear-gradient(90deg,var(--crit),var(--crit-2))",
+                            borderRadius: 999,
+                          }}
+                        />
+                        <div className="marker" style={{ left: `${pt.industryAvg}%` }}>
+                          <span className="marker-label">Avg {pt.industryAvg}%</span>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--text-3)", marginTop: 12 }}>
+                        {pt.mentioned} of {pt.total} prompts mentioned you
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ENGINE PERFORMANCE */}
+        {sortedEngines.length > 0 && (
+          <div className="section">
+            <div className="section-head">
+              <div>
+                <h2>How each engine sees you</h2>
+                <div className="sub">Percentage of prompts where each AI engine cites {audit.brand_name}.</div>
+              </div>
+            </div>
+            <div className="grid-3">
+              {sortedEngines.map(([key, stats]) => {
+                const t = tone(stats.visibility_rate);
+                const chipLabel = t === "good" ? "Strongest" : t === "warn" ? "Medium" : stats.visibility_rate === 0 ? "Absent" : "Weak";
+                const industryDelta = +(stats.visibility_rate - BENCHMARKS.engineVis.industry).toFixed(1);
+                return (
+                  <div key={key} className="engine-card">
+                    <div className="engine-head">
+                      <div className="engine-name">
+                        <span className={`engine-dot ${t}`} /> {stats.display_name}
+                      </div>
+                      <span className={`chip chip-${t}`}>{chipLabel}</span>
+                    </div>
+                    <div className={`engine-pct num-${t}`}>
+                      {Math.round(stats.visibility_rate)}
+                      <span className="unit">%</span>
+                    </div>
+                    <div className="engine-sub">
+                      {stats.brand_mentioned} of {stats.total_queries} prompts
+                    </div>
+                    <div className="bar" style={{ width: "100%" }}>
+                      <div className={`bar-fill ${t}`} style={{ width: `${Math.max(stats.visibility_rate, 2)}%` }} />
+                    </div>
+                    <div className="benchmark" style={{ marginTop: 12 }}>
+                      <span className="benchmark-label">Industry</span>
+                      <span className="benchmark-val">{BENCHMARKS.engineVis.industry}%</span>
+                      <Delta value={industryDelta} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* COMPETITOR MENTIONS */}
+        {sovStats && sovStats.ranked.length > 0 && (
+          <div className="section">
+            <div className="section-head">
+              <div>
+                <h2>Share of voice — you vs competitors</h2>
+                <div className="sub">Total brand mentions across all AI responses. Your share is the headline number.</div>
+              </div>
+            </div>
+            <div>
+              {sovStats.ranked.slice(0, 8).map((b, i) => {
+                const pct = sovStats.totalMentions > 0 ? Math.round((b.mentions / sovStats.totalMentions) * 100) : 0;
+                return (
+                  <div key={b.brand} className={`comp-row ${b.isClient ? "is-you" : ""}`}>
+                    <div className="comp-rank">#{i + 1}</div>
+                    <div>
+                      <div className="comp-name">
+                        {b.brand}{" "}
+                        {b.isClient && <span className="chip chip-mint" style={{ marginLeft: 6 }}>You</span>}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="bar">
+                        <div
+                          className={`bar-fill ${b.isClient ? "mint" : "info"}`}
+                          style={{ width: `${Math.max(pct, 2)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="comp-mentions">{b.mentions}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ASK SARAH */}
+        <div className="ask-sarah">
+          <div className="ask-avatar">S</div>
+          <div className="ask-body">
+            <h4>Ask Sarah</h4>
+            <p>Want this explained in plain English, or need a steer on what to tackle first?</p>
+            <div className="ask-prompts">
+              <button className="ask-prompt">What does this mean for us?</button>
+              <button className="ask-prompt">What should we work on first?</button>
+              <button className="ask-prompt">What&rsquo;s doable in 30 days?</button>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
