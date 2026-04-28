@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import AppShell from "@/components/ui/AppShell";
-import TopNav from "@/components/ui/TopNav";
-import GlassCard from "@/components/ui/GlassCard";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import WorkspaceShell from "@/components/audit/WorkspaceShell";
+import { tone } from "@/components/audit/useAuditData";
 
 interface Audit {
   id: string;
@@ -24,14 +21,12 @@ interface Audit {
   version?: number;
 }
 
-type Tone = "primary" | "secondary" | "error" | "neutral" | "success";
-
-const STATUS_TONE: Record<string, Tone> = {
-  pending: "secondary",
-  running: "primary",
-  completed: "success",
-  failed: "error",
-  cancelled: "neutral",
+const STATUS_CHIP: Record<string, string> = {
+  pending: "chip-neutral",
+  running: "chip-info",
+  completed: "chip-good",
+  failed: "chip-crit",
+  cancelled: "chip-neutral",
 };
 
 export default function AuditsPage() {
@@ -40,23 +35,19 @@ export default function AuditsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetchAudits();
+    (async () => {
+      const res = await fetch("/api/geo-audits");
+      const data = await res.json();
+      setAudits(data.audits || []);
+      setLoading(false);
+    })();
   }, []);
-
-  async function fetchAudits() {
-    const res = await fetch("/api/geo-audits");
-    const data = await res.json();
-    setAudits(data.audits || []);
-    setLoading(false);
-  }
 
   function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("en-AU", {
       day: "numeric",
       month: "short",
       year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
     });
   }
 
@@ -67,193 +58,204 @@ export default function AuditsPage() {
     return `${mins}m ${secs}s`;
   }
 
-  // Green (success) reserved for 60%+ only. Dark theme uses cyan/amber/red tiers.
-  function visibilityTone(rate: number | null): string {
-    if (rate == null) return "text-on-surface-variant";
-    if (rate >= 60) return "text-primary";
-    if (rate >= 35) return "text-on-surface";
-    if (rate >= 15) return "text-secondary";
-    return "text-error";
-  }
-
   const totalAudits = audits.length;
   const completed = audits.filter((a) => a.status === "completed").length;
   const running = audits.filter((a) => a.status === "running" || a.status === "pending").length;
-  const avgVisibility = audits
-    .filter((a) => a.visibility_rate != null)
-    .reduce((sum, a, _, arr) => sum + (a.visibility_rate || 0) / arr.length, 0);
+  const completedAudits = audits.filter((a) => a.visibility_rate != null);
+  const avgVisibility = completedAudits.length
+    ? Math.round(
+        completedAudits.reduce((sum, a) => sum + (a.visibility_rate || 0), 0) / completedAudits.length
+      )
+    : 0;
 
   return (
-    <AppShell
-      topNav={
-        <TopNav
-          brand="GEO Audit Pro"
-          tabs={[
-            { href: "/audits", label: "Audits", match: (p) => p.startsWith("/audits") },
-            { href: "/clients", label: "Clients", match: (p) => p.startsWith("/clients") },
-          ]}
-          right={
-            <>
-              <div className="bg-surface-container-lowest px-4 py-2 rounded-full border border-white/5 flex items-center gap-2">
-                <span className="material-symbols-outlined text-on-surface-variant text-[18px]">search</span>
-                <input
-                  type="text"
-                  placeholder="Search audits..."
-                  className="bg-transparent border-0 focus:ring-0 text-sm text-on-surface placeholder:text-on-surface-variant/50 w-48 outline-none"
-                />
-              </div>
-              <button className="p-2 text-on-surface-variant hover:bg-white/5 rounded-full transition-all">
-                <span className="material-symbols-outlined">notifications</span>
-              </button>
-            </>
-          }
-        />
+    <WorkspaceShell
+      title="Audits"
+      actions={
+        <button className="btn btn-sm btn-primary" onClick={() => router.push("/audits/new")}>
+          New audit
+        </button>
       }
     >
-      {/* Header */}
-      <div className="flex justify-between items-end mb-12">
+      <div className="page-head">
         <div>
-          <h2 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-2">
-            Your Audits
-          </h2>
-          <p className="text-on-surface-variant text-lg max-w-2xl">
-            Track AI visibility across your brand portfolio. Every audit is a fresh lens on how
-            generative engines see your business.
+          <h1>Your audits</h1>
+          <p>
+            Every AI Search Visibility audit run from this workspace. Click any row to open the full
+            report.
           </p>
-        </div>
-        <div className="hidden md:flex gap-4">
-          <Button variant="secondary" icon="download">
-            Export
-          </Button>
-          <Button icon="add" onClick={() => router.push("/audits/new")}>
-            New Audit
-          </Button>
         </div>
       </div>
 
-      {/* Stat strip */}
       {!loading && totalAudits > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-          <GlassCard padding="md">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
-              Total Audits
-            </p>
-            <p className="text-3xl font-black tracking-tighter text-on-surface">{totalAudits}</p>
-          </GlassCard>
-          <GlassCard padding="md">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
-              Completed
-            </p>
-            <p className="text-3xl font-black tracking-tighter text-primary">{completed}</p>
-          </GlassCard>
-          <GlassCard padding="md">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
-              Running
-            </p>
-            <p className="text-3xl font-black tracking-tighter text-secondary">{running}</p>
-          </GlassCard>
-          <GlassCard padding="md">
-            <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
-              Avg. Visibility
-            </p>
-            <p className={`text-3xl font-black tracking-tighter ${visibilityTone(avgVisibility)}`}>
-              {completed > 0 ? `${Math.round(avgVisibility)}%` : "—"}
-            </p>
-          </GlassCard>
+        <div className="kpi-strip">
+          <div className="kpi">
+            <div className="kpi-label">Total audits</div>
+            <div className="kpi-number">{totalAudits}</div>
+            <div className="kpi-sub">in this workspace</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">Completed</div>
+            <div className="kpi-number num-good">{completed}</div>
+            <div className="kpi-sub">finished runs</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">Running</div>
+            <div className={`kpi-number ${running > 0 ? "num-info" : ""}`}>{running}</div>
+            <div className="kpi-sub">in progress</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">Avg visibility</div>
+            <div className={`kpi-number num-${tone(avgVisibility)}`}>
+              {completedAudits.length ? avgVisibility : "—"}
+              {completedAudits.length ? <span className="unit">%</span> : null}
+            </div>
+            <div className="kpi-sub">across completed runs</div>
+          </div>
         </div>
       )}
 
-      {/* Content */}
       {loading ? (
-        <GlassCard className="text-center" padding="xl">
-          <p className="text-on-surface-variant">Loading audits...</p>
-        </GlassCard>
+        <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
+          Loading audits...
+        </div>
       ) : audits.length === 0 ? (
-        <GlassCard className="text-center" padding="xl">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-3xl">radar</span>
+        <div className="card pad-lg" style={{ textAlign: "center" }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              margin: "0 auto 14px",
+              borderRadius: 14,
+              background: "var(--mint-weak)",
+              border: "1px solid var(--mint-line)",
+              display: "grid",
+              placeItems: "center",
+              color: "var(--mint)",
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
           </div>
-          <h3 className="text-2xl font-bold text-on-surface mb-2">No audits yet</h3>
-          <p className="text-on-surface-variant mb-8 max-w-md mx-auto">
-            Run your first AI visibility audit to see how your brand appears across ChatGPT,
-            Claude, Gemini, Perplexity and more.
+          <h3
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 20,
+              fontWeight: 700,
+              color: "var(--text)",
+              margin: "0 0 8px",
+            }}
+          >
+            No audits yet
+          </h3>
+          <p style={{ color: "var(--text-3)", maxWidth: 440, margin: "0 auto 18px" }}>
+            Run your first AI visibility audit to see how your brand appears across ChatGPT, Claude,
+            Gemini, Perplexity and more.
           </p>
-          <Button icon="add" size="lg" onClick={() => router.push("/audits/new")}>
-            Create Your First Audit
-          </Button>
-        </GlassCard>
+          <button className="btn btn-primary" onClick={() => router.push("/audits/new")}>
+            Create your first audit
+          </button>
+        </div>
       ) : (
-        <GlassCard padding="none" className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div className="table-wrap">
+          <div className="table-head-bar">
+            <div>
+              <h3>Audit history</h3>
+              <div className="sub">Latest first.</div>
+            </div>
+          </div>
+          <div className="scroll">
+            <table className="data" style={{ minWidth: 880 }}>
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Brand
-                  </th>
-                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Status
-                  </th>
-                  <th className="text-center px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Visibility
-                  </th>
-                  <th className="text-center px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Engines
-                  </th>
-                  <th className="text-center px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Duration
-                  </th>
-                  <th className="text-right px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Date
-                  </th>
+                <tr>
+                  <th>Brand</th>
+                  <th className="center">Status</th>
+                  <th className="center">Visibility</th>
+                  <th className="center">Engines</th>
+                  <th className="center">Duration</th>
+                  <th>Date</th>
                 </tr>
               </thead>
               <tbody>
-                {audits.map((audit) => (
-                  <tr
-                    key={audit.id}
-                    className="hover:bg-white/5 cursor-pointer transition-colors"
-                    onClick={() => router.push(`/audits/${audit.id}`)}
-                  >
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-on-surface">{audit.brand_name}</p>
-                        {audit.version && audit.version > 1 && (
-                          <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[10px] font-bold">
-                            v{audit.version}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-on-surface-variant mt-0.5">{audit.brand_url}</p>
-                    </td>
-                    <td className="px-6 py-5">
-                      <Badge tone={STATUS_TONE[audit.status] || "neutral"}>{audit.status}</Badge>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      {audit.visibility_rate != null ? (
-                        <span className={`text-xl font-black tracking-tighter ${visibilityTone(audit.visibility_rate)}`}>
-                          {audit.visibility_rate}%
+                {audits.map((audit) => {
+                  const t = tone(audit.visibility_rate ?? 0);
+                  return (
+                    <tr
+                      key={audit.id}
+                      className="clickable"
+                      onClick={() => router.push(`/audits/${audit.id}`)}
+                    >
+                      <td>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            fontWeight: 600,
+                            color: "var(--text)",
+                          }}
+                        >
+                          {audit.brand_name}
+                          {audit.version && audit.version > 1 && (
+                            <span
+                              style={{
+                                padding: "2px 7px",
+                                borderRadius: 999,
+                                background: "var(--mint-weak)",
+                                color: "var(--mint)",
+                                fontSize: 10,
+                                fontWeight: 700,
+                                letterSpacing: "0.05em",
+                                border: "1px solid var(--mint-line)",
+                              }}
+                            >
+                              v{audit.version}
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "var(--text-3)",
+                            fontFamily: "var(--font-mono)",
+                            marginTop: 2,
+                          }}
+                        >
+                          {audit.brand_url}
+                        </div>
+                      </td>
+                      <td className="center">
+                        <span className={`chip ${STATUS_CHIP[audit.status] || "chip-neutral"}`}>
+                          {audit.status}
                         </span>
-                      ) : (
-                        <span className="text-on-surface-variant">—</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-5 text-center text-sm text-on-surface-variant">
-                      {audit.engines?.length || 0}
-                    </td>
-                    <td className="px-6 py-5 text-center text-sm text-on-surface-variant">
-                      {formatDuration(audit.duration_seconds)}
-                    </td>
-                    <td className="px-6 py-5 text-right text-sm text-on-surface-variant">
-                      {formatDate(audit.created_at)}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="center">
+                        {audit.visibility_rate != null ? (
+                          <span className={`num-big num-${t}`}>
+                            {audit.visibility_rate}
+                            <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>%</span>
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--text-3)" }}>—</span>
+                        )}
+                      </td>
+                      <td className="center" style={{ color: "var(--text-2)" }}>
+                        {audit.engines?.length || 0}
+                      </td>
+                      <td className="center" style={{ color: "var(--text-2)" }}>
+                        {formatDuration(audit.duration_seconds)}
+                      </td>
+                      <td style={{ color: "var(--text-3)" }}>{formatDate(audit.created_at)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-        </GlassCard>
+        </div>
       )}
-    </AppShell>
+    </WorkspaceShell>
   );
 }

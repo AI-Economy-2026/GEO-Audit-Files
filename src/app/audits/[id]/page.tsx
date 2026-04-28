@@ -3,11 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import AppShell from "@/components/ui/AppShell";
-import TopNav from "@/components/ui/TopNav";
-import GlassCard from "@/components/ui/GlassCard";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import AuditShell from "@/components/audit/AuditShell";
+import { tone } from "@/components/audit/useAuditData";
 
 interface AuditData {
   id: string;
@@ -44,28 +41,21 @@ interface AuditHistoryEntry {
   completed_at: string | null;
 }
 
-type Tone = "primary" | "secondary" | "error" | "neutral" | "success";
-
-const STATUS_TONE: Record<string, Tone> = {
-  pending: "secondary",
-  running: "primary",
-  completed: "success",
-  failed: "error",
-  cancelled: "neutral",
+const STATUS_CHIP: Record<string, string> = {
+  pending: "chip-neutral",
+  running: "chip-info",
+  completed: "chip-good",
+  failed: "chip-crit",
+  cancelled: "chip-neutral",
 };
 
-function visibilityTone(rate: number | null): string {
-  if (rate == null) return "text-on-surface-variant";
-  if (rate >= 50) return "text-primary";
-  if (rate >= 25) return "text-secondary";
-  return "text-error";
-}
-
-function visibilityBar(rate: number): string {
-  if (rate >= 50) return "bg-primary";
-  if (rate >= 25) return "bg-secondary";
-  return "bg-error";
-}
+const AUDIT_STATUS_CHIP: Record<string, string> = {
+  completed: "chip-good",
+  running: "chip-info",
+  pending: "chip-neutral",
+  failed: "chip-crit",
+  cancelled: "chip-neutral",
+};
 
 export default function AuditDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -146,6 +136,14 @@ export default function AuditDetailPage() {
     }
   }, [audit?.status, fetchHistory]);
 
+  /* Once an audit is completed, redirect to the new Overview dashboard.
+     The current page serves only as a progress/status view while audits are running. */
+  useEffect(() => {
+    if (audit?.status === "completed") {
+      router.replace(`/audits/${id}/dashboard`);
+    }
+  }, [audit?.status, id, router]);
+
   async function handleCancel() {
     await fetch(`/api/geo-audits/${id}`, {
       method: "PATCH",
@@ -155,40 +153,35 @@ export default function AuditDetailPage() {
     fetchAudit();
   }
 
-  const shell = (children: React.ReactNode) => (
-    <AppShell
-      topNav={
-        <TopNav
-          brand="GEO Audit Pro"
-          tabs={[
-            { href: "/audits", label: "Audits", match: (p) => p.startsWith("/audits") },
-            { href: "/clients", label: "Clients", match: (p) => p.startsWith("/clients") },
-          ]}
-          right={
-            <Button variant="ghost" icon="arrow_back" size="sm" onClick={() => router.push("/audits")}>
-              Back
-            </Button>
-          }
-        />
-      }
-    >
-      {children}
-    </AppShell>
-  );
-
   if (loading) {
-    return shell(
-      <GlassCard padding="xl" className="text-center">
-        <p className="text-on-surface-variant">Loading audit...</p>
-      </GlassCard>
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--text-3)",
+        }}
+      >
+        Loading audit...
+      </div>
     );
   }
 
   if (!audit) {
-    return shell(
-      <GlassCard padding="xl" className="text-center">
-        <p className="text-error">Audit not found.</p>
-      </GlassCard>
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--crit)",
+        }}
+      >
+        Audit not found.
+      </div>
     );
   }
 
@@ -217,253 +210,309 @@ export default function AuditDetailPage() {
     (h) => h.status === "running" || h.status === "pending"
   );
 
-  return shell(
-    <>
-      {/* Header */}
-      <div className="flex flex-wrap justify-between items-end mb-10 gap-4">
+  return (
+    <AuditShell auditId={id} brandName={audit.brand_name}>
+      <div className="page-head">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-4xl font-extrabold tracking-tighter text-on-surface">
-              {audit.brand_name}
-            </h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+            <h1 style={{ margin: 0 }}>{audit.brand_name}</h1>
             {audit.version > 1 && (
-              <span className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-bold">
+              <span
+                style={{
+                  padding: "3px 10px",
+                  borderRadius: 999,
+                  background: "var(--mint-weak)",
+                  color: "var(--mint)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.05em",
+                  border: "1px solid var(--mint-line)",
+                }}
+              >
                 v{audit.version}
               </span>
             )}
-            <Badge tone={STATUS_TONE[audit.status] || "neutral"}>{audit.status}</Badge>
+            <span className={`chip ${STATUS_CHIP[audit.status] || "chip-neutral"} chip-lg`}>
+              {audit.status}
+            </span>
           </div>
-          <p className="text-on-surface-variant text-lg">{audit.brand_url}</p>
+          <p style={{ fontFamily: "var(--font-mono)", color: "var(--text-3)" }}>{audit.brand_url}</p>
         </div>
-        <div className="flex gap-3 flex-wrap">
+        <div className="actions">
           {isCompleted && audit.dashboard_url && (
-            <>
-              <Button
-                variant="secondary"
-                icon="open_in_new"
-                onClick={() => router.push(`/audits/${id}/dashboard`)}
-              >
-                Full Dashboard
-              </Button>
-            </>
+            <button
+              className="btn btn-sm"
+              onClick={() => router.push(`/audits/${id}/dashboard`)}
+            >
+              Open dashboard
+            </button>
           )}
           {isCompleted && !hasRunningVersion && (
-            <Button
-              icon="refresh"
+            <button
+              className="btn btn-sm btn-primary"
               onClick={handleReAudit}
               disabled={reAuditLoading}
             >
-              {reAuditLoading ? "Starting..." : "Re-Audit"}
-            </Button>
+              {reAuditLoading ? "Starting..." : "Re-audit"}
+            </button>
           )}
         </div>
       </div>
 
-      {/* Running: progress panel */}
+      {/* RUNNING — progress card */}
       {isRunning && (
-        <GlassCard padding="lg" className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-on-surface flex items-center gap-3">
-              <span className="material-symbols-outlined text-primary animate-pulse">radar</span>
-              Audit in Progress
-            </h3>
-            <Button variant="ghost" size="sm" icon="stop" onClick={handleCancel}>
+        <div className="card pad-lg" style={{ marginBottom: 24 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 18,
+              gap: 16,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span
+                style={{
+                  width: 12,
+                  height: 12,
+                  borderRadius: 999,
+                  background: "var(--info)",
+                  boxShadow: "0 0 12px var(--info)",
+                }}
+              />
+              <h3
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 18,
+                  fontWeight: 600,
+                  margin: 0,
+                  color: "var(--text)",
+                }}
+              >
+                Audit in progress
+              </h3>
+            </div>
+            <button className="btn btn-sm" onClick={handleCancel}>
               Cancel
-            </Button>
+            </button>
           </div>
 
-          <div className="w-full h-2 bg-surface-container-lowest rounded-full overflow-hidden mb-3">
-            <div
-              className="h-full bg-primary transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
+          <div className="bar" style={{ height: 10, marginBottom: 10 }}>
+            <div className="bar-fill info" style={{ width: `${progressPercent}%` }} />
           </div>
 
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-on-surface-variant">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              fontSize: 13,
+              marginBottom: 8,
+            }}
+          >
+            <span style={{ color: "var(--text-3)" }}>
               {audit.progress_current} / {audit.progress_total} queries
             </span>
-            <span className="text-primary font-bold">{progressPercent}%</span>
+            <span
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+                color: "var(--info)",
+              }}
+            >
+              {progressPercent}%
+            </span>
           </div>
 
           {audit.progress_message && (
-            <p className="text-xs text-on-surface-variant font-mono mt-3 opacity-70">
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--text-3)",
+                fontFamily: "var(--font-mono)",
+                marginTop: 10,
+                marginBottom: 0,
+              }}
+            >
               {audit.progress_message}
             </p>
           )}
 
           {audit.progress_current > 0 && (
-            <p className="text-xs text-on-surface-variant mt-2 opacity-60">
+            <p style={{ fontSize: 11, color: "var(--text-4)", marginTop: 6, marginBottom: 0 }}>
               ~
-              {Math.ceil(((audit.progress_total - audit.progress_current) * 2) / 60)}{" "}
-              min remaining
+              {Math.ceil(((audit.progress_total - audit.progress_current) * 2) / 60)} min remaining
             </p>
           )}
-        </GlassCard>
+        </div>
       )}
 
-      {/* Failed */}
+      {/* FAILED — error banner */}
       {isFailed && (
-        <GlassCard padding="lg" className="mb-8 border-error/30">
-          <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-error-container/30 flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-error">report</span>
+        <div
+          className="card pad-lg"
+          style={{
+            marginBottom: 24,
+            borderColor: "var(--crit-line)",
+            background: "var(--crit-weak)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: "var(--crit-weak)",
+                border: "1px solid var(--crit-line)",
+                display: "grid",
+                placeItems: "center",
+                color: "var(--crit)",
+                flexShrink: 0,
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
             </div>
             <div>
-              <h3 className="text-xl font-bold text-on-surface mb-2">Audit Failed</h3>
-              <p className="text-on-surface-variant">
+              <h3
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 18,
+                  fontWeight: 600,
+                  margin: "0 0 6px",
+                  color: "var(--text)",
+                }}
+              >
+                Audit failed
+              </h3>
+              <p style={{ margin: 0, color: "var(--text-2)", fontSize: 14 }}>
                 {audit.error_message || "Unknown error."}
               </p>
             </div>
           </div>
-        </GlassCard>
+        </div>
       )}
 
-      {/* Completed */}
+      {/* COMPLETED — fallback view (page redirects to /dashboard, this only flashes briefly) */}
       {isCompleted && (
-        <div className="space-y-8">
-          {/* KPI Bento */}
-          <div className="grid grid-cols-12 gap-6">
-            {/* Hero visibility score — floating dark glass card with cyan accent */}
-            <div className="col-span-12 lg:col-span-4 glass-card p-8 rounded-[2rem] border border-white/5 shadow-[0_0_60px_rgba(68,216,241,0.08)] h-full flex flex-col justify-between items-center text-center">
-              <div className="w-full text-left">
-                <span className="text-on-surface-variant font-bold uppercase tracking-widest text-xs">
-                  Visibility Score
-                </span>
+        <>
+          <div className="kpi-strip">
+            <div className="kpi">
+              <div className="kpi-label">Visibility</div>
+              <div className={`kpi-number num-${tone(audit.visibility_rate ?? 0)}`}>
+                {audit.visibility_rate ?? 0}
+                <span className="unit">%</span>
               </div>
-              <div className="py-8">
-                <span className="text-8xl font-black text-primary tracking-tighter drop-shadow-[0_0_30px_rgba(68,216,241,0.35)]">
-                  {audit.visibility_rate ?? 0}%
-                </span>
-                <p className="text-on-surface font-bold mt-3 text-base">
-                  {audit.total_mentioned} of {audit.total_queries} queries
-                </p>
-              </div>
-              <div className="w-full bg-white/5 border border-white/5 p-3 rounded-2xl flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary">
-                  schedule
-                </span>
-                <span className="text-on-surface-variant text-sm text-left leading-tight">
-                  {audit.duration_seconds
-                    ? `Completed in ${Math.floor(audit.duration_seconds / 60)}m ${audit.duration_seconds % 60}s`
-                    : "Completed"}
-                </span>
+              <div className="kpi-sub">
+                {audit.total_mentioned} of {audit.total_queries} queries
               </div>
             </div>
-
-            {/* Stat cards column */}
-            <div className="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-6">
-              <GlassCard padding="md">
-                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
-                  Total Queries
-                </p>
-                <p className="text-3xl font-black tracking-tighter text-on-surface">
-                  {audit.total_queries}
-                </p>
-              </GlassCard>
-              <GlassCard padding="md">
-                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
-                  Brand Mentions
-                </p>
-                <p className="text-3xl font-black tracking-tighter text-primary">
-                  {audit.total_mentioned}
-                </p>
-              </GlassCard>
-              <GlassCard padding="md">
-                <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-2">
-                  Engines Tested
-                </p>
-                <p className="text-3xl font-black tracking-tighter text-on-surface">
-                  {audit.engines?.length}
-                </p>
-              </GlassCard>
-
-              {/* Competitors list */}
-              {audit.competitors?.length > 0 && (
-                <GlassCard padding="md" className="col-span-2 md:col-span-3">
-                  <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mb-3">
-                    Competitors Tracked
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {audit.competitors.map((c) => (
-                      <span
-                        key={c}
-                        className="px-3 py-1 bg-surface-container-high rounded-full text-xs font-medium text-on-surface"
-                      >
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                </GlassCard>
-              )}
+            <div className="kpi">
+              <div className="kpi-label">Total queries</div>
+              <div className="kpi-number">{audit.total_queries ?? 0}</div>
+              <div className="kpi-sub">prompts run</div>
+            </div>
+            <div className="kpi">
+              <div className="kpi-label">Brand mentions</div>
+              <div className="kpi-number num-good">{audit.total_mentioned ?? 0}</div>
+              <div className="kpi-sub">across engines</div>
+            </div>
+            <div className="kpi">
+              <div className="kpi-label">Engines tested</div>
+              <div className="kpi-number">{audit.engines?.length ?? 0}</div>
+              <div className="kpi-sub">
+                {audit.duration_seconds
+                  ? `Completed in ${Math.floor(audit.duration_seconds / 60)}m ${audit.duration_seconds % 60}s`
+                  : "Completed"}
+              </div>
             </div>
           </div>
 
-          {/* Engine Performance */}
-          {engineBreakdown && (
-            <GlassCard padding="lg">
-              <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary">bar_chart</span>
-                Engine Performance
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(engineBreakdown).map(([key, stats]) => (
-                  <div
-                    key={key}
-                    className="p-5 bg-white/5 rounded-2xl border border-white/5 hover:bg-white/10 transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-bold text-on-surface">{stats.display_name}</span>
-                      <span
-                        className={`text-xl font-black tracking-tighter ${visibilityTone(stats.visibility_rate)}`}
-                      >
-                        {stats.visibility_rate}%
-                      </span>
-                    </div>
-                    <div className="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden mb-2">
-                      <div
-                        className={`h-full ${visibilityBar(stats.visibility_rate)} rounded-full`}
-                        style={{ width: `${stats.visibility_rate}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-on-surface-variant">
-                      {stats.brand_mentioned} / {stats.total_queries} mentions
-                    </p>
-                  </div>
+          {audit.competitors?.length > 0 && (
+            <div className="card pad" style={{ marginBottom: 24 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "var(--text-4)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  marginBottom: 10,
+                }}
+              >
+                Competitors tracked
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {audit.competitors.map((c) => (
+                  <span key={c} className="tag">
+                    {c}
+                  </span>
                 ))}
               </div>
-            </GlassCard>
+            </div>
           )}
 
-          {/* Score History */}
+          {engineBreakdown && (
+            <div className="section">
+              <div className="section-head">
+                <div>
+                  <h2>Engine performance</h2>
+                  <div className="sub">Visibility rate per engine.</div>
+                </div>
+              </div>
+              <div className="grid-3">
+                {Object.entries(engineBreakdown).map(([key, stats]) => {
+                  const t = tone(stats.visibility_rate);
+                  return (
+                    <div key={key} className="engine-card">
+                      <div className="engine-head">
+                        <div className="engine-name">
+                          <span className={`engine-dot ${t}`} /> {stats.display_name}
+                        </div>
+                      </div>
+                      <div className={`engine-pct num-${t}`}>
+                        {Math.round(stats.visibility_rate)}
+                        <span className="unit">%</span>
+                      </div>
+                      <div className="engine-sub">
+                        {stats.brand_mentioned} of {stats.total_queries} mentions
+                      </div>
+                      <div className="bar" style={{ width: "100%" }}>
+                        <div
+                          className={`bar-fill ${t}`}
+                          style={{ width: `${Math.max(stats.visibility_rate, 2)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {history.length > 1 && (
-            <GlassCard padding="lg">
-              <h3 className="text-xl font-bold text-on-surface mb-6 flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary">timeline</span>
-                Audit History &mdash; Score Changes
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+            <div className="table-wrap">
+              <div className="table-head-bar">
+                <div>
+                  <h3>Audit history — score changes</h3>
+                  <div className="sub">All versions for this brand.</div>
+                </div>
+              </div>
+              <div className="scroll">
+                <table className="data" style={{ minWidth: 720 }}>
                   <thead>
-                    <tr className="border-b border-white/5 text-left">
-                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                        Version
-                      </th>
-                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                        Date
-                      </th>
-                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                        Visibility
-                      </th>
-                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                        Change
-                      </th>
-                      <th className="pb-3 pr-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                        Mentions
-                      </th>
-                      <th className="pb-3 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                        Status
-                      </th>
+                    <tr>
+                      <th>Version</th>
+                      <th>Date</th>
+                      <th className="center">Visibility</th>
+                      <th className="center">Change</th>
+                      <th className="center">Mentions</th>
+                      <th className="center">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -476,26 +525,46 @@ export default function AuditDetailPage() {
                           ? +(entry.visibility_rate - prev.visibility_rate).toFixed(1)
                           : null;
                       const isCurrent = entry.id === id;
+                      const t = tone(entry.visibility_rate ?? 0);
+                      const dDir = delta == null ? "flat" : delta > 0 ? "up" : delta < 0 ? "down" : "flat";
 
                       return (
                         <tr
                           key={entry.id}
-                          className={`border-b border-white/5 ${isCurrent ? "bg-primary/10" : "hover:bg-white/5"} transition-colors`}
+                          className="clickable"
+                          onClick={() => router.push(`/audits/${entry.id}`)}
+                          style={isCurrent ? { background: "var(--mint-weak)" } : undefined}
                         >
-                          <td className="py-4 pr-4">
-                            <button
-                              onClick={() => router.push(`/audits/${entry.id}`)}
-                              className="text-primary font-bold hover:underline"
+                          <td>
+                            <span
+                              style={{
+                                fontFamily: "var(--font-mono)",
+                                fontWeight: 700,
+                                color: "var(--mint)",
+                              }}
                             >
                               v{entry.version}
-                            </button>
+                            </span>
                             {isCurrent && (
-                              <span className="ml-2 text-[9px] bg-primary text-on-primary-fixed px-1.5 py-0.5 rounded font-bold uppercase">
+                              <span
+                                style={{
+                                  marginLeft: 8,
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  letterSpacing: "0.05em",
+                                  textTransform: "uppercase",
+                                  padding: "2px 7px",
+                                  borderRadius: 999,
+                                  background: "var(--mint-weak)",
+                                  color: "var(--mint)",
+                                  border: "1px solid var(--mint-line)",
+                                }}
+                              >
                                 Current
                               </span>
                             )}
                           </td>
-                          <td className="py-4 pr-4 text-on-surface-variant">
+                          <td style={{ color: "var(--text-3)" }}>
                             {entry.completed_at
                               ? new Date(entry.completed_at).toLocaleDateString("en-AU", {
                                   day: "numeric",
@@ -504,38 +573,46 @@ export default function AuditDetailPage() {
                                 })
                               : "In progress"}
                           </td>
-                          <td className={`py-4 pr-4 font-black tracking-tighter ${visibilityTone(entry.visibility_rate)}`}>
-                            {entry.visibility_rate != null ? `${entry.visibility_rate}%` : "—"}
-                          </td>
-                          <td className="py-4 pr-4">
-                            {delta != null ? (
-                              <span
-                                className={`inline-flex items-center gap-1 font-bold ${
-                                  delta > 0
-                                    ? "text-primary"
-                                    : delta < 0
-                                      ? "text-error"
-                                      : "text-on-surface-variant"
-                                }`}
-                              >
-                                {delta > 0 ? "+" : ""}
-                                {delta}%
-                                {delta > 0 && <span>&#9650;</span>}
-                                {delta < 0 && <span>&#9660;</span>}
+                          <td className="center">
+                            {entry.visibility_rate != null ? (
+                              <span className={`num-big num-${t}`}>
+                                {entry.visibility_rate}
+                                <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>%</span>
                               </span>
                             ) : (
-                              <span className="text-on-surface-variant">—</span>
+                              <span style={{ color: "var(--text-3)" }}>—</span>
                             )}
                           </td>
-                          <td className="py-4 pr-4 text-on-surface-variant">
+                          <td className="center">
+                            {delta != null ? (
+                              <span
+                                style={{
+                                  fontFamily: "var(--font-display)",
+                                  fontWeight: 700,
+                                  fontSize: 13,
+                                  color:
+                                    dDir === "up"
+                                      ? "var(--good)"
+                                      : dDir === "down"
+                                        ? "var(--crit)"
+                                        : "var(--text-4)",
+                                }}
+                              >
+                                {dDir === "up" ? "▲" : dDir === "down" ? "▼" : "±"} {Math.abs(delta)}%
+                              </span>
+                            ) : (
+                              <span style={{ color: "var(--text-3)" }}>—</span>
+                            )}
+                          </td>
+                          <td className="center" style={{ color: "var(--text-2)" }}>
                             {entry.total_mentioned != null
                               ? `${entry.total_mentioned} / ${entry.total_queries}`
                               : "—"}
                           </td>
-                          <td className="py-4">
-                            <Badge tone={STATUS_TONE[entry.status] || "neutral"}>
+                          <td className="center">
+                            <span className={`chip ${AUDIT_STATUS_CHIP[entry.status] || "chip-neutral"}`}>
                               {entry.status}
-                            </Badge>
+                            </span>
                           </td>
                         </tr>
                       );
@@ -543,10 +620,10 @@ export default function AuditDetailPage() {
                   </tbody>
                 </table>
               </div>
-            </GlassCard>
+            </div>
           )}
-        </div>
+        </>
       )}
-    </>
+    </AuditShell>
   );
 }

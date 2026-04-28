@@ -42,11 +42,22 @@ export default function NewAuditPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  /**
+   * Split input on commas OR newlines so users can paste lists like
+   * "AI, AI Trainer, SEO" or multi-line. De-dupes, ignores empty.
+   */
+  function splitInput(raw: string): string[] {
+    return raw
+      .split(/[,\n]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
   function addCompetitor(e?: React.KeyboardEvent | React.MouseEvent) {
     if (e) e.preventDefault();
-    const comp = competitorInput.trim();
-    if (comp && !competitors.includes(comp)) {
-      setCompetitors([...competitors, comp]);
+    const fresh = splitInput(competitorInput).filter((c) => !competitors.includes(c));
+    if (fresh.length) {
+      setCompetitors([...competitors, ...fresh]);
       setCompetitorInput("");
     }
   }
@@ -55,9 +66,9 @@ export default function NewAuditPage() {
   }
   function addKeyword(e?: React.KeyboardEvent | React.MouseEvent) {
     if (e) e.preventDefault();
-    const kw = keywordInput.trim();
-    if (kw && !keywords.includes(kw)) {
-      setKeywords([...keywords, kw]);
+    const fresh = splitInput(keywordInput).filter((k) => !keywords.includes(k));
+    if (fresh.length) {
+      setKeywords([...keywords, ...fresh]);
       setKeywordInput("");
     }
   }
@@ -349,17 +360,17 @@ export default function NewAuditPage() {
                   Who are your main competitors?
                 </h2>
                 <p className="text-on-surface-variant text-lg">
-                  We&apos;ll track their visibility alongside yours.
+                  We&apos;ll track their visibility alongside yours. Paste multiple separated by commas.
                 </p>
               </div>
               <div className="pt-4">
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={competitorInput}
                     onChange={(e) => setCompetitorInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addCompetitor(e)}
-                    placeholder="e.g. Smith & Co"
+                    placeholder="e.g. Smith & Co, Jones Legal, Miller Partners"
                     className={`flex-1 ${inputCls}`}
                     autoFocus
                   />
@@ -367,6 +378,9 @@ export default function NewAuditPage() {
                     Add
                   </Button>
                 </div>
+                <p className="text-xs text-on-surface-variant opacity-70 mb-4">
+                  Tip: paste a comma-separated list and hit Add to bulk-insert.
+                </p>
                 {competitors.length > 0 && (
                   <ul className="space-y-2 mt-4">
                     {competitors.map((comp) => (
@@ -397,17 +411,17 @@ export default function NewAuditPage() {
                   What keywords do you want to be found for?
                 </h2>
                 <p className="text-on-surface-variant text-lg">
-                  e.g. Criminal Lawyer, Melbourne Lawyer, Family Lawyer
+                  Paste multiple separated by commas — we&apos;ll split them for you. e.g. Criminal Lawyer, Melbourne Lawyer, Family Lawyer
                 </p>
               </div>
               <div className="pt-4">
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={keywordInput}
                     onChange={(e) => setKeywordInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addKeyword(e)}
-                    placeholder="e.g. Family Lawyer"
+                    placeholder="e.g. AI, AI Trainer, AI Consultant, GEO, SEO"
                     className={`flex-1 ${inputCls}`}
                     autoFocus
                   />
@@ -415,6 +429,9 @@ export default function NewAuditPage() {
                     Add
                   </Button>
                 </div>
+                <p className="text-xs text-on-surface-variant opacity-70 mb-4">
+                  Tip: paste a comma-separated list and hit Add to bulk-insert.
+                </p>
                 {keywords.length > 0 && (
                   <ul className="space-y-2 mt-4">
                     {keywords.map((kw) => (

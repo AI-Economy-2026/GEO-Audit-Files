@@ -2,11 +2,8 @@
 
 import { Fragment, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import AppShell from "@/components/ui/AppShell";
-import TopNav from "@/components/ui/TopNav";
-import GlassCard from "@/components/ui/GlassCard";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
+import WorkspaceShell from "@/components/audit/WorkspaceShell";
+import { tone } from "@/components/audit/useAuditData";
 
 interface Client {
   id: string;
@@ -32,38 +29,29 @@ interface AuditVersion {
   completed_at: string | null;
 }
 
-type Tone = "primary" | "secondary" | "error" | "neutral" | "success";
-
-const STATUS_TONE: Record<string, Tone> = {
-  pending_intake: "secondary",
-  intake_completed: "primary",
-  auditing: "primary",
-  completed: "success",
-  failed: "error",
+const STATUS_CHIP: Record<string, string> = {
+  pending_intake: "chip-neutral",
+  intake_completed: "chip-info",
+  auditing: "chip-info",
+  completed: "chip-good",
+  failed: "chip-crit",
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending_intake: "Awaiting Intake",
-  intake_completed: "Intake Done",
+  pending_intake: "Awaiting intake",
+  intake_completed: "Intake done",
   auditing: "Auditing",
   completed: "Completed",
   failed: "Failed",
 };
 
-const AUDIT_STATUS_TONE: Record<string, Tone> = {
-  completed: "success",
-  running: "primary",
-  pending: "secondary",
-  failed: "error",
-  cancelled: "neutral",
+const AUDIT_STATUS_CHIP: Record<string, string> = {
+  completed: "chip-good",
+  running: "chip-info",
+  pending: "chip-neutral",
+  failed: "chip-crit",
+  cancelled: "chip-neutral",
 };
-
-function visibilityTone(rate: number | null): string {
-  if (rate == null) return "text-on-surface-variant";
-  if (rate >= 50) return "text-primary";
-  if (rate >= 25) return "text-secondary";
-  return "text-error";
-}
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -75,15 +63,13 @@ export default function ClientsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    fetchClients();
+    (async () => {
+      const res = await fetch("/api/clients");
+      const data = await res.json();
+      setClients(data.clients || []);
+      setLoading(false);
+    })();
   }, []);
-
-  async function fetchClients() {
-    const res = await fetch("/api/clients");
-    const data = await res.json();
-    setClients(data.clients || []);
-    setLoading(false);
-  }
 
   const fetchVersions = useCallback(
     async (auditId: string, clientId: string) => {
@@ -130,75 +116,118 @@ export default function ClientsPage() {
     });
   }
 
+  const completedClients = clients.filter((c) => c.status === "completed").length;
+  const auditingClients = clients.filter((c) => c.status === "auditing").length;
+  const pendingClients = clients.filter((c) => c.status === "pending_intake").length;
+
   return (
-    <AppShell
-      topNav={
-        <TopNav
-          brand="GEO Audit Pro"
-          tabs={[
-            { href: "/audits", label: "Audits", match: (p) => p.startsWith("/audits") },
-            { href: "/clients", label: "Clients", match: (p) => p.startsWith("/clients") },
-          ]}
-          right={
-            <Button icon="add" onClick={() => router.push("/clients/new")}>
-              New Client
-            </Button>
-          }
-        />
+    <WorkspaceShell
+      title="Clients"
+      actions={
+        <button className="btn btn-sm btn-primary" onClick={() => router.push("/clients/new")}>
+          New client
+        </button>
       }
     >
-      <div className="flex justify-between items-end mb-10 gap-4 flex-wrap">
+      <div className="page-head">
         <div>
-          <h2 className="text-4xl font-extrabold tracking-tighter text-on-surface mb-2">
-            Clients
-          </h2>
-          <p className="text-on-surface-variant text-lg max-w-2xl">
-            Manage your client roster and track each brand&apos;s audit history in one place.
+          <h1>Your clients</h1>
+          <p>
+            Manage your client roster and track each brand&rsquo;s audit history. Click a row to
+            expand its audit versions.
           </p>
         </div>
-        <Button icon="add" size="lg" onClick={() => router.push("/clients/new")}>
-          New Client
-        </Button>
       </div>
 
-      {loading ? (
-        <GlassCard padding="xl" className="text-center">
-          <p className="text-on-surface-variant">Loading...</p>
-        </GlassCard>
-      ) : clients.length === 0 ? (
-        <GlassCard padding="xl" className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-3xl">groups</span>
+      {!loading && clients.length > 0 && (
+        <div className="kpi-strip">
+          <div className="kpi">
+            <div className="kpi-label">Active clients</div>
+            <div className="kpi-number">{clients.length}</div>
+            <div className="kpi-sub">across your workspace</div>
           </div>
-          <h3 className="text-2xl font-bold text-on-surface mb-2">No clients yet</h3>
-          <p className="text-on-surface-variant mb-8 max-w-md mx-auto">
+          <div className="kpi">
+            <div className="kpi-label">Completed</div>
+            <div className="kpi-number num-good">{completedClients}</div>
+            <div className="kpi-sub">audit delivered</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">Auditing</div>
+            <div className={`kpi-number ${auditingClients > 0 ? "num-info" : ""}`}>
+              {auditingClients}
+            </div>
+            <div className="kpi-sub">in progress</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">Awaiting intake</div>
+            <div className={`kpi-number ${pendingClients > 0 ? "num-warn" : ""}`}>
+              {pendingClients}
+            </div>
+            <div className="kpi-sub">pending client form</div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
+          Loading clients...
+        </div>
+      ) : clients.length === 0 ? (
+        <div className="card pad-lg" style={{ textAlign: "center" }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              margin: "0 auto 14px",
+              borderRadius: 14,
+              background: "var(--mint-weak)",
+              border: "1px solid var(--mint-line)",
+              display: "grid",
+              placeItems: "center",
+              color: "var(--mint)",
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+            </svg>
+          </div>
+          <h3
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 20,
+              fontWeight: 700,
+              color: "var(--text)",
+              margin: "0 0 8px",
+            }}
+          >
+            No clients yet
+          </h3>
+          <p style={{ color: "var(--text-3)", maxWidth: 440, margin: "0 auto 18px" }}>
             Add a client to generate their AI visibility audit intake link.
           </p>
-          <Button icon="add" size="lg" onClick={() => router.push("/clients/new")}>
-            Add Your First Client
-          </Button>
-        </GlassCard>
+          <button className="btn btn-primary" onClick={() => router.push("/clients/new")}>
+            Add your first client
+          </button>
+        </div>
       ) : (
-        <GlassCard padding="none" className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
+        <div className="table-wrap">
+          <div className="table-head-bar">
+            <div>
+              <h3>Client roster</h3>
+              <div className="sub">Click a client with audits to view its version history.</div>
+            </div>
+          </div>
+          <div className="scroll">
+            <table className="data" style={{ minWidth: 880 }}>
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Client
-                  </th>
-                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Status
-                  </th>
-                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Intake
-                  </th>
-                  <th className="text-left px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Report
-                  </th>
-                  <th className="text-right px-6 py-4 text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
-                    Added
-                  </th>
+                <tr>
+                  <th>Client</th>
+                  <th className="center">Status</th>
+                  <th>Intake</th>
+                  <th>Report</th>
+                  <th>Added</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,167 +238,250 @@ export default function ClientsPage() {
 
                   return (
                     <Fragment key={client.id}>
-                      <tr className="hover:bg-white/5 transition-colors border-t border-white/5">
-                        <td className="px-6 py-5">
-                          <div className="flex items-center gap-3">
+                      <tr
+                        className={hasAudit ? "clickable" : undefined}
+                        onClick={() => hasAudit && toggleExpand(client)}
+                      >
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             {hasAudit ? (
-                              <button
-                                onClick={() => toggleExpand(client)}
-                                className="text-on-surface-variant hover:text-primary transition-all"
+                              <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                style={{
+                                  width: 14,
+                                  height: 14,
+                                  color: "var(--text-3)",
+                                  transition: "transform .18s var(--ease)",
+                                  transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                                  flexShrink: 0,
+                                }}
                               >
-                                <span
-                                  className={`material-symbols-outlined transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                                >
-                                  chevron_right
-                                </span>
-                              </button>
+                                <polyline points="9 6 15 12 9 18" />
+                              </svg>
                             ) : (
-                              <span className="w-6" />
+                              <span style={{ width: 14, flexShrink: 0 }} />
                             )}
                             <div>
-                              <p className="font-bold text-on-surface">{client.name}</p>
-                              <p className="text-xs text-on-surface-variant mt-0.5">
+                              <div style={{ fontWeight: 600, color: "var(--text)" }}>{client.name}</div>
+                              <div
+                                style={{
+                                  fontSize: 12,
+                                  color: "var(--text-3)",
+                                  fontFamily: "var(--font-mono)",
+                                  marginTop: 2,
+                                }}
+                              >
                                 {client.url}
-                              </p>
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-5">
-                          <Badge tone={STATUS_TONE[client.status] || "neutral"}>
+                        <td className="center">
+                          <span className={`chip ${STATUS_CHIP[client.status] || "chip-neutral"}`}>
                             {STATUS_LABELS[client.status] || client.status}
-                          </Badge>
+                          </span>
                         </td>
-                        <td className="px-6 py-5">
+                        <td>
                           <button
-                            onClick={() => copyIntakeLink(client.intake_token)}
-                            className="text-sm text-primary hover:opacity-80 font-bold inline-flex items-center gap-1 transition-opacity"
+                            className="btn btn-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyIntakeLink(client.intake_token);
+                            }}
                           >
-                            <span className="material-symbols-outlined text-[16px]">
-                              {copied === client.intake_token ? "check" : "content_copy"}
-                            </span>
-                            {copied === client.intake_token ? "Copied" : "Copy Link"}
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              {copied === client.intake_token ? (
+                                <polyline points="20 6 9 17 4 12" />
+                              ) : (
+                                <>
+                                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                                </>
+                              )}
+                            </svg>
+                            {copied === client.intake_token ? "Copied" : "Copy link"}
                           </button>
                         </td>
-                        <td className="px-6 py-5">
+                        <td>
                           {client.status === "completed" ? (
                             <a
                               href={`/report/${client.report_slug}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-primary hover:opacity-80 font-bold inline-flex items-center gap-1 transition-opacity"
+                              onClick={(e) => e.stopPropagation()}
+                              className="btn btn-sm"
+                              style={{ textDecoration: "none" }}
                             >
-                              View Report
-                              <span className="material-symbols-outlined text-[16px]">
-                                open_in_new
-                              </span>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+                                <polyline points="15 3 21 3 21 9" />
+                                <line x1="10" y1="14" x2="21" y2="3" />
+                              </svg>
+                              View report
                             </a>
                           ) : client.status === "auditing" ? (
-                            <span className="text-sm text-secondary inline-flex items-center gap-2">
-                              <span className="w-2 h-2 bg-secondary rounded-full animate-pulse" />
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 6,
+                                fontSize: 12,
+                                color: "var(--info)",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: 999,
+                                  background: "var(--info)",
+                                  boxShadow: "0 0 8px var(--info)",
+                                }}
+                              />
                               In progress
                             </span>
                           ) : (
-                            <span className="text-sm text-on-surface-variant">—</span>
+                            <span style={{ color: "var(--text-3)" }}>—</span>
                           )}
                         </td>
-                        <td className="px-6 py-5 text-right text-sm text-on-surface-variant">
-                          {formatDate(client.created_at)}
-                        </td>
+                        <td style={{ color: "var(--text-3)" }}>{formatDate(client.created_at)}</td>
                       </tr>
 
-                      {/* Expanded audit versions */}
                       {isExpanded && (
-                        <tr className="bg-surface-container-lowest/50">
-                          <td colSpan={5} className="px-6 py-5">
-                            <div className="ml-9">
-                              {versionsLoading === client.id ? (
-                                <p className="text-sm text-on-surface-variant">
-                                  Loading versions...
-                                </p>
-                              ) : clientVersions.length === 0 ? (
-                                <p className="text-sm text-on-surface-variant">
-                                  No audit versions found.
-                                </p>
-                              ) : (
-                                <div>
-                                  <p className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-3">
-                                    Audit Versions ({clientVersions.length})
-                                  </p>
-                                  <div className="space-y-2">
-                                    {clientVersions.map((v, idx) => {
-                                      const prev = idx > 0 ? clientVersions[idx - 1] : null;
-                                      const delta =
-                                        prev &&
-                                        v.visibility_rate != null &&
-                                        prev.visibility_rate != null
-                                          ? +(
-                                              v.visibility_rate - prev.visibility_rate
-                                            ).toFixed(1)
-                                          : null;
-
-                                      return (
-                                        <div
-                                          key={v.id}
-                                          className="flex items-center gap-4 bg-white/5 border border-white/5 rounded-xl px-4 py-3 hover:bg-white/10 transition-colors"
-                                        >
-                                          <span className="text-sm font-black text-primary w-10">
-                                            v{v.version}
-                                          </span>
-                                          <Badge
-                                            tone={AUDIT_STATUS_TONE[v.status] || "neutral"}
-                                          >
-                                            {v.status}
-                                          </Badge>
-                                          <span
-                                            className={`text-base font-black tracking-tighter w-16 text-right ${visibilityTone(v.visibility_rate)}`}
-                                          >
-                                            {v.visibility_rate != null
-                                              ? `${v.visibility_rate}%`
-                                              : "—"}
-                                          </span>
-                                          <span className="w-16 text-right text-sm">
-                                            {delta != null ? (
-                                              <span
-                                                className={`font-bold ${
-                                                  delta > 0
-                                                    ? "text-primary"
-                                                    : delta < 0
-                                                      ? "text-error"
-                                                      : "text-on-surface-variant"
-                                                }`}
-                                              >
-                                                {delta > 0 ? "+" : ""}
-                                                {delta}%
-                                              </span>
-                                            ) : (
-                                              <span className="text-on-surface-variant">—</span>
-                                            )}
-                                          </span>
-                                          <span className="text-xs text-on-surface-variant flex-1">
-                                            {v.total_mentioned != null
-                                              ? `${v.total_mentioned} / ${v.total_queries} mentions`
-                                              : ""}
-                                          </span>
-                                          <span className="text-xs text-on-surface-variant">
-                                            {v.completed_at
-                                              ? formatDate(v.completed_at)
-                                              : v.status === "running" || v.status === "pending"
-                                                ? "Running..."
-                                                : ""}
-                                          </span>
-                                          <button
-                                            onClick={() => router.push(`/audits/${v.id}`)}
-                                            className="text-xs text-primary hover:opacity-80 font-bold uppercase tracking-wider transition-opacity"
-                                          >
-                                            View
-                                          </button>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
+                        <tr>
+                          <td colSpan={5} style={{ background: "var(--inset)", padding: "16px 24px" }}>
+                            {versionsLoading === client.id ? (
+                              <div style={{ color: "var(--text-3)", fontSize: 13 }}>
+                                Loading versions...
+                              </div>
+                            ) : clientVersions.length === 0 ? (
+                              <div style={{ color: "var(--text-3)", fontSize: 13 }}>
+                                No audit versions found.
+                              </div>
+                            ) : (
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    color: "var(--text-4)",
+                                    textTransform: "uppercase",
+                                    letterSpacing: "0.08em",
+                                    marginBottom: 10,
+                                  }}
+                                >
+                                  Audit versions ({clientVersions.length})
                                 </div>
-                              )}
-                            </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                  {clientVersions.map((v, idx) => {
+                                    const prev = idx > 0 ? clientVersions[idx - 1] : null;
+                                    const delta =
+                                      prev &&
+                                      v.visibility_rate != null &&
+                                      prev.visibility_rate != null
+                                        ? +(v.visibility_rate - prev.visibility_rate).toFixed(1)
+                                        : null;
+                                    const t = tone(v.visibility_rate ?? 0);
+                                    const dDir = delta == null ? "flat" : delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+
+                                    return (
+                                      <div
+                                        key={v.id}
+                                        onClick={() => router.push(`/audits/${v.id}`)}
+                                        style={{
+                                          display: "grid",
+                                          gridTemplateColumns: "60px 90px 1fr 100px 110px 70px",
+                                          alignItems: "center",
+                                          gap: 14,
+                                          padding: "12px 16px",
+                                          borderRadius: "var(--r-md)",
+                                          background: "var(--surface-2)",
+                                          border: "1px solid var(--border-soft)",
+                                          cursor: "pointer",
+                                          transition: "border-color .18s var(--ease)",
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontFamily: "var(--font-mono)",
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            color: "var(--mint)",
+                                          }}
+                                        >
+                                          v{v.version}
+                                        </span>
+                                        <span
+                                          className={`chip ${AUDIT_STATUS_CHIP[v.status] || "chip-neutral"}`}
+                                        >
+                                          {v.status}
+                                        </span>
+                                        <span style={{ fontSize: 12, color: "var(--text-3)" }}>
+                                          {v.total_mentioned != null
+                                            ? `${v.total_mentioned} / ${v.total_queries} mentions`
+                                            : ""}
+                                        </span>
+                                        <span
+                                          className={`num-big num-${t}`}
+                                          style={{ fontSize: 18, textAlign: "right" }}
+                                        >
+                                          {v.visibility_rate != null ? (
+                                            <>
+                                              {v.visibility_rate}
+                                              <span
+                                                style={{
+                                                  fontSize: 11,
+                                                  color: "var(--text-3)",
+                                                  fontWeight: 500,
+                                                }}
+                                              >
+                                                %
+                                              </span>
+                                            </>
+                                          ) : (
+                                            "—"
+                                          )}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            fontFamily: "var(--font-display)",
+                                            textAlign: "right",
+                                            color:
+                                              dDir === "up"
+                                                ? "var(--good)"
+                                                : dDir === "down"
+                                                  ? "var(--crit)"
+                                                  : "var(--text-4)",
+                                          }}
+                                        >
+                                          {delta == null
+                                            ? "—"
+                                            : `${delta > 0 ? "▲" : delta < 0 ? "▼" : "±"} ${Math.abs(delta)}%`}
+                                        </span>
+                                        <span
+                                          style={{
+                                            fontSize: 11,
+                                            color: "var(--text-3)",
+                                            textAlign: "right",
+                                          }}
+                                        >
+                                          {v.completed_at
+                                            ? formatDate(v.completed_at)
+                                            : v.status === "running" || v.status === "pending"
+                                              ? "Running…"
+                                              : ""}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       )}
@@ -379,8 +491,8 @@ export default function ClientsPage() {
               </tbody>
             </table>
           </div>
-        </GlassCard>
+        </div>
       )}
-    </AppShell>
+    </WorkspaceShell>
   );
 }
