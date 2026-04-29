@@ -46,7 +46,8 @@ export default function PromptAnalysisPage() {
           prompt_id: r.prompt_id,
           prompt_text: r.prompt_text,
           category: r.category,
-          type: (r.prompt_type || "ranking").toUpperCase(),
+          // Backend emits "informational" / "ranking". UI uses INTENT/RANKING — normalise.
+          type: r.prompt_type === "ranking" ? "RANKING" : "INTENT",
           mentionedEngines: [],
           totalEngines: 0,
           difficulty: "medium",

@@ -1,41 +1,116 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
-import { useAuditData, tone } from "@/components/audit/useAuditData";
+import { useAuditData, tone, type EngineStats } from "@/components/audit/useAuditData";
 
 const INDUSTRY_ENGINE_AVG = 28;
+const LOG_PREFIX = "[engines]";
+
+/** Defensively coerce one engine entry; returns null if it's not usable. */
+function coerceEngineEntry(key: string, raw: unknown): [string, EngineStats] | null {
+  if (!raw || typeof raw !== "object") {
+    console.warn(`${LOG_PREFIX} skipping engine "${key}" — value is not an object`, raw);
+    return null;
+  }
+  const e = raw as Record<string, unknown>;
+  const visibility_rate = typeof e.visibility_rate === "number" ? e.visibility_rate : NaN;
+  const brand_mentioned = typeof e.brand_mentioned === "number" ? e.brand_mentioned : 0;
+  const total_queries = typeof e.total_queries === "number" ? e.total_queries : 0;
+  const display_name = typeof e.display_name === "string" && e.display_name ? e.display_name : key;
+  if (Number.isNaN(visibility_rate)) {
+    console.warn(`${LOG_PREFIX} skipping engine "${key}" — missing/invalid visibility_rate`, e);
+    return null;
+  }
+  return [key, { display_name, visibility_rate, brand_mentioned, total_queries }];
+}
 
 export default function EngineGapsPage() {
   const { id } = useParams<{ id: string }>();
   const { audit, results, loading } = useAuditData(id);
 
-  const engineBreakdown = audit?.summary_json?.engine_breakdown || {};
-  const sortedEngines = Object.entries(engineBreakdown).sort((a, b) => b[1].visibility_rate - a[1].visibility_rate);
+  // Diagnostic logging — fires once per data update so we can see the shape
+  // in production browser console when something looks off.
+  useEffect(() => {
+    if (loading) return;
+    console.log(`${LOG_PREFIX} audit_id=${id}`, {
+      audit_status: audit?.status,
+      audit_loaded: !!audit,
+      summary_json_present: !!audit?.summary_json,
+      engine_breakdown_keys: audit?.summary_json?.engine_breakdown
+        ? Object.keys(audit.summary_json.engine_breakdown)
+        : null,
+      engine_breakdown_sample:
+        audit?.summary_json?.engine_breakdown &&
+        Object.values(audit.summary_json.engine_breakdown)[0],
+      results_count: results.length,
+      first_result: results[0] || null,
+    });
+  }, [id, audit, results, loading]);
+
+  const rawBreakdown = audit?.summary_json?.engine_breakdown;
+  const engineBreakdown: Record<string, EngineStats> = useMemo(() => {
+    if (!rawBreakdown || typeof rawBreakdown !== "object") {
+      if (audit && !rawBreakdown) {
+        console.warn(`${LOG_PREFIX} audit ${id} has no engine_breakdown in summary_json`);
+      }
+      return {};
+    }
+    const safe: Record<string, EngineStats> = {};
+    for (const [key, value] of Object.entries(rawBreakdown)) {
+      const coerced = coerceEngineEntry(key, value);
+      if (coerced) safe[coerced[0]] = coerced[1];
+    }
+    return safe;
+  }, [rawBreakdown, audit, id]);
+
+  const sortedEngines = useMemo(
+    () =>
+      Object.entries(engineBreakdown).sort(
+        (a, b) => (b[1]?.visibility_rate ?? 0) - (a[1]?.visibility_rate ?? 0)
+      ),
+    [engineBreakdown]
+  );
 
   const strongest = sortedEngines[0];
   const weakest = sortedEngines[sortedEngines.length - 1];
   const spread =
-    strongest && weakest ? Math.round(strongest[1].visibility_rate - weakest[1].visibility_rate) : 0;
+    strongest && weakest
+      ? Math.round((strongest[1]?.visibility_rate ?? 0) - (weakest[1]?.visibility_rate ?? 0))
+      : 0;
 
-  /* Engine × prompt-type matrix */
+  /* Engine × prompt-type matrix — guarded against malformed result rows */
   const matrix = useMemo(() => {
-    if (!audit || !results.length) return null;
-    const engines = Object.keys(engineBreakdown);
-    const types: Array<"intent" | "ranking"> = ["intent", "ranking"];
-    const cells: Record<string, Record<string, { total: number; hit: number }>> = {};
-    engines.forEach((e) => {
-      cells[e] = {};
-      types.forEach((t) => (cells[e][t] = { total: 0, hit: 0 }));
-    });
-    results.forEach((r) => {
-      const t = (r.prompt_type || "ranking") as "intent" | "ranking";
-      if (!cells[r.engine]) return;
-      cells[r.engine][t].total += 1;
-      if (r.brand_mentioned) cells[r.engine][t].hit += 1;
-    });
-    return { engines, types, cells };
+    try {
+      if (!audit || !results.length) return null;
+      const engines = Object.keys(engineBreakdown);
+      if (engines.length === 0) {
+        console.warn(`${LOG_PREFIX} no engines in breakdown — matrix skipped`);
+        return null;
+      }
+      const types: Array<"intent" | "ranking"> = ["intent", "ranking"];
+      const cells: Record<string, Record<string, { total: number; hit: number }>> = {};
+      engines.forEach((e) => {
+        cells[e] = {};
+        types.forEach((t) => (cells[e][t] = { total: 0, hit: 0 }));
+      });
+      results.forEach((r) => {
+        if (!r || !r.engine) return;
+        // Normalise prompt_type: backend emits "informational" / "ranking";
+        // anything else falls under "intent" so the matrix stays 2-col.
+        const raw = r.prompt_type || "";
+        const t: "intent" | "ranking" = raw === "ranking" ? "ranking" : "intent";
+        if (!cells[r.engine]) return;
+        if (!cells[r.engine][t]) cells[r.engine][t] = { total: 0, hit: 0 };
+        cells[r.engine][t].total += 1;
+        if (r.brand_mentioned) cells[r.engine][t].hit += 1;
+      });
+      return { engines, types, cells };
+    } catch (err) {
+      console.error(`${LOG_PREFIX} matrix build failed`, err);
+      return null;
+    }
   }, [audit, results, engineBreakdown]);
 
   if (loading || !audit) {
@@ -43,6 +118,25 @@ export default function EngineGapsPage() {
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-3)" }}>
         {loading ? "Loading..." : "Audit not found."}
       </div>
+    );
+  }
+
+  // Empty-state — engine_breakdown missing or unusable
+  if (sortedEngines.length === 0) {
+    return (
+      <AuditShell auditId={id} brandName={audit.brand_name}>
+        <div className="page-head">
+          <div>
+            <h1>Engine Gaps</h1>
+            <p>Which AI engines cite {audit.brand_name}, and which ignore you entirely.</p>
+          </div>
+        </div>
+        <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
+          {audit.status !== "completed"
+            ? `Engine breakdown will be available once the audit finishes (current status: ${audit.status}).`
+            : "No engine breakdown data found in this audit's summary. Try re-running the audit, or contact support if the issue persists."}
+        </div>
+      </AuditShell>
     );
   }
 

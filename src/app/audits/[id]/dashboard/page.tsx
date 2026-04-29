@@ -65,7 +65,10 @@ export default function OverviewPage() {
     if (!results.length) return [];
     const types: Array<"intent" | "ranking"> = ["intent", "ranking"];
     return types.map((t) => {
-      const rows = results.filter((r) => r.prompt_type === t);
+      // Backend uses "informational" — alias it to "intent" for filtering.
+      const rows = results.filter((r) =>
+        t === "ranking" ? r.prompt_type === "ranking" : r.prompt_type !== "ranking"
+      );
       const mentioned = rows.filter((r) => r.brand_mentioned).length;
       const rate = rows.length > 0 ? Math.round((mentioned / rows.length) * 100) : 0;
       return {
