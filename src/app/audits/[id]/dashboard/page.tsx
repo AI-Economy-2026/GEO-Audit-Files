@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import AskSarahCard from "@/components/audit/AskSarahCard";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
 
 const BENCHMARKS = {
@@ -308,18 +309,14 @@ export default function OverviewPage() {
       )}
 
       {/* ASK SARAH */}
-      <div className="ask-sarah">
-        <div className="ask-avatar">S</div>
-        <div className="ask-body">
-          <h4>Ask Sarah</h4>
-          <p>Want this explained in plain English, or need a steer on what to tackle first?</p>
-          <div className="ask-prompts">
-            <button className="ask-prompt">What does this mean for us?</button>
-            <button className="ask-prompt">What should we work on first?</button>
-            <button className="ask-prompt">What&rsquo;s doable in 30 days?</button>
-          </div>
-        </div>
-      </div>
+      <AskSarahCard
+        brandName={audit.brand_name}
+        visibilityRate={visRate}
+        totalQueries={audit.total_queries ?? 0}
+        totalMentioned={audit.total_mentioned ?? 0}
+        results={results}
+        engineBreakdown={Object.keys(engineBreakdown).length ? engineBreakdown : undefined}
+      />
     </AuditShell>
   );
 }

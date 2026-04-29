@@ -390,7 +390,13 @@ export default function ClientsPage() {
                                     return (
                                       <div
                                         key={v.id}
-                                        onClick={() => router.push(`/audits/${v.id}`)}
+                                        onClick={() =>
+                                          router.push(
+                                            v.status === "completed"
+                                              ? `/audits/${v.id}/dashboard`
+                                              : `/audits/${v.id}`
+                                          )
+                                        }
                                         style={{
                                           display: "grid",
                                           gridTemplateColumns: "60px 90px 1fr 100px 110px 70px",

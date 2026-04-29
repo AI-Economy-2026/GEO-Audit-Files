@@ -185,7 +185,13 @@ export default function AuditsPage() {
                     <tr
                       key={audit.id}
                       className="clickable"
-                      onClick={() => router.push(`/audits/${audit.id}`)}
+                      onClick={() =>
+                        router.push(
+                          audit.status === "completed"
+                            ? `/audits/${audit.id}/dashboard`
+                            : `/audits/${audit.id}`
+                        )
+                      }
                     >
                       <td>
                         <div

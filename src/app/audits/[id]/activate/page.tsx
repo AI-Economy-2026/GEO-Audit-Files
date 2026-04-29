@@ -1,59 +1,157 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
-import { useAuditData, tone } from "@/components/audit/useAuditData";
+import { useAuditData } from "@/components/audit/useAuditData";
 
-const WEEKS = [
-  {
-    num: "WEEK 01",
-    title: "Quick fixes",
-    items: [
-      "Deploy JSON-LD schema for entities",
-      "Tidy service page structure",
-      "Publish llms.txt",
-    ],
-  },
-  {
-    num: "WEEK 02",
-    title: "Priority page",
-    items: [
-      "Ship buyer-intent landing page",
-      "Add FAQ schema and proof blocks",
-      "Internal linking from services",
-    ],
-  },
-  {
-    num: "WEEK 03",
-    title: "Comparisons & proof",
-    items: [
-      "Publish two “vs” pages",
-      "Earned mentions and citations",
-      "Normalise entity references",
-    ],
-  },
-  {
-    num: "WEEK 04",
-    title: "Refine & re-audit",
-    items: [
-      "Refine pages from feedback",
-      "Re-run the Rank audit",
-      "Measure movement in Tracker",
-    ],
-  },
-];
+interface ActionItem {
+  id: string;
+  audit_id: string;
+  week_number: number;
+  category: "technical" | "non_technical";
+  title: string;
+  description: string | null;
+  effort_label: string | null;
+  sort_order: number;
+  completed_at: string | null;
+  created_at: string;
+}
+
+type Filter = "all" | "technical" | "non_technical";
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function monthGroup(week: number): { label: string; sub: string } {
+  if (week <= 4) return { label: "Month 1", sub: "Foundations & quick fixes" };
+  if (week <= 8) return { label: "Month 2", sub: "Priority pages & content" };
+  return { label: "Month 3", sub: "Authority & re-audit" };
+}
 
 export default function ActivatePage() {
   const { id } = useParams<{ id: string }>();
-  const { audit, loading } = useAuditData(id);
+  const { audit, loading: auditLoading } = useAuditData(id);
 
-  const visRate = audit?.visibility_rate ?? 0;
-  const activationScore = Math.min(100, Math.round(40 + (100 - visRate) * 0.4));
+  const [items, setItems] = useState<ActionItem[]>([]);
+  const [planLoading, setPlanLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
-  if (loading || !audit) {
+  // Fetch (and on first call, generate) the action plan
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setPlanLoading(true);
+    setError(null);
+
+    fetch(`/api/geo-audits/${id}/action-plan`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load plan.");
+        if (cancelled) return;
+        setItems(data.items || []);
+        if (data.generated) setGenerating(false);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setPlanLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Detect "still generating" state for UX clarity — fires before the API responds
+  useEffect(() => {
+    if (planLoading && items.length === 0) {
+      const t = setTimeout(() => setGenerating(true), 800);
+      return () => clearTimeout(t);
+    }
+    setGenerating(false);
+  }, [planLoading, items.length]);
+
+  async function toggleItem(item: ActionItem) {
+    const nextCompleted = !item.completed_at;
+    setPendingIds((prev) => new Set(prev).add(item.id));
+
+    // Optimistic
+    setItems((prev) =>
+      prev.map((it) =>
+        it.id === item.id
+          ? { ...it, completed_at: nextCompleted ? new Date().toISOString() : null }
+          : it
+      )
+    );
+
+    try {
+      const res = await fetch(`/api/geo-audits/${id}/action-plan/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ completed: nextCompleted }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update.");
+      setItems((prev) => prev.map((it) => (it.id === item.id ? data.item : it)));
+    } catch {
+      // Revert on failure
+      setItems((prev) =>
+        prev.map((it) =>
+          it.id === item.id ? { ...it, completed_at: item.completed_at } : it
+        )
+      );
+    } finally {
+      setPendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+    }
+  }
+
+  const filtered = useMemo(() => {
+    if (filter === "all") return items;
+    return items.filter((it) => it.category === filter);
+  }, [items, filter]);
+
+  const grouped = useMemo(() => {
+    const months: Record<number, ActionItem[]> = { 1: [], 2: [], 3: [] };
+    for (const it of filtered) {
+      const m = it.week_number <= 4 ? 1 : it.week_number <= 8 ? 2 : 3;
+      months[m].push(it);
+    }
+    return months;
+  }, [filtered]);
+
+  const stats = useMemo(() => {
+    const total = items.length;
+    const done = items.filter((it) => it.completed_at).length;
+    const technical = items.filter((it) => it.category === "technical").length;
+    const nonTechnical = items.filter((it) => it.category === "non_technical").length;
+    return { total, done, technical, nonTechnical, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
+  }, [items]);
+
+  if (auditLoading || !audit) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-3)" }}>
-        {loading ? "Loading..." : "Audit not found."}
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--text-3)",
+        }}
+      >
+        {auditLoading ? "Loading..." : "Audit not found."}
       </div>
     );
   }
@@ -63,41 +161,52 @@ export default function ActivatePage() {
       <div className="page-head">
         <div>
           <h1>Prioritise &amp; Activate</h1>
-          <p>The audit findings as ordered work. Pick your three, run the 30-day plan.</p>
+          <p>
+            Your 90-day action plan, generated from this audit&rsquo;s findings. Tick items off as you
+            complete them — we&rsquo;ll track the date stamp.
+          </p>
         </div>
         <div className="actions">
           <button className="btn btn-sm">Export PDF</button>
-          <button className="btn btn-primary btn-sm">Start with quick fixes</button>
         </div>
       </div>
 
-      {/* HERO */}
+      {/* PROGRESS HERO */}
       <div className="hero">
         <div className="hero-left">
-          <div className="hero-label">Activation score</div>
+          <div className="hero-label">Plan progress</div>
           <div className="hero-headline">
-            {activationScore}<span className="slash">/ 100</span>
+            {stats.done}
+            <span className="slash">/ {stats.total}</span>
+            {stats.total > 0 && (
+              <span className={`big-delta ${stats.pct >= 50 ? "up" : ""}`}>{stats.pct}%</span>
+            )}
           </div>
           <div className="hero-summary">
-            Average across your top priority prompts. Strong case for starting this month, with three quick fixes in week one to build momentum.
+            {stats.total === 0
+              ? "Your plan is being prepared. Once ready, it covers 13 weeks of prioritised technical and content work, calibrated to this audit&rsquo;s findings."
+              : stats.done === 0
+                ? "Pick the easiest item in Week 1 and tick it off — momentum compounds. Filter to technical or non-technical to focus the team."
+                : `${stats.done} done, ${stats.total - stats.done} to go. Re-audit at the end of Month 3 to measure movement.`}
           </div>
           <div className="hero-benchmarks">
             <div className="hero-bm-item">
-              <div className="hero-bm-label">Category avg</div>
+              <div className="hero-bm-label">Technical</div>
               <div className="hero-bm-value">
-                <span className="num">58</span>
-                <span className={`delta ${activationScore > 58 ? "up" : "down"}`}>
-                  {activationScore > 58 ? "▲" : "▼"} {Math.abs(activationScore - 58)}
-                </span>
+                <span className="num">{stats.technical}</span>
               </div>
             </div>
             <div className="hero-bm-item">
-              <div className="hero-bm-label">High-op prompts</div>
-              <div className="hero-bm-value"><span className="num">4</span></div>
+              <div className="hero-bm-label">Non-technical</div>
+              <div className="hero-bm-value">
+                <span className="num">{stats.nonTechnical}</span>
+              </div>
             </div>
             <div className="hero-bm-item">
-              <div className="hero-bm-label">Total effort</div>
-              <div className="hero-bm-value"><span className="num">38 hrs</span></div>
+              <div className="hero-bm-label">Window</div>
+              <div className="hero-bm-value">
+                <span className="num">90 days</span>
+              </div>
             </div>
           </div>
         </div>
@@ -109,8 +218,10 @@ export default function ActivatePage() {
               </svg>
             </div>
             <div className="hero-insight-text">
-              <div className="title">Week 1: quick fixes</div>
-              <div className="body">Three technical wins that get you in the right shape before the bigger moves.</div>
+              <div className="title">Easiest first</div>
+              <div className="body">
+                Items are ordered by effort within each week — start at the top.
+              </div>
             </div>
           </div>
           <div className="hero-insight">
@@ -121,46 +232,230 @@ export default function ActivatePage() {
               </svg>
             </div>
             <div className="hero-insight-text">
-              <div className="title">Weeks 2-4: the bigger moves</div>
-              <div className="body">Landing page, comparison pages, authority work, then re-audit to prove movement.</div>
+              <div className="title">Re-audit at day 90</div>
+              <div className="body">Final week includes a re-audit step so you can measure movement.</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* PLAN */}
-      <div className="card pad-lg section">
-        <div className="section-head" style={{ marginBottom: 20 }}>
-          <div>
-            <h2>30-day plan of attack</h2>
-            <div className="sub">A restrained weekly cadence. Quick fixes first, then the big pieces.</div>
-          </div>
+      {/* FILTER BAR */}
+      <div
+        className="card pad"
+        style={{ marginBottom: 18, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--text-3)",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            marginRight: 4,
+          }}
+        >
+          Filter
         </div>
-        <div className="plan">
-          {WEEKS.map((w) => (
-            <div key={w.num} className="week">
-              <div className="week-num">{w.num}</div>
-              <div className="week-title">{w.title}</div>
-              <ul className="week-items">
-                {w.items.map((item, i) => (
-                  <li key={i}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        {(
+          [
+            { id: "all", label: `All (${stats.total})` },
+            { id: "technical", label: `Technical (${stats.technical})` },
+            { id: "non_technical", label: `Non-technical (${stats.nonTechnical})` },
+          ] as { id: Filter; label: string }[]
+        ).map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setFilter(f.id)}
+            className="btn btn-sm"
+            style={
+              filter === f.id
+                ? { background: "var(--mint-weak)", borderColor: "var(--mint-line)", color: "var(--mint)" }
+                : undefined
+            }
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
+
+      {/* PLAN BODY */}
+      {planLoading ? (
+        <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
+          {generating
+            ? "Generating your 90-day plan from this audit's findings — one moment, this can take 15-30 seconds."
+            : "Loading plan..."}
+        </div>
+      ) : error ? (
+        <div
+          className="card pad-lg"
+          style={{
+            borderColor: "var(--crit-line)",
+            background: "var(--crit-weak)",
+            color: "var(--text-2)",
+          }}
+        >
+          {error}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
+          No action items yet. Try refreshing the page.
+        </div>
+      ) : (
+        <>
+          {[1, 2, 3].map((m) => {
+            const monthItems = grouped[m];
+            if (monthItems.length === 0) return null;
+            const meta = monthGroup(m * 4);
+            return (
+              <div key={m} className="section">
+                <div className="section-head">
+                  <div>
+                    <h2>{meta.label}</h2>
+                    <div className="sub">{meta.sub}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {monthItems.map((it) => {
+                    const done = !!it.completed_at;
+                    const pending = pendingIds.has(it.id);
+                    return (
+                      <div
+                        key={it.id}
+                        className="card pad"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "28px 60px 1fr 100px 160px",
+                          gap: 14,
+                          alignItems: "flex-start",
+                          opacity: pending ? 0.6 : 1,
+                          background: done ? "var(--inset)" : undefined,
+                          transition: "opacity .15s var(--ease)",
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <button
+                          onClick={() => toggleItem(it)}
+                          disabled={pending}
+                          aria-label={done ? "Mark incomplete" : "Mark complete"}
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 6,
+                            background: done ? "var(--mint)" : "var(--surface-2)",
+                            border: `1px solid ${done ? "var(--mint)" : "var(--border)"}`,
+                            cursor: pending ? "wait" : "pointer",
+                            display: "grid",
+                            placeItems: "center",
+                            color: done ? "#052822" : "transparent",
+                            padding: 0,
+                            marginTop: 2,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {done && (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </button>
+
+                        {/* Week */}
+                        <div
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: "var(--text-3)",
+                            letterSpacing: "0.08em",
+                            paddingTop: 4,
+                          }}
+                        >
+                          W{String(it.week_number).padStart(2, "0")}
+                        </div>
+
+                        {/* Title + description */}
+                        <div>
+                          <div
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: 15,
+                              fontWeight: 600,
+                              color: done ? "var(--text-3)" : "var(--text)",
+                              textDecoration: done ? "line-through" : "none",
+                              marginBottom: 4,
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            {it.title}
+                          </div>
+                          {it.description && (
+                            <div style={{ fontSize: 13, color: "var(--text-3)", lineHeight: 1.5 }}>
+                              {it.description}
+                            </div>
+                          )}
+                          <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <span
+                              className={`tag`}
+                              style={{
+                                background:
+                                  it.category === "technical" ? "var(--info-weak)" : "var(--mint-weak)",
+                                borderColor:
+                                  it.category === "technical" ? "var(--info-line)" : "var(--mint-line)",
+                                color: it.category === "technical" ? "var(--info)" : "var(--mint)",
+                              }}
+                            >
+                              {it.category === "technical" ? "Technical" : "Non-technical"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Effort */}
+                        <div
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 11,
+                            color: "var(--text-3)",
+                            background: "var(--surface-2)",
+                            padding: "4px 10px",
+                            borderRadius: 6,
+                            border: "1px solid var(--border-soft)",
+                            whiteSpace: "nowrap",
+                            justifySelf: "start",
+                            marginTop: 2,
+                          }}
+                        >
+                          {it.effort_label || "—"}
+                        </div>
+
+                        {/* Date stamp */}
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: done ? "var(--good)" : "var(--text-4)",
+                            textAlign: "right",
+                            paddingTop: 4,
+                          }}
+                        >
+                          {done ? `Completed ${formatDate(it.completed_at!)}` : "Not started"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
 
       {/* CTA */}
       <div className="cta-banner">
         <div className="cta-banner-text">
           <h3>Want a hand getting started?</h3>
-          <p>We can tackle week one&rsquo;s quick fixes for you, so you&rsquo;re in the right shape to take the bigger pieces on yourself.</p>
+          <p>
+            We can tackle the Month 1 quick fixes for you so you&rsquo;re in the right shape to take the
+            bigger pieces on yourself.
+          </p>
         </div>
         <button className="btn btn-primary">Get the quick fixes done →</button>
       </div>

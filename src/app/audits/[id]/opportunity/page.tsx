@@ -1,23 +1,31 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import ExplainButton from "@/components/audit/ExplainButton";
+import ExplainDrawer from "@/components/audit/ExplainDrawer";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
+import type { ExplainTargetContext } from "@/app/api/explain/route";
 
 /* Opportunity cards derived from audit data */
 interface OppCard {
+  id: string;
   severity: "crit" | "warn" | "good" | "info";
   chipLabel: string;
   title: string;
   body: string;
   metrics: { label: string; value: string; tone?: "good" | "warn" | "crit" | null; unit?: string }[];
+  explainTarget: ExplainTargetContext;
 }
 
 export default function OpportunityPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { audit, results, loading } = useAuditData(id);
+  const [explainTarget, setExplainTarget] = useState<ExplainTargetContext | null>(null);
+  const openExplain = (t: ExplainTargetContext) => setExplainTarget(t);
+  const closeExplain = () => setExplainTarget(null);
 
   const engineBreakdown = audit?.summary_json?.engine_breakdown || {};
   const keywordGaps = audit?.summary_json?.keyword_gap_analysis?.keyword_gaps || [];
@@ -52,15 +60,24 @@ export default function OpportunityPage() {
 
     // 1. Worst engine fix
     if (worst && worstRate < 30) {
+      const liftPotential = Math.round((30 - worstRate) * 0.8);
       built.push({
+        id: "worst-engine",
         severity: "crit",
         chipLabel: "Critical",
         title: `${worstName} visibility fix`,
         body: `You are ${worstRate === 0 ? "absent from" : "weak on"} ${worstName}, a key answer surface for category discovery prompts.`,
         metrics: [
           { label: "Current", value: `${Math.round(worstRate)}`, unit: "%", tone: "crit" },
-          { label: "Lift potential", value: `+${Math.round((30 - worstRate) * 0.8)}`, unit: "%", tone: "good" },
+          { label: "Lift potential", value: `+${liftPotential}`, unit: "%", tone: "good" },
         ],
+        explainTarget: {
+          type: "missed_opportunity",
+          id: "worst-engine",
+          label: `${worstName} visibility fix`,
+          value: `${Math.round(worstRate)}%`,
+          meta: { engineName: worstName, currentRate: Math.round(worstRate), liftPotentialPercent: liftPotential, promptText: `prompts on ${worstName}` },
+        },
       });
     }
 
@@ -68,7 +85,9 @@ export default function OpportunityPage() {
     const rankingRows = results.filter((r) => r.prompt_type === "ranking");
     const rankingHit = rankingRows.filter((r) => r.brand_mentioned).length;
     const rankingRate = rankingRows.length > 0 ? Math.round((rankingHit / rankingRows.length) * 100) : 0;
+    const rankingDifficulty = rankingRate < 15 ? "hard" : rankingRate < 30 ? "medium" : "easier";
     built.push({
+      id: "buyer-intent",
       severity: rankingRate < 30 ? "warn" : "good",
       chipLabel: rankingRate < 30 ? "High impact" : "Strong",
       title: "Buyer-intent content",
@@ -80,11 +99,19 @@ export default function OpportunityPage() {
         { label: "Current", value: `${rankingRate}`, unit: "%", tone: tone(rankingRate) },
         { label: "Target", value: "50", unit: "%", tone: "good" },
       ],
+      explainTarget: {
+        type: "priority_play",
+        id: "buyer-intent",
+        label: "Buyer-intent content",
+        value: `${rankingRate}%`,
+        meta: { activationScore: 100 - rankingRate, difficulty: rankingDifficulty },
+      },
     });
 
     // 3. Leverage best-performing engine
     if (best && bestRate > 15) {
       built.push({
+        id: "best-engine",
         severity: "good",
         chipLabel: "Quick fix",
         title: `Replicate ${bestName} patterns`,
@@ -93,6 +120,13 @@ export default function OpportunityPage() {
           { label: bestName, value: `${Math.round(bestRate)}`, unit: "%", tone: "good" },
           { label: "Effort", value: "2-3 days", tone: null },
         ],
+        explainTarget: {
+          type: "lock_in_whats_working",
+          id: "best-engine",
+          label: `Replicate ${bestName} patterns`,
+          value: `${Math.round(bestRate)}%`,
+          meta: { engineName: bestName, rate: Math.round(bestRate) },
+        },
       });
     }
 
@@ -101,6 +135,7 @@ export default function OpportunityPage() {
       engines.length > 0 ? engines.reduce((s, [, e]) => s + e.visibility_rate, 0) / engines.length : 0;
     if (avgEngineRate < 30) {
       built.push({
+        id: "authority",
         severity: "warn",
         chipLabel: "Authority",
         title: "Citation and authority",
@@ -109,6 +144,13 @@ export default function OpportunityPage() {
           { label: "Broad queries", value: `${Math.round(avgEngineRate)}`, unit: "%", tone: tone(avgEngineRate) },
           { label: "Target", value: "30", unit: "%", tone: "good" },
         ],
+        explainTarget: {
+          type: "priority_play",
+          id: "authority",
+          label: "Citation and authority",
+          value: `${Math.round(avgEngineRate)}%`,
+          meta: { activationScore: 100 - Math.round(avgEngineRate), difficulty: "medium" },
+        },
       });
     }
 
@@ -116,6 +158,7 @@ export default function OpportunityPage() {
     const compGaps = keywordGaps.filter((g) => g.competitors_present.length > 0 && g.engines_hit.length === 0).length;
     if (compGaps > 0) {
       built.push({
+        id: "competitor-gap",
         severity: "crit",
         chipLabel: "Competitor gap",
         title: "Where competitors win and you don't",
@@ -124,11 +167,19 @@ export default function OpportunityPage() {
           { label: "Gap count", value: `${compGaps}`, tone: "crit" },
           { label: "Effort", value: "1-2 weeks", tone: null },
         ],
+        explainTarget: {
+          type: "missed_opportunity",
+          id: "competitor-gap",
+          label: "Where competitors win and you don't",
+          value: `${compGaps} prompts`,
+          meta: { competitorsPresent: compGaps, promptText: "competitor-only prompts" },
+        },
       });
     }
 
     // 6. Foundational — structured data
     built.push({
+      id: "foundational",
       severity: "info",
       chipLabel: "Foundational",
       title: "Structured data & indexability",
@@ -137,6 +188,13 @@ export default function OpportunityPage() {
         { label: "Schema gaps", value: "6", tone: "warn" },
         { label: "Effort", value: "1 week", tone: null },
       ],
+      explainTarget: {
+        type: "quick_fix",
+        id: "foundational",
+        label: "Structured data & indexability",
+        value: "6 gaps",
+        meta: { effortDays: "1 week" },
+      },
     });
 
     return built;
@@ -168,8 +226,25 @@ export default function OpportunityPage() {
       {/* HERO */}
       <div className="hero">
         <div className="hero-left">
-          <div className="hero-label">Opportunity score</div>
-          <div className="hero-headline">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="hero-label" style={{ marginBottom: 0 }}>Opportunity score</div>
+            <ExplainButton
+              target={{
+                type: "opportunity_score",
+                id: "opp-score",
+                label: "Opportunity score",
+                value: oppScore,
+                meta: {
+                  categoryAverage: 58,
+                  quickFixCount: quickFixes,
+                  windowDays: 30,
+                  estimatedLiftPoints: cards[0] ? 28 : 0,
+                },
+              }}
+              onOpen={openExplain}
+            />
+          </div>
+          <div className="hero-headline" style={{ marginTop: 14 }}>
             {oppScore}
             <span className="slash">/ 100</span>
           </div>
@@ -216,6 +291,20 @@ export default function OpportunityPage() {
                 <div className="title">Start here</div>
                 <div className="body">{cards[0].title} — biggest single lift available right now.</div>
               </div>
+              <ExplainButton
+                target={{
+                  type: "start_here_recommendation",
+                  id: "start-here",
+                  label: cards[0].title,
+                  value: typeof cards[0].metrics[0]?.value === "string" ? cards[0].metrics[0].value : "",
+                  meta: {
+                    engineName: cards[0].title.replace(" visibility fix", ""),
+                    currentRate: parseInt(String(cards[0].metrics[0]?.value || "0"), 10),
+                    liftPotentialPercent: parseInt(String(cards[0].metrics[1]?.value || "0").replace("+", ""), 10),
+                  },
+                }}
+                onOpen={openExplain}
+              />
             </div>
           )}
           <div className="hero-insight">
@@ -228,6 +317,18 @@ export default function OpportunityPage() {
               <div className="title">Lock in what&rsquo;s working</div>
               <div className="body">Ship dedicated pages where you already rank to capture 3-5 more citations in a week.</div>
             </div>
+            <ExplainButton
+              target={{
+                type: "lock_in_whats_working",
+                id: "lock-in",
+                label: "Lock in what's working",
+                meta: {
+                  engineName: cards.find((c) => c.id === "best-engine")?.title.replace("Replicate ", "").replace(" patterns", "") || "your strongest engine",
+                  rate: parseInt(String(cards.find((c) => c.id === "best-engine")?.metrics[0]?.value || "0"), 10),
+                },
+              }}
+              onOpen={openExplain}
+            />
           </div>
         </div>
       </div>
@@ -348,7 +449,10 @@ export default function OpportunityPage() {
                     )}
                   </svg>
                 </div>
-                <span className={`chip chip-${c.severity}`}>{c.chipLabel}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span className={`chip chip-${c.severity}`}>{c.chipLabel}</span>
+                  <ExplainButton target={c.explainTarget} onOpen={openExplain} />
+                </div>
               </div>
 
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, lineHeight: 1.3, margin: 0, letterSpacing: "-0.01em" }}>
@@ -426,6 +530,12 @@ export default function OpportunityPage() {
           Get the quick fixes done →
         </button>
       </div>
+
+      <ExplainDrawer
+        open={explainTarget !== null}
+        target={explainTarget}
+        onClose={closeExplain}
+      />
     </AuditShell>
   );
 }
