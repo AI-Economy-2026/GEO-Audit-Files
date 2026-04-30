@@ -176,6 +176,7 @@ export default function AuditsPage() {
                   <th className="center">Engines</th>
                   <th className="center">Duration</th>
                   <th>Date</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -254,6 +255,25 @@ export default function AuditsPage() {
                         {formatDuration(audit.duration_seconds)}
                       </td>
                       <td style={{ color: "var(--text-3)" }}>{formatDate(audit.created_at)}</td>
+                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "var(--text-3)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          View
+                          <span className="row-chevron" aria-hidden="true">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                              <polyline points="9 6 15 12 9 18" />
+                            </svg>
+                          </span>
+                        </span>
+                      </td>
                     </tr>
                   );
                 })}
