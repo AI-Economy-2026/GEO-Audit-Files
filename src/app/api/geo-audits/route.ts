@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext, AuthError } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 
-const WORKER_URL = process.env.GEO_WORKER_URL;
+const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
 
 // GET /api/geo-audits — list audits for the user's org

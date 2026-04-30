@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext, AuthError } from "@/lib/auth-context";
 
-const WORKER_URL = process.env.GEO_WORKER_URL;
+const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
 
 export async function POST(req: NextRequest) {

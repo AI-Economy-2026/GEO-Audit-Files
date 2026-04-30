@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { generatePrompts } from "@/lib/prompt-generator";
 
-const WORKER_URL = process.env.GEO_WORKER_URL;
+const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
 
 const DEFAULT_ENGINES = [
