@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Tooltip from "./Tooltip";
 
 interface TopbarProps {
   auditId: string;
@@ -41,14 +42,20 @@ export default function Topbar({ auditId, brandName }: TopbarProps) {
 
       {/* Actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button className="btn btn-sm">Export PDF</button>
-        <button className="btn btn-sm">Share</button>
-        <button
-          className="btn btn-sm btn-primary"
-          onClick={() => router.push(`/audits/${auditId}`)}
-        >
-          Re-audit
-        </button>
+        <Tooltip label="Download a PDF copy of this report">
+          <button className="btn btn-sm">Export PDF</button>
+        </Tooltip>
+        <Tooltip label="Get a public shareable link to this report">
+          <button className="btn btn-sm">Share</button>
+        </Tooltip>
+        <Tooltip label="Re-run this audit with the latest engine data">
+          <button
+            className="btn btn-sm btn-primary"
+            onClick={() => router.push(`/audits/${auditId}`)}
+          >
+            Re-audit
+          </button>
+        </Tooltip>
       </div>
     </div>
   );

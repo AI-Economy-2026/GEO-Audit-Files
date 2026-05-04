@@ -1,6 +1,7 @@
 "use client";
 
 import type { ExplainTargetContext } from "@/app/api/explain/route";
+import Tooltip from "./Tooltip";
 
 interface Props {
   target: ExplainTargetContext;
@@ -33,9 +34,9 @@ export default function ExplainButton({ target, onOpen, variant = "icon" }: Prop
   }
 
   return (
+    <Tooltip label={`Explain "${target.label}" in plain English`}>
     <button
       onClick={() => onOpen(target)}
-      title="Explain this"
       aria-label={`Explain: ${target.label}`}
       style={{
         width: 26,
@@ -68,5 +69,6 @@ export default function ExplainButton({ target, onOpen, variant = "icon" }: Prop
         <line x1="12" y1="17" x2="12.01" y2="17" />
       </svg>
     </button>
+    </Tooltip>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData } from "@/components/audit/useAuditData";
 
 interface ActionItem {
@@ -333,31 +334,33 @@ export default function ActivatePage() {
                         }}
                       >
                         {/* Checkbox */}
-                        <button
-                          onClick={() => toggleItem(it)}
-                          disabled={pending}
-                          aria-label={done ? "Mark incomplete" : "Mark complete"}
-                          style={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: 6,
-                            background: done ? "var(--mint)" : "var(--surface-2)",
-                            border: `1px solid ${done ? "var(--mint)" : "var(--border)"}`,
-                            cursor: pending ? "wait" : "pointer",
-                            display: "grid",
-                            placeItems: "center",
-                            color: done ? "#052822" : "transparent",
-                            padding: 0,
-                            marginTop: 2,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {done && (
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </button>
+                        <Tooltip label={done ? "Mark this item incomplete" : "Mark this item complete"}>
+                          <button
+                            onClick={() => toggleItem(it)}
+                            disabled={pending}
+                            aria-label={done ? "Mark incomplete" : "Mark complete"}
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: 6,
+                              background: done ? "var(--mint)" : "var(--surface-2)",
+                              border: `1px solid ${done ? "var(--mint)" : "var(--border)"}`,
+                              cursor: pending ? "wait" : "pointer",
+                              display: "grid",
+                              placeItems: "center",
+                              color: done ? "#052822" : "transparent",
+                              padding: 0,
+                              marginTop: 2,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {done && (
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </button>
+                        </Tooltip>
 
                         {/* Week */}
                         <div
@@ -370,7 +373,7 @@ export default function ActivatePage() {
                             paddingTop: 4,
                           }}
                         >
-                          W{String(it.week_number).padStart(2, "0")}
+                          {it.week_number}
                         </div>
 
                         {/* Title + description */}

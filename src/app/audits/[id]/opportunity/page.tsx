@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
 import ExplainButton from "@/components/audit/ExplainButton";
 import ExplainDrawer from "@/components/audit/ExplainDrawer";
+import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
 import type { ExplainTargetContext } from "@/app/api/explain/route";
 
@@ -489,12 +490,16 @@ export default function OpportunityPage() {
               </div>
 
               <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 4 }}>
-                <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center" }}>
-                  View fixes
-                </button>
-                <button className="btn btn-sm btn-primary" style={{ flex: 1, justifyContent: "center" }}>
-                  Add to plan
-                </button>
+                <Tooltip label="See the step-by-step fix detail">
+                  <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center", width: "100%" }}>
+                    View fixes
+                  </button>
+                </Tooltip>
+                <Tooltip label="Add this play to your 90-day action plan">
+                  <button className="btn btn-sm btn-primary" style={{ flex: 1, justifyContent: "center", width: "100%" }}>
+                    Add to plan
+                  </button>
+                </Tooltip>
               </div>
             </div>
           ))}

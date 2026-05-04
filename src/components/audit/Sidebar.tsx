@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Tooltip from "./Tooltip";
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ReactNode;
+  hint?: string;
 }
 
 interface Group {
@@ -29,6 +31,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
       {
         href: "/clients",
         label: "All clients",
+        hint: "View every client in your workspace",
         icon: (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
@@ -38,6 +41,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
       {
         href: "/audits",
         label: "All audits",
+        hint: "Browse every audit you've run",
         icon: (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M3 3v18h18" />
@@ -56,6 +60,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
         {
           href: `/audits/${auditId}/dashboard`,
           label: "Overview",
+          hint: "Top-level visibility rank and KPIs",
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="7" height="9" />
@@ -68,6 +73,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
         {
           href: `/audits/${auditId}/prompts`,
           label: "Prompt Analysis",
+          hint: "Every prompt tested, with engines citing you",
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
@@ -77,6 +83,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
         {
           href: `/audits/${auditId}/engines`,
           label: "Engine Gaps",
+          hint: "Per-engine performance and prompt-type matrix",
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="9" />
@@ -87,6 +94,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
         {
           href: `/audits/${auditId}/competitors`,
           label: "Competitors",
+          hint: "Share-of-voice leaderboard and beat/win lists",
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
@@ -103,6 +111,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
         {
           href: `/audits/${auditId}/opportunity`,
           label: "Opportunity Map",
+          hint: "Priority plays ranked by impact",
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />
@@ -113,6 +122,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
         {
           href: `/audits/${auditId}/activate`,
           label: "Prioritise & Activate",
+          hint: "90-day action plan with checkboxes",
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
@@ -127,6 +137,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
         {
           href: `/audits/${auditId}/tracker`,
           label: "Tracker",
+          hint: "Movement vs baseline and previous audits",
           icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -217,9 +228,8 @@ export default function Sidebar({ auditId }: SidebarProps) {
           <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {group.items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + "/");
-              return (
+              const link = (
                 <Link
-                  key={item.href}
                   href={item.href}
                   style={{
                     display: "flex",
@@ -234,6 +244,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
                     background: active ? "var(--mint-weak)" : "transparent",
                     border: `1px solid ${active ? "var(--mint-line)" : "transparent"}`,
                     transition: "all 0.18s var(--ease)",
+                    width: "100%",
                   }}
                 >
                   <span style={{ width: 16, height: 16, flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
@@ -241,6 +252,13 @@ export default function Sidebar({ auditId }: SidebarProps) {
                   </span>
                   <span>{item.label}</span>
                 </Link>
+              );
+              return item.hint ? (
+                <Tooltip key={item.href} label={item.hint} side="right">
+                  {link}
+                </Tooltip>
+              ) : (
+                <span key={item.href}>{link}</span>
               );
             })}
           </nav>

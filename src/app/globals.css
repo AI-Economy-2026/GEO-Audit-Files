@@ -544,6 +544,8 @@ table.data tbody tr.clickable:hover td { background: rgba(94,234,212,.06); }
 table.data tbody tr.clickable .row-chevron { color: var(--text-4); transition: color .15s var(--ease), transform .15s var(--ease); display: inline-block; }
 table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform: translateX(3px); }
 
+@keyframes tt-fade { from { opacity: 0; transform: translateX(-50%) translateY(2px); } to { opacity: 1; } }
+
 /* Numeric displays */
 .num-big {
   font-family: var(--font-display);

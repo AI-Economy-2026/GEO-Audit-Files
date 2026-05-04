@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import WorkspaceShell from "@/components/audit/WorkspaceShell";
+import Tooltip from "@/components/audit/Tooltip";
 import { tone } from "@/components/audit/useAuditData";
 
 interface Audit {
@@ -256,23 +257,32 @@ export default function AuditsPage() {
                       </td>
                       <td style={{ color: "var(--text-3)" }}>{formatDate(audit.created_at)}</td>
                       <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: "var(--text-3)",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                          }}
+                        <Tooltip
+                          label={
+                            audit.status === "completed"
+                              ? "Open the full dashboard"
+                              : "Open audit progress / details"
+                          }
+                          side="left"
                         >
-                          View
-                          <span className="row-chevron" aria-hidden="true">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                              <polyline points="9 6 15 12 9 18" />
-                            </svg>
+                          <span
+                            style={{
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "var(--text-3)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                            }}
+                          >
+                            View
+                            <span className="row-chevron" aria-hidden="true">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                                <polyline points="9 6 15 12 9 18" />
+                              </svg>
+                            </span>
                           </span>
-                        </span>
+                        </Tooltip>
                       </td>
                     </tr>
                   );
