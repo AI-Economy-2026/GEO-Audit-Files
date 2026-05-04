@@ -172,28 +172,29 @@ export default function Sidebar({ auditId }: SidebarProps) {
       >
         <div
           style={{
-            width: 34,
-            height: 34,
+            width: 36,
+            height: 36,
             borderRadius: 10,
             background: "linear-gradient(135deg, var(--mint), var(--mint-2))",
             display: "grid",
             placeItems: "center",
-            color: "#052822",
-            fontWeight: 800,
-            fontFamily: "var(--font-display)",
-            fontSize: 14,
             boxShadow: "0 6px 18px rgba(94,234,212,.28)",
             flexShrink: 0,
+            padding: 7,
           }}
+          aria-label="RankCo"
         >
-          AI
+          {/* Navy-coloured RankCo mark on the mint gradient block */}
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
+            <path d="M50 18 L82 78 L66 78 L50 48 L34 78 L18 78 Z" fill="#0E1A2D" />
+          </svg>
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14, letterSpacing: "-0.01em", lineHeight: 1.15 }}>
-            AI Search Visibility
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.01em", lineHeight: 1.15, color: "var(--text)" }}>
+            RankCo
           </div>
           <div style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
-            Rank
+            AI Visibility Rank
           </div>
         </div>
       </div>

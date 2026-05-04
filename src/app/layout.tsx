@@ -2,8 +2,26 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Search Visibility Rank — Balmer Agency",
-  description: "Measure your brand visibility across AI search engines",
+  title: {
+    default: "RankCo — AI Search Visibility Rank",
+    template: "%s · RankCo",
+  },
+  description:
+    "See where your brand shows up across ChatGPT, Claude, Gemini, Perplexity, Grok, and Google AI — and where it doesn't. The GEO audit built for agencies.",
+  applicationName: "RankCo",
+  openGraph: {
+    title: "RankCo — AI Search Visibility Rank",
+    description:
+      "See where your brand shows up across every major AI engine — and where it doesn't.",
+    siteName: "RankCo",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RankCo — AI Search Visibility Rank",
+    description:
+      "See where your brand shows up across every major AI engine — and where it doesn't.",
+  },
 };
 
 export default function RootLayout({
