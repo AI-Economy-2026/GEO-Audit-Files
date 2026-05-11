@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import InfoTip from "@/components/audit/InfoTip";
 import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
 import { downloadCsv, safeFilename } from "@/lib/csv";
@@ -129,7 +130,11 @@ export default function CompetitorsPage() {
       {/* KPI STRIP */}
       <div className="kpi-strip">
         <div className="kpi">
-          <div className="kpi-label">Your share of voice</div>
+          <div className="kpi-label">
+            <InfoTip label="Your slice of every brand-mention pie in this category. Higher = AI engines pick you more often when listing brands. Compare to category average (15%).">
+              Your share of voice
+            </InfoTip>
+          </div>
           <div className={`kpi-number num-${tone(clientSov)}`}>
             {clientSov}<span className="unit">%</span>
           </div>
@@ -145,7 +150,11 @@ export default function CompetitorsPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Leader&rsquo;s share</div>
+          <div className="kpi-label">
+            <InfoTip label="The most-mentioned brand in your category, with their share of all citations. This is the brand to study and out-rank.">
+              Leader&rsquo;s share
+            </InfoTip>
+          </div>
           <div className={`kpi-number num-${leader?.isClient ? "good" : "warn"}`}>
             {leader?.sov ?? 0}<span className="unit">%</span>
           </div>
@@ -156,7 +165,11 @@ export default function CompetitorsPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Gap to #1</div>
+          <div className="kpi-label">
+            <InfoTip label="Points between your share-of-voice and the category leader. Small gap = realistic catch-up. Big gap = strategic shift needed.">
+              Gap to #1
+            </InfoTip>
+          </div>
           <div className={`kpi-number num-${gap > 15 ? "crit" : "warn"}`}>
             {gap}<span className="unit">pt</span>
           </div>
@@ -169,7 +182,11 @@ export default function CompetitorsPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Competitors tracked</div>
+          <div className="kpi-label">
+            <InfoTip label="Number of distinct competitor brands AI engines mentioned in your category. More = denser landscape; fewer = clearer top-of-mind opportunity.">
+              Competitors tracked
+            </InfoTip>
+          </div>
           <div className="kpi-number">{ranked.length - 1}</div>
           <div className="kpi-sub">named in results</div>
           <div className="benchmark">

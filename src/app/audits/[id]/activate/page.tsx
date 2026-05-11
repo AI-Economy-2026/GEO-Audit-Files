@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import InfoTip from "@/components/audit/InfoTip";
 import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData } from "@/components/audit/useAuditData";
 
@@ -196,19 +197,31 @@ export default function ActivatePage() {
           </div>
           <div className="hero-benchmarks">
             <div className="hero-bm-item">
-              <div className="hero-bm-label">Technical</div>
+              <div className="hero-bm-label">
+                <InfoTip label="Engineering work in this plan — schema, llms.txt, sitemaps, indexability fixes. Filter the list to just these to hand off to a developer.">
+                  Technical
+                </InfoTip>
+              </div>
               <div className="hero-bm-value">
                 <span className="num">{stats.technical}</span>
               </div>
             </div>
             <div className="hero-bm-item">
-              <div className="hero-bm-label">Non-technical</div>
+              <div className="hero-bm-label">
+                <InfoTip label="Content and authority work — landing pages, comparison pages, citations, PR. Filter to just these to hand off to a content team.">
+                  Non-technical
+                </InfoTip>
+              </div>
               <div className="hero-bm-value">
                 <span className="num">{stats.nonTechnical}</span>
               </div>
             </div>
             <div className="hero-bm-item">
-              <div className="hero-bm-label">Window</div>
+              <div className="hero-bm-label">
+                <InfoTip label="Total time the plan covers — 13 weeks across 3 months. Last week always includes a re-audit step to measure movement.">
+                  Window
+                </InfoTip>
+              </div>
               <div className="hero-bm-value">
                 <span className="num">90 days</span>
               </div>

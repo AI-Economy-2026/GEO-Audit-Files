@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
 import AskSarahCard from "@/components/audit/AskSarahCard";
+import InfoTip from "@/components/audit/InfoTip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
 
 const BENCHMARKS = {
@@ -219,7 +220,11 @@ export default function OverviewPage() {
       {/* KPI STRIP */}
       <div className="kpi-strip">
         <div className="kpi">
-          <div className="kpi-label">Prompts tested</div>
+          <div className="kpi-label">
+            <InfoTip label="Total buyer-intent prompts we ran across every AI engine. A wider prompt set means a more reliable read on how AI engines see your category.">
+              Prompts tested
+            </InfoTip>
+          </div>
           <div className="kpi-number">{audit.summary_json?.audit_metadata?.total_prompts ?? "—"}</div>
           <div className="kpi-sub">across {audit.engines?.length ?? 0} engines</div>
           <div className="benchmark">
@@ -228,7 +233,11 @@ export default function OverviewPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Brand mentions</div>
+          <div className="kpi-label">
+            <InfoTip label="Total times your brand was mentioned across every prompt × engine combination. Higher count = more conversations you show up in.">
+              Brand mentions
+            </InfoTip>
+          </div>
           <div className={`kpi-number num-${tone(visRate)}`}>{audit.total_mentioned ?? 0}</div>
           <div className="kpi-sub">of {audit.total_queries ?? 0} possible</div>
           <div className="benchmark">
@@ -238,7 +247,11 @@ export default function OverviewPage() {
         </div>
         {sovStats && (
           <div className="kpi">
-            <div className="kpi-label">Share of voice</div>
+            <div className="kpi-label">
+              <InfoTip label="Your share of every brand mentioned in this category. 100% would mean only your brand is ever cited — anything above category average is healthy ground.">
+                Share of voice
+              </InfoTip>
+            </div>
             <div className={`kpi-number num-${tone(sovStats.sov)}`}>
               {sovStats.sov}<span className="unit">%</span>
             </div>
@@ -250,7 +263,11 @@ export default function OverviewPage() {
           </div>
         )}
         <div className="kpi">
-          <div className="kpi-label">Opportunity</div>
+          <div className="kpi-label">
+            <InfoTip label="Upside score (0-100) — how much headroom you have to grow visibility. Higher = more gap left to close. Pair with the Opportunity Map for the priority plays.">
+              Opportunity
+            </InfoTip>
+          </div>
           <div className="kpi-number num-good">{Math.min(100, Math.round((100 - visRate) * 0.85))}</div>
           <div className="kpi-sub">upside score</div>
           <div className="benchmark">

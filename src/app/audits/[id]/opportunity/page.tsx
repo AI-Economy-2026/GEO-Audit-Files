@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
 import ExplainButton from "@/components/audit/ExplainButton";
 import ExplainDrawer from "@/components/audit/ExplainDrawer";
+import InfoTip from "@/components/audit/InfoTip";
 import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
 import type { ExplainTargetContext } from "@/app/api/explain/route";
@@ -343,7 +344,11 @@ export default function OpportunityPage() {
       {/* KPI STRIP */}
       <div className="kpi-strip">
         <div className="kpi">
-          <div className="kpi-label">Missed opportunities</div>
+          <div className="kpi-label">
+            <InfoTip label="Prompts where NO engine mentioned you — every blind spot is a buyer asking a question you have no answer in front of.">
+              Missed opportunities
+            </InfoTip>
+          </div>
           <div className="kpi-number num-crit">{missedCount}</div>
           <div className="kpi-sub">zero-mention prompts</div>
           <div className="benchmark">
@@ -352,7 +357,11 @@ export default function OpportunityPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Priority plays</div>
+          <div className="kpi-label">
+            <InfoTip label="Top-ranked plays surfaced from this audit. Each one bundles a content angle, the engines that need it, and an expected lift. Click any card for the step-by-step fix.">
+              Priority plays
+            </InfoTip>
+          </div>
           <div className="kpi-number">{priorityPlays}</div>
           <div className="kpi-sub">ranked by score</div>
           <div className="benchmark">
@@ -361,7 +370,11 @@ export default function OpportunityPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Quick fixes</div>
+          <div className="kpi-label">
+            <InfoTip label="Plays you can ship in under a week — schema, llms.txt, a single comparison page. Bank these for momentum before larger content work.">
+              Quick fixes
+            </InfoTip>
+          </div>
           <div className="kpi-number num-good">{quickFixes}</div>
           <div className="kpi-sub">under 1 week</div>
           <div className="benchmark">
@@ -370,7 +383,11 @@ export default function OpportunityPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Window</div>
+          <div className="kpi-label">
+            <InfoTip label="Recommended time before re-running the audit to measure movement. Most engines need 2-4 weeks to re-index after content changes.">
+              Window
+            </InfoTip>
+          </div>
           <div className="kpi-number">
             30<span className="unit">days</span>
           </div>

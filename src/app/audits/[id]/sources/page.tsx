@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import InfoTip from "@/components/audit/InfoTip";
 import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, type CitedDomain } from "@/components/audit/useAuditData";
 import { downloadCsv, safeFilename } from "@/lib/csv";
@@ -151,22 +152,38 @@ export default function SourcesPage() {
       {/* KPI STRIP */}
       <div className="kpi-strip">
         <div className="kpi">
-          <div className="kpi-label">Total citations</div>
+          <div className="kpi-label">
+            <InfoTip label="Total URLs the AI engines cited across every response in this audit. Higher count = more references AI is reaching for in your category.">
+              Total citations
+            </InfoTip>
+          </div>
           <div className="kpi-number">{totalCitations}</div>
           <div className="kpi-sub">across {results.length} responses</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Unique domains</div>
+          <div className="kpi-label">
+            <InfoTip label="Number of distinct domains those citations point to. Smaller pool = AI keeps reaching for the same 10-20 sites — those are the ones to target.">
+              Unique domains
+            </InfoTip>
+          </div>
           <div className="kpi-number">{uniqueDomains}</div>
           <div className="kpi-sub">distinct sources cited</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Top source</div>
+          <div className="kpi-label">
+            <InfoTip label="The single domain AI engines reach for most often in your category. If you can get content placed here, your citation odds jump.">
+              Top source
+            </InfoTip>
+          </div>
           <div className="kpi-number num-good">{top.share_percent}<span className="unit">%</span></div>
           <div className="kpi-sub" style={{ wordBreak: "break-all" }}>{top.domain}</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Your domain rank</div>
+          <div className="kpi-label">
+            <InfoTip label="Where your own domain sits in the ranked list of cited sources. #1 means you're the most-cited site in your category; '—' means no engine cited you at all.">
+              Your domain rank
+            </InfoTip>
+          </div>
           <div className={`kpi-number num-${brandRank ? "good" : "crit"}`}>
             {brandRank ? `#${brandRank}` : "—"}
           </div>
