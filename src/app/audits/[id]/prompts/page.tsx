@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import InfoTip from "@/components/audit/InfoTip";
+import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
 
 interface PromptAggregate {
@@ -95,14 +97,19 @@ export default function PromptAnalysisPage() {
           </p>
         </div>
         <div className="actions">
-          <button className="btn btn-sm">Export CSV</button>
+          <Tooltip label="Download every prompt + result row as a CSV (one row per prompt × engine)">
+            <button className="btn btn-sm">Export CSV</button>
+          </Tooltip>
         </div>
       </div>
 
       {/* KPI STRIP */}
       <div className="kpi-strip">
         <div className="kpi">
-          <div className="kpi-label">Prompts tested</div>
+          <div className="kpi-label">
+            Prompts tested
+            <InfoTip label="Total buyer-intent prompts we ran across every AI engine. A wider prompt set means a more reliable read on how AI engines see your category." />
+          </div>
           <div className="kpi-number">{prompts.length}</div>
           <div className="kpi-sub">across {audit.engines?.length ?? 0} engines</div>
           <div className="benchmark">
@@ -111,7 +118,10 @@ export default function PromptAnalysisPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">You appear in</div>
+          <div className="kpi-label">
+            You appear in
+            <InfoTip label="How many of those prompts mention your brand on at least one engine. This is your raw visibility coverage — the count of conversations you show up in." />
+          </div>
           <div className={`kpi-number num-${tone(Math.round((appearIn / Math.max(prompts.length, 1)) * 100))}`}>
             {appearIn}
           </div>
@@ -122,7 +132,10 @@ export default function PromptAnalysisPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Blind spots</div>
+          <div className="kpi-label">
+            Blind spots
+            <InfoTip label="Prompts where NO AI engine mentioned you. Pure gaps — buyers asking these questions never hear about you. Highest-priority targets for content work." />
+          </div>
           <div className="kpi-number num-crit">{blindSpots}</div>
           <div className="kpi-sub">zero-mention prompts</div>
           <div className="benchmark">
@@ -131,7 +144,10 @@ export default function PromptAnalysisPage() {
           </div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">Winnable</div>
+          <div className="kpi-label">
+            Winnable
+            <InfoTip label="Blind-spot prompts that look achievable — medium-or-easier difficulty, no entrenched competitor moat. The fastest wins to ship first." />
+          </div>
           <div className="kpi-number num-good">{winnable}</div>
           <div className="kpi-sub">difficulty ≤ medium</div>
           <div className="benchmark">
