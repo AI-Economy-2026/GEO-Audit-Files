@@ -186,12 +186,16 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 export async function answerFollowUp(
   target: ExplainTargetContext,
   base: ExplanationPayload,
-  question: string
+  question: string,
+  auditCtx?: AuditExplanationContext
 ): Promise<string> {
-  const systemPrompt = `You are a GEO (Generative Engine Optimisation) advisor.
-You are helping a user understand a specific element of their audit report.
+  const ctxBlock = auditCtx ? formatAuditContext(auditCtx) : "";
+  const systemPrompt = `You are a GEO (Generative Engine Optimisation) advisor for ${auditCtx?.brandName ?? "this brand"}.
+You are helping the user understand a specific element of their audit report.
 
-Context — this element:
+${ctxBlock}
+
+THIS ELEMENT:
 - Type: ${target.type}
 - Label: ${target.label}
 - Value: ${target.value ?? "n/a"}
@@ -205,6 +209,7 @@ The user has already seen this baseline explanation:
 Rules:
 - Plain language. No marketing speak. No "As an AI".
 - Maximum 2 short paragraphs OR a numbered list of up to 4 items.
+- Reference actual prompts, competitors, or engines from the data when relevant.
 - Stay anchored to the element above — refuse questions that drift off-topic.
 - If the question is unclear, ask one clarifying question instead of guessing.`;
 
@@ -221,4 +226,162 @@ Rules:
     .map((b) => (b as { type: "text"; text: string }).text)
     .join("")
     .trim();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Contextual explanations — LLM-generated, grounded in real audit data.
+   Used for first-time card opens; deterministic buildTemplate stays as
+   a fallback when audit context isn't available or the LLM call fails.
+   ════════════════════════════════════════════════════════════════════ */
+export interface AuditExplanationContext {
+  brandName: string;
+  brandUrl: string;
+  visibilityRate: number;
+  totalQueries: number;
+  totalMentioned: number;
+  engineBreakdown: { engine: string; rate: number; mentioned: number; total: number }[];
+  topBlindSpots: { prompt: string; competitors: string[] }[];
+  topCompetitors: { name: string; mentions: number }[];
+  topCitedDomains: { domain: string; share_percent: number }[];
+}
+
+function formatAuditContext(ctx: AuditExplanationContext): string {
+  const engines = ctx.engineBreakdown
+    .slice()
+    .sort((a, b) => a.rate - b.rate)
+    .map((e) => `  - ${e.engine}: ${Math.round(e.rate)}% (${e.mentioned}/${e.total})`)
+    .join("\n");
+
+  const blindSpots = ctx.topBlindSpots
+    .slice(0, 6)
+    .map(
+      (b, i) =>
+        `  ${i + 1}. "${b.prompt}"${b.competitors.length ? ` — cited instead: ${b.competitors.join(", ")}` : ""}`
+    )
+    .join("\n");
+
+  const competitors = ctx.topCompetitors
+    .slice(0, 5)
+    .map((c) => `  - ${c.name} (${c.mentions} mentions)`)
+    .join("\n");
+
+  const domains = ctx.topCitedDomains
+    .slice(0, 8)
+    .map((d) => `  - ${d.domain}: ${d.share_percent}%`)
+    .join("\n");
+
+  return `AUDIT CONTEXT for ${ctx.brandName} (${ctx.brandUrl}):
+- Overall visibility: ${Math.round(ctx.visibilityRate)}% — appears in ${ctx.totalMentioned} of ${ctx.totalQueries} engine responses
+
+Per-engine visibility (worst first):
+${engines || "  (no engine data)"}
+
+Top blind-spot prompts where ${ctx.brandName} is missing:
+${blindSpots || "  (none flagged)"}
+
+Most-mentioned competitors in their category:
+${competitors || "  (none tracked)"}
+
+Most-cited domains AI engines reach for in their category:
+${domains || "  (no citation data)"}`;
+}
+
+const JSON_SCHEMA_PROMPT = `Return ONLY a JSON object matching this exact schema (no prose, no code fences):
+{
+  "summary": "2-3 sentences. Reference ${"{brand}"} by name. Cite at least one specific number from the audit context (engine %, blind-spot prompt, or competitor name).",
+  "whyItMatters": "2-3 sentences. Explain the business impact tied to this brand's category. Reference a competitor or engine if relevant.",
+  "whatToDoNext": ["3-4 imperative next steps", "Each tied to a specific prompt, competitor, engine, or domain from the audit data", "Concrete enough that a marketer could action it this week", "Last item should be measurable"],
+  "effortLevel": "low" | "medium" | "high",
+  "expectedImpact": "low" | "medium" | "high"
+}`;
+
+interface RawExplanation {
+  summary?: unknown;
+  whyItMatters?: unknown;
+  whatToDoNext?: unknown;
+  effortLevel?: unknown;
+  expectedImpact?: unknown;
+}
+
+function coerceExplanation(raw: RawExplanation, fallback: ExplanationPayload): ExplanationPayload {
+  const summary = typeof raw.summary === "string" ? raw.summary.trim() : fallback.summary;
+  const whyItMatters =
+    typeof raw.whyItMatters === "string" ? raw.whyItMatters.trim() : fallback.whyItMatters;
+  const whatToDoNext = Array.isArray(raw.whatToDoNext)
+    ? raw.whatToDoNext.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((s) => s.trim())
+    : fallback.whatToDoNext;
+  const validLevel = (v: unknown, f: "low" | "medium" | "high") =>
+    v === "low" || v === "medium" || v === "high" ? v : f;
+  return {
+    summary,
+    whyItMatters,
+    whatToDoNext: whatToDoNext.length > 0 ? whatToDoNext : fallback.whatToDoNext,
+    effortLevel: validLevel(raw.effortLevel, fallback.effortLevel),
+    expectedImpact: validLevel(raw.expectedImpact, fallback.expectedImpact),
+  };
+}
+
+export async function generateContextualExplanation(
+  target: ExplainTargetContext,
+  auditCtx: AuditExplanationContext
+): Promise<ExplanationPayload> {
+  // Always compute the deterministic baseline — used both as fallback and
+  // as grounding context so the LLM doesn't drift from the metric semantics.
+  const fallback = buildTemplate(target);
+
+  const systemPrompt = `You are a GEO (Generative Engine Optimisation) advisor producing a contextual explanation for a specific card on ${auditCtx.brandName}'s audit dashboard.
+
+${formatAuditContext(auditCtx)}
+
+THE CARD THIS USER CLICKED:
+- Type: ${target.type}
+- Label: ${target.label}
+- Value: ${target.value ?? "n/a"}
+- Meta: ${JSON.stringify(target.meta || {})}
+
+DETERMINISTIC BASELINE (use as semantic anchor — do not contradict the metric direction):
+- Summary: ${fallback.summary}
+- Why it matters: ${fallback.whyItMatters}
+- Next steps: ${fallback.whatToDoNext.join(" / ")}
+- Effort: ${fallback.effortLevel} · Impact: ${fallback.expectedImpact}
+
+YOUR JOB:
+- Rewrite the baseline so it's specific to ${auditCtx.brandName}'s situation
+- Use real prompts, competitors, engines, and domains from the audit context above
+- Give one concrete example the user can act on this week
+- Numbers matter — reference percentages, counts, or named entities
+
+${JSON_SCHEMA_PROMPT.replace("{brand}", auditCtx.brandName)}`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 700,
+      temperature: 0.4,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: `Generate the JSON explanation for ${auditCtx.brandName}'s "${target.label}" card.`,
+        },
+      ],
+    });
+
+    const text = message.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("")
+      .trim();
+
+    const cleaned = text
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```\s*$/i, "")
+      .trim();
+
+    const parsed = JSON.parse(cleaned) as RawExplanation;
+    return coerceExplanation(parsed, fallback);
+  } catch (err) {
+    console.error("generateContextualExplanation failed, falling back to template:", err);
+    return fallback;
+  }
 }
