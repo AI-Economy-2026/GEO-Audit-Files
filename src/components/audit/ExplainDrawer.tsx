@@ -10,6 +10,10 @@ interface Props {
   open: boolean;
   target: ExplainTargetContext | null;
   onClose: () => void;
+  /** When provided, the drawer uses the audit-scoped persistent
+   *  endpoint so the base explanation + follow-ups are cached in DB
+   *  and re-shown on the next open. */
+  auditId?: string;
 }
 
 interface FollowUp {
@@ -17,7 +21,7 @@ interface FollowUp {
   answer: string;
 }
 
-export default function ExplainDrawer({ open, target, onClose }: Props) {
+export default function ExplainDrawer({ open, target, onClose, auditId }: Props) {
   const [loading, setLoading] = useState(false);
   const [explanation, setExplanation] = useState<ExplanationPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +29,10 @@ export default function ExplainDrawer({ open, target, onClose }: Props) {
   const [question, setQuestion] = useState("");
   const [askingFollowUp, setAskingFollowUp] = useState(false);
 
-  // Fetch explanation when drawer opens with a new target
+  const endpoint = auditId ? `/api/geo-audits/${auditId}/explanations` : "/api/explain";
+
+  // Fetch explanation when drawer opens with a new target — also restores
+  // any persisted follow-up history when called with auditId.
   useEffect(() => {
     if (!open || !target) return;
     let cancelled = false;
@@ -35,7 +42,7 @@ export default function ExplainDrawer({ open, target, onClose }: Props) {
     setFollowUps([]);
     setQuestion("");
 
-    fetch("/api/explain", {
+    fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ target }),
@@ -43,8 +50,19 @@ export default function ExplainDrawer({ open, target, onClose }: Props) {
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
-        if (data.explanation) setExplanation(data.explanation);
-        else setError(data.error || "Couldn't load explanation.");
+        if (data.explanation) {
+          setExplanation(data.explanation);
+          if (Array.isArray(data.follow_ups)) {
+            setFollowUps(
+              data.follow_ups.map((f: { question: string; answer: string }) => ({
+                question: f.question,
+                answer: f.answer,
+              }))
+            );
+          }
+        } else {
+          setError(data.error || "Couldn't load explanation.");
+        }
       })
       .catch(() => {
         if (!cancelled) setError("We couldn't load the explanation, please try again.");
@@ -56,7 +74,7 @@ export default function ExplainDrawer({ open, target, onClose }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [open, target]);
+  }, [open, target, endpoint]);
 
   // ESC closes
   useEffect(() => {
@@ -74,13 +92,21 @@ export default function ExplainDrawer({ open, target, onClose }: Props) {
     setAskingFollowUp(true);
     setQuestion("");
     try {
-      const res = await fetch("/api/explain", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target, followUpQuestion: q }),
       });
       const data = await res.json();
-      if (data.explanation?.summary) {
+      // Audit-scoped endpoint returns the FULL follow_ups array
+      if (auditId && Array.isArray(data.follow_ups)) {
+        setFollowUps(
+          data.follow_ups.map((f: { question: string; answer: string }) => ({
+            question: f.question,
+            answer: f.answer,
+          }))
+        );
+      } else if (data.explanation?.summary) {
         setFollowUps((prev) => [...prev, { question: q, answer: data.explanation.summary }]);
       } else {
         setFollowUps((prev) => [

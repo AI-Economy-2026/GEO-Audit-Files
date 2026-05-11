@@ -490,13 +490,21 @@ export default function OpportunityPage() {
               </div>
 
               <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 4 }}>
-                <Tooltip label="See the step-by-step fix detail">
-                  <button className="btn btn-sm" style={{ flex: 1, justifyContent: "center", width: "100%" }}>
+                <Tooltip label="See the step-by-step fix detail (Sarah explains it in plain English)">
+                  <button
+                    className="btn btn-sm"
+                    style={{ flex: 1, justifyContent: "center", width: "100%" }}
+                    onClick={() => openExplain(c.explainTarget)}
+                  >
                     View fixes
                   </button>
                 </Tooltip>
-                <Tooltip label="Add this play to your 90-day action plan">
-                  <button className="btn btn-sm btn-primary" style={{ flex: 1, justifyContent: "center", width: "100%" }}>
+                <Tooltip label="Open your 90-day action plan to schedule this work">
+                  <button
+                    className="btn btn-sm btn-primary"
+                    style={{ flex: 1, justifyContent: "center", width: "100%" }}
+                    onClick={() => router.push(`/audits/${id}/activate`)}
+                  >
                     Add to plan
                   </button>
                 </Tooltip>
@@ -540,6 +548,7 @@ export default function OpportunityPage() {
         open={explainTarget !== null}
         target={explainTarget}
         onClose={closeExplain}
+        auditId={id}
       />
     </AuditShell>
   );
