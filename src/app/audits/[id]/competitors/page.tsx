@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
+import { downloadCsv, safeFilename } from "@/lib/csv";
 
 export default function CompetitorsPage() {
   const { id } = useParams<{ id: string }>();
@@ -100,7 +102,27 @@ export default function CompetitorsPage() {
           <p>Who is winning citations in your category. Their share of voice and where you can take ground.</p>
         </div>
         <div className="actions">
-          <button className="btn btn-sm">Export CSV</button>
+          <Tooltip label="Download the share-of-voice leaderboard as a CSV">
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                const rows: (string | number)[][] = [
+                  ["Rank", "Brand", "URL", "Mentions", "Share of voice %", "Is you"],
+                  ...ranked.map((b) => [
+                    b.rank,
+                    b.brand,
+                    b.url || "",
+                    b.mentions,
+                    b.sov,
+                    b.isClient ? "yes" : "no",
+                  ]),
+                ];
+                downloadCsv(`${safeFilename(audit.brand_name)}-competitors`, rows);
+              }}
+            >
+              Export CSV
+            </button>
+          </Tooltip>
         </div>
       </div>
 

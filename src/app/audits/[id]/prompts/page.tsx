@@ -6,6 +6,7 @@ import AuditShell from "@/components/audit/AuditShell";
 import InfoTip from "@/components/audit/InfoTip";
 import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
+import { downloadCsv, safeFilename } from "@/lib/csv";
 
 interface PromptAggregate {
   prompt_id: number;
@@ -97,8 +98,28 @@ export default function PromptAnalysisPage() {
           </p>
         </div>
         <div className="actions">
-          <Tooltip label="Download every prompt + result row as a CSV (one row per prompt × engine)">
-            <button className="btn btn-sm">Export CSV</button>
+          <Tooltip label="Download every prompt as a CSV (mention count, engines citing you, difficulty, activation score)">
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                const rows: (string | number)[][] = [
+                  ["Prompt", "Type", "Category", "Engines mentioning you", "Total engines", "Engines citing", "Difficulty", "Activation score"],
+                  ...prompts.map((p) => [
+                    p.prompt_text,
+                    p.type,
+                    p.category,
+                    p.mentionedEngines.length,
+                    p.totalEngines,
+                    p.mentionedEngines.join("; "),
+                    p.difficulty,
+                    p.activation,
+                  ]),
+                ];
+                downloadCsv(`${safeFilename(audit.brand_name)}-prompts`, rows);
+              }}
+            >
+              Export CSV
+            </button>
           </Tooltip>
         </div>
       </div>

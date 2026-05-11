@@ -41,12 +41,11 @@ export default function Topbar({ auditId, brandName }: TopbarProps) {
       </div>
 
       {/* Actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Tooltip label="Download a PDF copy of this report">
-          <button className="btn btn-sm">Export PDF</button>
-        </Tooltip>
-        <Tooltip label="Get a public shareable link to this report">
-          <button className="btn btn-sm">Share</button>
+      <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <Tooltip label="Open the browser print dialog — save the current view as PDF">
+          <button className="btn btn-sm" onClick={() => window.print()}>
+            Export PDF
+          </button>
         </Tooltip>
         <Tooltip label="Re-run this audit with the latest engine data">
           <button

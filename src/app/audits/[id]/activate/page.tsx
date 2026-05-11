@@ -167,8 +167,12 @@ export default function ActivatePage() {
             complete them — we&rsquo;ll track the date stamp.
           </p>
         </div>
-        <div className="actions">
-          <button className="btn btn-sm">Export PDF</button>
+        <div className="actions no-print">
+          <Tooltip label="Open the browser print dialog — save the 90-day plan as PDF">
+            <button className="btn btn-sm" onClick={() => window.print()}>
+              Export PDF
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -452,7 +456,7 @@ export default function ActivatePage() {
       )}
 
       {/* CTA */}
-      <div className="cta-banner">
+      <div className="cta-banner no-print">
         <div className="cta-banner-text">
           <h3>Want a hand getting started?</h3>
           <p>
@@ -460,7 +464,13 @@ export default function ActivatePage() {
             bigger pieces on yourself.
           </p>
         </div>
-        <button className="btn btn-primary">Get the quick fixes done →</button>
+        <a
+          className="btn btn-primary"
+          style={{ textDecoration: "none" }}
+          href={`mailto:hello@rankco.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi — I'd like RankCo to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
+        >
+          Get the quick fixes done →
+        </a>
       </div>
     </AuditShell>
   );

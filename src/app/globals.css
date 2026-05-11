@@ -546,6 +546,17 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
 
 @keyframes tt-fade { from { opacity: 0; } to { opacity: 1; } }
 
+/* Print stylesheet — used by "Export PDF" via window.print() */
+@media print {
+  body { background: #fff !important; color: #111 !important; }
+  body::before, body::after { display: none !important; }
+  .no-print, .sidebar, aside { display: none !important; }
+  .app { display: block !important; }
+  main { padding: 0 !important; }
+  .card, .kpi, .table-wrap, .hero, .engine-card, .opp-card { break-inside: avoid; page-break-inside: avoid; }
+  .hero { box-shadow: none !important; }
+}
+
 /* Numeric displays */
 .num-big {
   font-family: var(--font-display);

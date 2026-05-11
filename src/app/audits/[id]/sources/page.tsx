@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
 import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, type CitedDomain } from "@/components/audit/useAuditData";
+import { downloadCsv, safeFilename } from "@/lib/csv";
 
 /* When the worker hasn't backfilled top_cited_domains yet (older audits),
    build it client-side from results.citations as a fallback. */
@@ -123,8 +124,26 @@ export default function SourcesPage() {
           </p>
         </div>
         <div className="actions">
-          <Tooltip label="Download a CSV of every cited domain">
-            <button className="btn btn-sm">Export CSV</button>
+          <Tooltip label="Download every cited domain with count, share % and engines that cited it">
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                const rows: (string | number | boolean)[][] = [
+                  ["Rank", "Domain", "Citations", "Share %", "Engines", "Is your brand"],
+                  ...domains.map((d, i) => [
+                    i + 1,
+                    d.domain,
+                    d.count,
+                    d.share_percent,
+                    d.engines.join("; "),
+                    d.is_brand,
+                  ]),
+                ];
+                downloadCsv(`${safeFilename(audit.brand_name)}-sources`, rows);
+              }}
+            >
+              Export CSV
+            </button>
           </Tooltip>
         </div>
       </div>

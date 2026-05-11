@@ -292,9 +292,13 @@ export default function Sidebar({ auditId }: SidebarProps) {
         <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginBottom: 12 }}>
           We can tackle the quick fixes for you so you&rsquo;re in the right shape to move on the rest.
         </div>
-        <button className="btn btn-primary btn-sm" style={{ width: "100%", justifyContent: "center" }}>
+        <a
+          className="btn btn-primary btn-sm"
+          style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
+          href="mailto:hello@rankco.ai?subject=Quick%20fixes%20-%20get%20us%20a%20hand"
+        >
           Get the quick fixes done
-        </button>
+        </a>
       </div>
     </aside>
   );

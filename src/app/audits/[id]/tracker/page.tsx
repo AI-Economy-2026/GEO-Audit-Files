@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
+import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
+import { downloadCsv, safeFilename } from "@/lib/csv";
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -82,7 +84,27 @@ export default function TrackerPage() {
           </p>
         </div>
         <div className="actions">
-          <button className="btn btn-sm">Export CSV</button>
+          <Tooltip label="Download every audit version with visibility / mentions / dates">
+            <button
+              className="btn btn-sm"
+              onClick={() => {
+                const rows: (string | number)[][] = [
+                  ["Version", "Status", "Visibility %", "Mentions", "Total queries", "Completed"],
+                  ...history.map((h) => [
+                    h.version,
+                    h.status,
+                    h.visibility_rate ?? "",
+                    h.total_mentioned ?? "",
+                    h.total_queries ?? "",
+                    h.completed_at ?? "",
+                  ]),
+                ];
+                downloadCsv(`${safeFilename(audit.brand_name)}-tracker`, rows);
+              }}
+            >
+              Export CSV
+            </button>
+          </Tooltip>
         </div>
       </div>
 
