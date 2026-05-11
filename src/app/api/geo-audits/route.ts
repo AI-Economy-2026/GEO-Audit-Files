@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext, AuthError } from "@/lib/auth-context";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
@@ -37,8 +37,7 @@ export async function GET() {
 // POST /api/geo-audits — create a new audit and trigger the worker
 export async function POST(req: NextRequest) {
   try {
-    const ctx = await getAuthContext(); 
-    console.log("ctx --------------------------", ctx);
+    const ctx = await getAuthContext();
     const body = await req.json();
 
     const {
@@ -64,6 +63,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "brand_name, brand_url, and prompts are required." },
         { status: 400 }
+      );
+    }
+
+    // Credit gate — admins bypass, agencies must have credits + active
+    // status. We use the service-role client because app_users isn't
+    // writable from the user's own session (RLS denies).
+    const admin = createAdminClient();
+    const { data: profile, error: profileErr } = await admin
+      .from("app_users")
+      .select("role, credits_remaining, credits_used, status")
+      .eq("id", ctx.userId)
+      .maybeSingle();
+
+    if (profileErr || !profile) {
+      return NextResponse.json(
+        { error: "Account profile not found. Contact your administrator." },
+        { status: 403 }
+      );
+    }
+    if (profile.status === "suspended") {
+      return NextResponse.json(
+        { error: "Your account is suspended. Contact your administrator." },
+        { status: 403 }
+      );
+    }
+    if (profile.role === "agency" && (profile.credits_remaining ?? 0) <= 0) {
+      return NextResponse.json(
+        { error: "No audit credits remaining. Ask your administrator to top up." },
+        { status: 402 }
       );
     }
 
@@ -151,6 +179,19 @@ export async function POST(req: NextRequest) {
           { status: 502 }
         );
       }
+    }
+
+    // 4. Decrement credits (agencies only — admins run without cost).
+    //    Done after worker handoff so failed audits don't consume credits.
+    if (profile.role === "agency") {
+      await admin
+        .from("app_users")
+        .update({
+          credits_remaining: Math.max(0, (profile.credits_remaining ?? 0) - 1),
+          credits_used: (profile.credits_used ?? 0) + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", ctx.userId);
     }
 
     return NextResponse.json({ audit_id: audit.id }, { status: 201 });

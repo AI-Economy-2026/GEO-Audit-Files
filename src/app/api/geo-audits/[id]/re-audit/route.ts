@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext, AuthError } from "@/lib/auth-context";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
@@ -20,6 +20,30 @@ export async function POST(
     const ctx = await getAuthContext();
     const { id: sourceAuditId } = await params;
     const supabase = await createClient();
+
+    // Credit gate — admins bypass, agencies must have credits + active
+    const admin = createAdminClient();
+    const { data: profile, error: profileErr } = await admin
+      .from("app_users")
+      .select("role, credits_remaining, credits_used, status")
+      .eq("id", ctx.userId)
+      .maybeSingle();
+
+    if (profileErr || !profile) {
+      return NextResponse.json({ error: "Account profile not found." }, { status: 403 });
+    }
+    if (profile.status === "suspended") {
+      return NextResponse.json(
+        { error: "Your account is suspended. Contact your administrator." },
+        { status: 403 }
+      );
+    }
+    if (profile.role === "agency" && (profile.credits_remaining ?? 0) <= 0) {
+      return NextResponse.json(
+        { error: "No audit credits remaining. Ask your administrator to top up." },
+        { status: 402 }
+      );
+    }
 
     // 1. Load the source audit
     const { data: source, error: sourceErr } = await supabase
@@ -128,8 +152,6 @@ export async function POST(
           body: JSON.stringify({ audit_id: newAudit.id }),
         });
       } catch {
-        const { createAdminClient } = await import("@/lib/supabase/server");
-        const admin = createAdminClient();
         await admin
           .from("geo_audits")
           .update({
@@ -143,6 +165,18 @@ export async function POST(
           { status: 502 }
         );
       }
+    }
+
+    // Decrement credits (agencies only)
+    if (profile.role === "agency") {
+      await admin
+        .from("app_users")
+        .update({
+          credits_remaining: Math.max(0, (profile.credits_remaining ?? 0) - 1),
+          credits_used: (profile.credits_used ?? 0) + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", ctx.userId);
     }
 
     return NextResponse.json(

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import AuthShell from "@/components/ui/AuthShell";
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
@@ -88,10 +87,7 @@ export default function LoginPage() {
       </GlassCard>
 
       <p className="text-center text-sm text-on-surface-variant mt-6">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-primary font-bold hover:opacity-80 transition-opacity">
-          Sign up
-        </Link>
+        Don&apos;t have an account? Ask your RankCo administrator for an invite.
       </p>
     </AuthShell>
   );
