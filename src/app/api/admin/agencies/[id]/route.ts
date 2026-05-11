@@ -74,7 +74,50 @@ export async function PATCH(
   }
 }
 
-/* GET /api/admin/agencies/[id] — single agency with audit count */
+/* DELETE /api/admin/agencies/[id] — permanently remove agency + auth user */
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await requireAdmin();
+    const { id: agencyId } = await params;
+    const admin = createAdminClient();
+
+    // Verify it's an agency before deleting
+    const { data: profile } = await admin
+      .from("app_users")
+      .select("role")
+      .eq("id", agencyId)
+      .maybeSingle();
+
+    if (!profile) {
+      return NextResponse.json({ error: "Agency not found." }, { status: 404 });
+    }
+    if (profile.role !== "agency") {
+      return NextResponse.json({ error: "Cannot delete non-agency accounts here." }, { status: 400 });
+    }
+
+    // Delete their clients and audits first (FK safety), then profile, then auth user
+    await admin.from("geo_clients").delete().eq("created_by", agencyId);
+    await admin.from("geo_audits").delete().eq("created_by", agencyId);
+    await admin.from("app_users").delete().eq("id", agencyId);
+
+    const { error: authErr } = await admin.auth.admin.deleteUser(agencyId);
+    if (authErr) {
+      return NextResponse.json({ error: authErr.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
+}
+
+/* GET /api/admin/agencies/[id] — single agency with audits and clients */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -96,12 +139,24 @@ export async function GET(
       return NextResponse.json({ error: "Agency not found." }, { status: 404 });
     }
 
-    const { count } = await admin
-      .from("geo_audits")
-      .select("id", { count: "exact", head: true })
-      .eq("created_by", agencyId);
+    const [{ data: audits }, { data: clients }] = await Promise.all([
+      admin
+        .from("geo_audits")
+        .select("id, brand_name, brand_url, status, visibility_rate, engines, created_at, completed_at")
+        .eq("created_by", agencyId)
+        .order("created_at", { ascending: false }),
+      admin
+        .from("geo_clients")
+        .select("id, name, url, status, intake_token, report_slug, audit_id, intake_completed_at, created_at")
+        .eq("created_by", agencyId)
+        .order("created_at", { ascending: false }),
+    ]);
 
-    return NextResponse.json({ agency: { ...profile, audits_run: count ?? 0 } });
+    return NextResponse.json({
+      agency: { ...profile, audits_run: audits?.length ?? 0 },
+      audits: audits ?? [],
+      clients: clients ?? [],
+    });
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

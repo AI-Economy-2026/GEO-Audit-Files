@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
 import InfoTip from "@/components/audit/InfoTip";
-import Tooltip from "@/components/audit/Tooltip";
 
 interface Stats {
   totalAgencies: number;
@@ -40,14 +39,12 @@ export default function AdminOverviewPage() {
     <AdminShell
       title="Overview"
       actions={
-        <Tooltip label="Invite a new agency by email — they'll get a magic-link to set their password">
-          <button
-            className="btn btn-sm btn-primary"
-            onClick={() => router.push("/admin/agencies/new")}
-          >
-            New agency
-          </button>
-        </Tooltip>
+        <button
+          className="btn btn-sm btn-primary"
+          onClick={() => router.push("/admin/agencies/new")}
+        >
+          New agency
+        </button>
       }
     >
       <div className="page-head">

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Tooltip from "@/components/audit/Tooltip";
 
 interface NavItem {
   href: string;
@@ -120,31 +119,29 @@ export default function AdminSidebar() {
                 ? pathname === "/admin"
                 : pathname === item.href || pathname.startsWith(item.href + "/");
             return (
-              <Tooltip key={item.href} label={item.hint} side="right">
-                <Link
-                  href={item.href}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    color: active ? "var(--mint)" : "var(--text-2)",
-                    fontSize: 14,
-                    fontWeight: active ? 600 : 500,
-                    textDecoration: "none",
-                    background: active ? "var(--mint-weak)" : "transparent",
-                    border: `1px solid ${active ? "var(--mint-line)" : "transparent"}`,
-                    transition: "all 0.18s var(--ease)",
-                    width: "100%",
-                  }}
-                >
-                  <span style={{ width: 16, height: 16, flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </Link>
-              </Tooltip>
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  color: active ? "var(--mint)" : "var(--text-2)",
+                  fontSize: 14,
+                  fontWeight: active ? 600 : 500,
+                  textDecoration: "none",
+                  background: active ? "var(--mint-weak)" : "transparent",
+                  border: `1px solid ${active ? "var(--mint-line)" : "transparent"}`,
+                  transition: "all 0.18s var(--ease)",
+                }}
+              >
+                <span style={{ width: 16, height: 16, flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
+              </Link>
             );
           })}
         </nav>

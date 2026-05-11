@@ -117,10 +117,15 @@ export async function POST(req: NextRequest) {
     const newUserId = invite.data.user.id;
     const actionLink = invite.data.properties?.action_link ?? null;
 
-    // Backfill profile metadata + credits (trigger already inserted the row)
+    // Upsert so we don't race with the on_auth_user_created trigger.
+    // If trigger already inserted the row → conflict on id → update.
+    // If trigger hasn't fired yet → insert the row ourselves.
     const { error: profileErr } = await admin
       .from("app_users")
-      .update({
+      .upsert({
+        id: newUserId,
+        email,
+        role: "agency",
         agency_name,
         contact_name: contact_name || null,
         credits_remaining: initialCredits,

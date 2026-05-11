@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Tooltip from "./Tooltip";
+import { useMe } from "@/lib/use-me";
 
 interface NavItem {
   href: string;
@@ -24,6 +24,7 @@ interface SidebarProps {
  *  Audit-specific groups only render when auditId is provided. */
 export default function Sidebar({ auditId }: SidebarProps) {
   const pathname = usePathname();
+  const { me } = useMe();
 
   const workspaceGroup: Group = {
     label: "Workspace",
@@ -239,8 +240,9 @@ export default function Sidebar({ auditId }: SidebarProps) {
           <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {group.items.map((item) => {
               const active = pathname === item.href || pathname.startsWith(item.href + "/");
-              const link = (
+              return (
                 <Link
+                  key={item.href}
                   href={item.href}
                   style={{
                     display: "flex",
@@ -255,7 +257,6 @@ export default function Sidebar({ auditId }: SidebarProps) {
                     background: active ? "var(--mint-weak)" : "transparent",
                     border: `1px solid ${active ? "var(--mint-line)" : "transparent"}`,
                     transition: "all 0.18s var(--ease)",
-                    width: "100%",
                   }}
                 >
                   <span style={{ width: 16, height: 16, flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
@@ -264,42 +265,93 @@ export default function Sidebar({ auditId }: SidebarProps) {
                   <span>{item.label}</span>
                 </Link>
               );
-              return item.hint ? (
-                <Tooltip key={item.href} label={item.hint} side="right">
-                  {link}
-                </Tooltip>
-              ) : (
-                <span key={item.href}>{link}</span>
-              );
             })}
           </nav>
         </div>
       ))}
 
-      {/* Footer CTA */}
-      <div
-        style={{
-          marginTop: "auto",
-          padding: 16,
-          borderRadius: "var(--r-md)",
-          background: "var(--surface-2)",
-          border: "1px solid var(--border-soft)",
-        }}
-      >
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
-          Want a hand getting started?
-        </div>
-        <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginBottom: 12 }}>
-          We can tackle the quick fixes for you so you&rsquo;re in the right shape to move on the rest.
-        </div>
-        <a
-          className="btn btn-primary btn-sm"
-          style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
-          href="mailto:hello@rankco.ai?subject=Quick%20fixes%20-%20get%20us%20a%20hand"
+      {/* Footer — credit balance for agencies, quick-fix CTA for admins */}
+      {me?.role === "agency" ? (
+        <div
+          style={{
+            marginTop: "auto",
+            padding: 16,
+            borderRadius: "var(--r-md)",
+            background:
+              me.creditsRemaining > 0
+                ? "var(--surface-2)"
+                : "var(--crit-weak)",
+            border: `1px solid ${me.creditsRemaining > 0 ? "var(--border-soft)" : "var(--crit-line)"}`,
+          }}
         >
-          Get the quick fixes done
-        </a>
-      </div>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "var(--text-4)",
+              marginBottom: 6,
+            }}
+          >
+            Audit credits
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 28,
+              fontWeight: 700,
+              lineHeight: 1,
+              letterSpacing: "-0.02em",
+              color:
+                me.creditsRemaining > 0 ? "var(--mint)" : "var(--crit)",
+              marginBottom: 6,
+            }}
+          >
+            {me.creditsRemaining}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 12 }}>
+            {me.creditsRemaining > 0
+              ? `${me.creditsUsed} used so far`
+              : "No credits left — ask your admin to top up"}
+          </div>
+          <a
+            className="btn btn-sm"
+            style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
+            href={`mailto:hello@rankco.ai?subject=${encodeURIComponent(
+              `Credit top-up request — ${me.agencyName || me.email}`
+            )}&body=${encodeURIComponent(
+              `Hi, can I top up audit credits for ${me.agencyName || me.email}? Currently at ${me.creditsRemaining}.`
+            )}`}
+          >
+            Request top-up
+          </a>
+        </div>
+      ) : (
+        <div
+          style={{
+            marginTop: "auto",
+            padding: 16,
+            borderRadius: "var(--r-md)",
+            background: "var(--surface-2)",
+            border: "1px solid var(--border-soft)",
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
+            Want a hand getting started?
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5, marginBottom: 12 }}>
+            We can tackle the quick fixes for you so you&rsquo;re in the right shape to move on the rest.
+          </div>
+          <a
+            className="btn btn-primary btn-sm"
+            style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
+            href="mailto:hello@rankco.ai?subject=Quick%20fixes%20-%20get%20us%20a%20hand"
+          >
+            Get the quick fixes done
+          </a>
+        </div>
+      )}
     </aside>
   );
 }

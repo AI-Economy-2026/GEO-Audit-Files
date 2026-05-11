@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
-import Tooltip from "@/components/audit/Tooltip";
 
 interface Agency {
   id: string;
@@ -46,11 +45,9 @@ export default function AgenciesListPage() {
     <AdminShell
       title="Agencies"
       actions={
-        <Tooltip label="Invite a new agency by email">
-          <button className="btn btn-sm btn-primary" onClick={() => router.push("/admin/agencies/new")}>
-            New agency
-          </button>
-        </Tooltip>
+        <button className="btn btn-sm btn-primary" onClick={() => router.push("/admin/agencies/new")}>
+          New agency
+        </button>
       }
     >
       <div className="page-head">

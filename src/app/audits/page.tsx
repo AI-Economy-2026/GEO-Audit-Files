@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import WorkspaceShell from "@/components/audit/WorkspaceShell";
 import Tooltip from "@/components/audit/Tooltip";
 import { tone } from "@/components/audit/useAuditData";
+import { useMe } from "@/lib/use-me";
 
 interface Audit {
   id: string;
@@ -34,6 +35,8 @@ export default function AuditsPage() {
   const [audits, setAudits] = useState<Audit[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { me } = useMe();
+  const outOfCredits = me?.role === "agency" && me.creditsRemaining <= 0;
 
   useEffect(() => {
     (async () => {
@@ -73,7 +76,12 @@ export default function AuditsPage() {
     <WorkspaceShell
       title="Audits"
       actions={
-        <button className="btn btn-sm btn-primary" onClick={() => router.push("/audits/new")}>
+        <button
+          className="btn btn-sm btn-primary"
+          onClick={() => router.push("/audits/new")}
+          disabled={outOfCredits}
+          style={outOfCredits ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+        >
           New audit
         </button>
       }
@@ -87,6 +95,60 @@ export default function AuditsPage() {
           </p>
         </div>
       </div>
+
+      {outOfCredits && (
+        <div
+          className="card pad"
+          style={{
+            marginBottom: 18,
+            borderColor: "var(--crit-line)",
+            background: "var(--crit-weak)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: "var(--crit-weak)",
+                border: "1px solid var(--crit-line)",
+                display: "grid",
+                placeItems: "center",
+                color: "var(--crit)",
+                flexShrink: 0,
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, color: "var(--text)", fontSize: 14, marginBottom: 2 }}>
+                Out of audit credits
+              </div>
+              <div style={{ fontSize: 13, color: "var(--text-2)" }}>
+                Ask your administrator to top up before starting another audit.
+              </div>
+            </div>
+          </div>
+          <a
+            className="btn btn-sm"
+            style={{ textDecoration: "none", whiteSpace: "nowrap" }}
+            href={`mailto:hello@rankco.ai?subject=${encodeURIComponent(
+              `Credit top-up request — ${me?.agencyName || me?.email || ""}`
+            )}`}
+          >
+            Request top-up
+          </a>
+        </div>
+      )}
 
       {!loading && totalAudits > 0 && (
         <div className="kpi-strip">
@@ -155,7 +217,12 @@ export default function AuditsPage() {
             Run your first AI visibility audit to see how your brand appears across ChatGPT, Claude,
             Gemini, Perplexity and more.
           </p>
-          <button className="btn btn-primary" onClick={() => router.push("/audits/new")}>
+          <button
+            className="btn btn-primary"
+            onClick={() => router.push("/audits/new")}
+            disabled={outOfCredits}
+            style={outOfCredits ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
+          >
             Create your first audit
           </button>
         </div>

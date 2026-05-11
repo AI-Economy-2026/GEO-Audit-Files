@@ -83,6 +83,37 @@ export async function POST(
     );
   }
 
+  // Credit gate — the audit is billed to the agency that owns this client.
+  // If the agency's credits are exhausted or their account is suspended,
+  // refuse to create the audit so the intake form can show a clear error.
+  const { data: ownerProfile, error: ownerErr } = await admin
+    .from("app_users")
+    .select("role, credits_remaining, status")
+    .eq("id", client.created_by)
+    .maybeSingle();
+
+  if (ownerErr || !ownerProfile) {
+    return NextResponse.json(
+      { error: "This agency's account is missing — contact your administrator." },
+      { status: 403 }
+    );
+  }
+  if (ownerProfile.status === "suspended") {
+    return NextResponse.json(
+      { error: "This agency's account is suspended — contact them directly to resolve." },
+      { status: 403 }
+    );
+  }
+  if (ownerProfile.role === "agency" && (ownerProfile.credits_remaining ?? 0) <= 0) {
+    return NextResponse.json(
+      {
+        error:
+          "This agency has run out of audit credits. Please ask them to top up before submitting this form.",
+      },
+      { status: 402 }
+    );
+  }
+
   // Generate prompts from user queries
   const brandUrl = website_url || client.url;
   const generatedPrompts = generatePrompts(keywords);
@@ -164,6 +195,24 @@ export async function POST(
         { status: 502 }
       );
     }
+  }
+
+  // Decrement agency's credit (only for agencies — admin-owned clients,
+  // if any, run free).
+  if (ownerProfile.role === "agency") {
+    const { data: latest } = await admin
+      .from("app_users")
+      .select("credits_remaining, credits_used")
+      .eq("id", client.created_by)
+      .maybeSingle();
+    await admin
+      .from("app_users")
+      .update({
+        credits_remaining: Math.max(0, (latest?.credits_remaining ?? 0) - 1),
+        credits_used: (latest?.credits_used ?? 0) + 1,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", client.created_by);
   }
 
   return NextResponse.json(
