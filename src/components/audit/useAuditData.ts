@@ -21,6 +21,14 @@ export interface KeywordGap {
   competitors_present: { name: string; count: number }[];
 }
 
+export interface CitedDomain {
+  domain: string;
+  count: number;
+  share_percent: number;
+  engines: string[];
+  is_brand: boolean;
+}
+
 export interface SummaryJson {
   audit_metadata?: {
     brand: string;
@@ -35,6 +43,8 @@ export interface SummaryJson {
   competitor_analysis?: { mention_counts: Record<string, number>; most_mentioned: string | null };
   sentiment_breakdown?: { positive: number; neutral: number; negative: number };
   keyword_gap_analysis?: { keyword_gaps: KeywordGap[] };
+  top_cited_domains?: CitedDomain[];
+  citation_totals?: { total_citations: number; unique_domains: number };
 }
 
 export interface AuditData {
@@ -77,6 +87,7 @@ export interface ResultRow {
   prompt_type: string | null;
   position_rank: number | null;
   url_cited: boolean;
+  citations: string[] | null;
 }
 
 export interface AuditBundle {
@@ -103,7 +114,7 @@ export function useAuditData(id: string): AuditBundle {
         sb
           .from("geo_audit_results")
           .select(
-            "prompt_id, category, prompt_text, engine, engine_display, brand_mentioned, competitor_mentions, response_text, prompt_type, position_rank, url_cited"
+            "prompt_id, category, prompt_text, engine, engine_display, brand_mentioned, competitor_mentions, response_text, prompt_type, position_rank, url_cited, citations"
           )
           .eq("audit_id", id)
           .order("prompt_id"),
