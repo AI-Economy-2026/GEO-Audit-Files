@@ -1,38 +1,48 @@
 "use client";
 
+import { ReactNode } from "react";
 import Tooltip from "./Tooltip";
 
 interface Props {
+  /** The plain-English explanation shown on hover. */
   label: string;
+  /** Optional anchor side. Defaults to "top". */
   side?: "top" | "bottom" | "left" | "right";
+  /** The label text (or any node) that becomes the hover target. */
+  children: ReactNode;
 }
 
-/** Small "?" affordance next to a metric label. Hovering shows a
- *  plain-English explanation of what the metric actually means. */
-export default function InfoTip({ label, side = "top" }: Props) {
+/** Makes a label hoverable — wraps its children in a Tooltip and renders a
+ *  small inline info icon at the end as the visual affordance. The whole
+ *  children area becomes the hover target, not just the icon. */
+export default function InfoTip({ label, side = "top", children }: Props) {
   return (
     <Tooltip label={label} side={side} inline>
       <span
-        aria-label={label}
         style={{
           display: "inline-flex",
           alignItems: "center",
-          justifyContent: "center",
-          width: 14,
-          height: 14,
-          borderRadius: 999,
-          background: "transparent",
-          border: "1px solid var(--text-4)",
-          color: "var(--text-4)",
-          fontSize: 9,
-          fontWeight: 700,
-          marginLeft: 6,
-          cursor: "help",
-          verticalAlign: "middle",
-          lineHeight: 1,
+          gap: 5,
+          cursor: "pointer",
         }}
       >
-        ?
+        {children}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          style={{ opacity: 0.55, flexShrink: 0 }}
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
       </span>
     </Tooltip>
   );

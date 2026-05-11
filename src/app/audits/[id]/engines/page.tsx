@@ -154,8 +154,9 @@ export default function EngineGapsPage() {
       <div className="kpi-strip">
         <div className="kpi">
           <div className="kpi-label">
-            Strongest engine
-            <InfoTip label="The AI engine that cites your brand most often. Look at what's working here (page structure, schema, comparison content) and replicate the pattern on weaker engines." />
+            <InfoTip label="The AI engine that cites your brand most often. Look at what's working here (page structure, schema, comparison content) and replicate the pattern on weaker engines.">
+              Strongest engine
+            </InfoTip>
           </div>
           <div className={`kpi-number num-${strongest ? tone(strongest[1].visibility_rate) : "crit"}`}>
             {strongest ? Math.round(strongest[1].visibility_rate) : 0}<span className="unit">%</span>
@@ -168,8 +169,9 @@ export default function EngineGapsPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            Weakest engine
-            <InfoTip label="The AI engine that cites you least (often 0%). This is usually the single biggest lift opportunity — fix what makes this engine ignore you and your overall rank jumps." />
+            <InfoTip label="The AI engine that cites you least (often 0%). This is usually the single biggest lift opportunity — fix what makes this engine ignore you and your overall rank jumps.">
+              Weakest engine
+            </InfoTip>
           </div>
           <div className={`kpi-number num-${weakest ? tone(weakest[1].visibility_rate) : "crit"}`}>
             {weakest ? Math.round(weakest[1].visibility_rate) : 0}<span className="unit">%</span>
@@ -182,8 +184,9 @@ export default function EngineGapsPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            Engine spread
-            <InfoTip label="Gap between your best and worst engine in percentage points. Low spread = consistent visibility. High spread = you're winning some engines but invisible on others — target the laggards." />
+            <InfoTip label="Gap between your best and worst engine in percentage points. Low spread = consistent visibility. High spread = you're winning some engines but invisible on others — target the laggards.">
+              Engine spread
+            </InfoTip>
           </div>
           <div className={`kpi-number num-${spread > 20 ? "warn" : "good"}`}>
             {spread}<span className="unit">pt</span>
@@ -196,8 +199,9 @@ export default function EngineGapsPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            Engines tested
-            <InfoTip label="Number of AI engines included in this audit. We cover the 7 most-used: ChatGPT, Claude, Gemini, Perplexity, Grok, Google AI Mode, Google AI Overview." />
+            <InfoTip label="Number of AI engines included in this audit. We cover the 7 most-used: ChatGPT, Claude, Gemini, Perplexity, Grok, Google AI Mode, Google AI Overview.">
+              Engines tested
+            </InfoTip>
           </div>
           <div className="kpi-number">{audit.engines?.length ?? 0}</div>
           <div className="kpi-sub">weighted by usage</div>
