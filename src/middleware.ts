@@ -78,10 +78,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // /admin/* — admin role only
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
-    const role = await loadRole(user.id);
-    if (role !== "admin") {
+  // Load role once for all protected routes
+  const role = await loadRole(user.id);
+
+  // Admin — can only access /admin/* routes
+  if (role === "admin") {
+    if (!pathname.startsWith("/admin")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
+  // Agency — cannot access /admin/* routes
+  if (role === "agency") {
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) {
       const url = request.nextUrl.clone();
       url.pathname = "/clients";
       return NextResponse.redirect(url);
@@ -89,8 +101,10 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // /clients, /audits/* etc — agencies (and admins, who can shadow-test)
-  return supabaseResponse;
+  // No role found (app_users row missing) — send to login
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  return NextResponse.redirect(url);
 }
 
 export const config = {
