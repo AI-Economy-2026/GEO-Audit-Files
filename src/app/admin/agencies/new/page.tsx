@@ -12,14 +12,14 @@ export default function NewAgencyPage() {
   const [credits, setCredits] = useState<number>(4);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [actionLink, setActionLink] = useState<string | null>(null);
+  const [result, setResult] = useState<{ email: string; password: string; login_url: string; email_sent: boolean } | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submitting) return;
     setSubmitting(true);
     setError(null);
-    setActionLink(null);
+    setResult(null);
 
     try {
       const res = await fetch("/api/admin/agencies", {
@@ -34,13 +34,7 @@ export default function NewAgencyPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to invite agency.");
-      // If Supabase didn't ship the email itself, we can hand over the
-      // action_link for the admin to forward manually.
-      if (data.action_link) {
-        setActionLink(data.action_link);
-      } else {
-        router.push("/admin/agencies");
-      }
+      setResult({ ...data.credentials, email_sent: data.email_sent });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to invite agency.");
     } finally {
@@ -60,50 +54,51 @@ export default function NewAgencyPage() {
         </div>
       </div>
 
-      {actionLink ? (
-        <div className="card pad-lg" style={{ marginBottom: 18 }}>
-          <h3
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 18,
-              fontWeight: 600,
-              margin: "0 0 10px",
-              color: "var(--text)",
-            }}
-          >
-            ✓ Agency invited
-          </h3>
-          <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
-            Supabase didn&rsquo;t deliver the email (SMTP not configured). Send this magic-link to the
-            agency manually:
-          </p>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 12,
-              padding: 12,
-              borderRadius: "var(--r-md)",
-              background: "var(--inset)",
-              border: "1px solid var(--border-soft)",
-              wordBreak: "break-all",
-              color: "var(--mint)",
-              marginBottom: 14,
-            }}
-          >
-            {actionLink}
+      {result ? (
+        <div className="card pad-lg" style={{ maxWidth: 560 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--mint-weak)", border: "1px solid var(--mint-line)", display: "grid", placeItems: "center", color: "var(--mint)", flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+            </div>
+            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 600, margin: 0, color: "var(--text)" }}>
+              Agency created
+            </h3>
           </div>
+
+          {result.email_sent ? (
+            <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 18 }}>
+              A welcome email with login credentials has been sent to <strong>{result.email}</strong>. Credentials are also shown below for your records.
+            </p>
+          ) : (
+            <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 18 }}>
+              Email could not be sent (SMTP not configured). Share these credentials with the agency manually.
+            </p>
+          )}
+
+          <div style={{ background: "var(--inset)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-md)", padding: "16px 20px", marginBottom: 18 }}>
+            {[
+              { label: "Login URL", value: result.login_url },
+              { label: "Email", value: result.email },
+              { label: "Temporary password", value: result.password },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-4)", marginBottom: 3 }}>{label}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--mint)", wordBreak: "break-all" }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
           <div style={{ display: "flex", gap: 10 }}>
             <button
               className="btn btn-sm"
-              onClick={() => navigator.clipboard.writeText(actionLink)}
+              onClick={() => navigator.clipboard.writeText(
+                `Login: ${result.login_url}\nEmail: ${result.email}\nPassword: ${result.password}`
+              )}
             >
-              Copy link
+              Copy credentials
             </button>
-            <button
-              className="btn btn-sm btn-primary"
-              onClick={() => router.push("/admin/agencies")}
-            >
-              Done — view agencies
+            <button className="btn btn-sm btn-primary" onClick={() => router.push("/admin/agencies")}>
+              View all agencies
             </button>
           </div>
         </div>

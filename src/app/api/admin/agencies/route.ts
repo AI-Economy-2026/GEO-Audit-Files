@@ -65,6 +65,14 @@ export async function GET() {
   }
 }
 
+function generatePassword(): string {
+  // Avoids visually ambiguous chars (0/O, 1/I/l)
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const bytes = new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => chars[b % chars.length]).join("");
+}
+
 export async function POST(req: NextRequest) {
   try {
     await requireAdmin();
@@ -83,43 +91,35 @@ export async function POST(req: NextRequest) {
       );
     }
     const initialCredits = Math.max(0, Number.isInteger(credits) ? (credits as number) : 0);
+    const password = generatePassword();
 
     const admin = createAdminClient();
 
-    // generateLink({ type: 'invite' }) creates the user + returns the
-    // magic-link in properties.action_link. If Supabase SMTP is configured,
-    // it ALSO emails the link automatically. Either way, we return the
-    // link so the admin can hand-deliver it if email isn't set up.
-    const origin =
-      req.nextUrl.origin ||
-      process.env.NEXT_PUBLIC_SITE_URL ||
-      "http://localhost:3000";
-    const invite = await admin.auth.admin.generateLink({
-      type: "invite",
+    // Create user with a password directly — no magic link needed.
+    // email_confirm: true skips the confirmation step.
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
-      options: { redirectTo: `${origin}/clients` },
+      password,
+      email_confirm: true,
     });
 
-    if (invite.error || !invite.data?.user) {
-      const msg = invite.error?.message?.toLowerCase() || "";
-      if (msg.includes("already") || msg.includes("exist") || invite.error?.status === 422) {
+    if (createErr || !created?.user) {
+      const msg = createErr?.message?.toLowerCase() || "";
+      if (msg.includes("already") || msg.includes("exist")) {
         return NextResponse.json(
           { error: "An account with that email already exists." },
           { status: 409 }
         );
       }
       return NextResponse.json(
-        { error: invite.error?.message || "Failed to invite user." },
+        { error: createErr?.message || "Failed to create user." },
         { status: 500 }
       );
     }
 
-    const newUserId = invite.data.user.id;
-    const actionLink = invite.data.properties?.action_link ?? null;
+    const newUserId = created.user.id;
 
-    // Upsert so we don't race with the on_auth_user_created trigger.
-    // If trigger already inserted the row → conflict on id → update.
-    // If trigger hasn't fired yet → insert the row ourselves.
+    // Upsert profile — handles trigger race condition
     const { error: profileErr } = await admin
       .from("app_users")
       .upsert({
@@ -131,11 +131,34 @@ export async function POST(req: NextRequest) {
         credits_remaining: initialCredits,
         status: "active",
         updated_at: new Date().toISOString(),
-      })
-      .eq("id", newUserId);
+      });
 
     if (profileErr) {
       return NextResponse.json({ error: profileErr.message }, { status: 500 });
+    }
+
+    // Ask the Python worker to send the welcome email
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      req.nextUrl.origin ||
+      "https://rankco.ai";
+    const loginUrl = `${siteUrl}/login`;
+    const workerUrl = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
+    const workerKey = process.env.GEO_WORKER_API_KEY || "";
+
+    let emailSent = false;
+    try {
+      const emailRes = await fetch(`${workerUrl}/api/send-invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${workerKey}`,
+        },
+        body: JSON.stringify({ email, agency_name, password, login_url: loginUrl }),
+      });
+      emailSent = emailRes.ok;
+    } catch {
+      // Non-fatal — credentials returned to admin as fallback
     }
 
     return NextResponse.json(
@@ -149,10 +172,9 @@ export async function POST(req: NextRequest) {
           credits_used: 0,
           status: "active",
         },
-        // Present even when SMTP is configured (Supabase still sends the
-        // email, but exposing the link lets the admin hand-deliver if
-        // email delivery fails or isn't set up at all).
-        action_link: actionLink,
+        email_sent: emailSent,
+        // Always return so admin can copy-paste as fallback
+        credentials: { email, password, login_url: loginUrl },
       },
       { status: 201 }
     );
