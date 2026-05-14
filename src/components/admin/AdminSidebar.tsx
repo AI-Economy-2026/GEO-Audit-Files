@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 interface NavItem {
   href: string;
@@ -41,6 +42,13 @@ const NAV: NavItem[] = [
 /** Admin-flavoured sidebar — same theme as agency Sidebar, different nav. */
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
   return (
     <aside
       style={{
@@ -147,22 +155,59 @@ export default function AdminSidebar() {
         </nav>
       </div>
 
-      {/* Sign-out hint */}
-      <div
-        style={{
-          marginTop: "auto",
-          padding: 16,
-          borderRadius: "var(--r-md)",
-          background: "var(--surface-2)",
-          border: "1px solid var(--border-soft)",
-        }}
-      >
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
-          Logged in as admin
+      {/* Footer */}
+      <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div
+          style={{
+            padding: 16,
+            borderRadius: "var(--r-md)",
+            background: "var(--surface-2)",
+            border: "1px solid var(--border-soft)",
+          }}
+        >
+          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
+            Logged in as admin
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5 }}>
+            Agencies log in at the same URL — middleware routes them away from /admin automatically.
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5 }}>
-          Agencies you create here can log in at the same URL — middleware routes them away from /admin automatically.
-        </div>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            width: "100%",
+            padding: "10px 12px",
+            borderRadius: 10,
+            background: "transparent",
+            border: "1px solid transparent",
+            color: "var(--text-3)",
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: "pointer",
+            transition: "all 0.18s var(--ease)",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "var(--crit-weak)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--crit-line)";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--crit)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "transparent";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--text-3)";
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          Log out
+        </button>
       </div>
     </aside>
   );
