@@ -103,7 +103,7 @@ export default function NewAgencyPage() {
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="card pad-lg" style={{ maxWidth: 560 }}>
+        <form onSubmit={handleSubmit} className="card pad-lg" style={{ width: "100%" }}>
           <Field
             label="Agency name"
             hint="What the agency will see in the sidebar / topbar."

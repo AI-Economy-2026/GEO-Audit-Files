@@ -28,14 +28,14 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="h-screen w-64 fixed left-0 top-0 border-r border-white/5 bg-[#061423]/40 backdrop-blur-2xl flex flex-col p-4 gap-2 z-50">
+    <aside className="h-screen w-64 fixed left-0 top-0 border-r border-outline-variant bg-surface/60 backdrop-blur-2xl flex flex-col p-4 gap-2 z-50">
       <Link href="/audits" className="flex items-center gap-3 px-2 py-4 mb-6">
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
           <span className="material-symbols-outlined text-on-primary-fixed font-bold">radar</span>
         </div>
         <div>
           <h1 className="text-primary font-black leading-tight tracking-tighter">GEO Audit</h1>
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest">Console V1</p>
+          <p className="text-[10px] text-on-surface-variant uppercase tracking-widest">Console V1</p>
         </div>
       </Link>
 
@@ -48,8 +48,8 @@ export default function Sidebar() {
               href={item.href}
               className={
                 active
-                  ? "flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary rounded-xl border-r-2 border-primary hover:translate-x-1 transition-all duration-200"
-                  : "flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-white/5 rounded-xl hover:translate-x-1 transition-all duration-200"
+                  ? "flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary rounded-xl border-r-2 border-primary transition-colors duration-200"
+                  : "flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-primary/5 rounded-xl transition-colors duration-200"
               }
             >
               <span className="material-symbols-outlined">{item.icon}</span>
@@ -59,17 +59,17 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-2 border-t border-white/5 pt-4">
+      <div className="mt-auto flex flex-col gap-2 border-t border-outline-variant pt-4">
         <a
           href="mailto:support@balmeragency.com.au"
-          className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-white/5 rounded-xl hover:translate-x-1 transition-all duration-200"
+          className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-primary/5 rounded-xl transition-colors duration-200"
         >
           <span className="material-symbols-outlined">help</span>
           <span className="text-sm font-medium">Help Center</span>
         </a>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-white/5 rounded-xl hover:translate-x-1 transition-all duration-200 w-full text-left"
+          className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-primary/5 rounded-xl transition-colors duration-200 w-full text-left"
         >
           <span className="material-symbols-outlined">logout</span>
           <span className="text-sm font-medium">Log Out</span>

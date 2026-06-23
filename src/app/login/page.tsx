@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -32,12 +33,12 @@ export default function LoginPage() {
   }
 
   const inputCls =
-    "w-full px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
+    "w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
 
   return (
     <AuthShell>
       <div className="text-center mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-primary mx-auto mb-4 flex items-center justify-center shadow-[0_0_30px_rgba(68,216,241,0.3)]">
+        <div className="w-14 h-14 rounded-2xl bg-primary mx-auto mb-4 flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.3)]">
           <span className="material-symbols-outlined text-on-primary-fixed text-3xl">radar</span>
         </div>
         <h1 className="text-3xl font-extrabold tracking-tighter text-on-surface">GEO Audit Pro</h1>
@@ -64,13 +65,26 @@ export default function LoginPage() {
             <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
               Password
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputCls}
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`${inputCls} pr-12`}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant hover:text-on-surface cursor-pointer rounded-r-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  {showPassword ? "visibility_off" : "visibility"}
+                </span>
+              </button>
+            </div>
           </div>
 
           {error && (

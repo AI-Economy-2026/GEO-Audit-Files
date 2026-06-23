@@ -223,7 +223,7 @@ export default function NewAuditPage() {
   const rankingPrompts = prompts.filter((p) => p.prompt_type === "ranking");
 
   const inputCls =
-    "w-full px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
+    "w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
 
   return (
     <AppShell
@@ -386,12 +386,12 @@ export default function NewAuditPage() {
                     {competitors.map((comp) => (
                       <li
                         key={comp}
-                        className="flex justify-between items-center p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                        className="flex justify-between items-center p-3 bg-white/5 border border-outline-variant rounded-xl hover:bg-white/10 transition-colors"
                       >
                         <span className="font-medium text-on-surface">{comp}</span>
                         <button
                           onClick={() => removeCompetitor(comp)}
-                          className="text-error hover:opacity-80 text-xs font-bold uppercase tracking-wider"
+                          className="text-error hover:opacity-80 text-xs font-bold uppercase tracking-wider cursor-pointer"
                         >
                           Remove
                         </button>
@@ -437,12 +437,12 @@ export default function NewAuditPage() {
                     {keywords.map((kw) => (
                       <li
                         key={kw}
-                        className="flex justify-between items-center p-3 bg-white/5 border border-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                        className="flex justify-between items-center p-3 bg-white/5 border border-outline-variant rounded-xl hover:bg-white/10 transition-colors"
                       >
                         <span className="font-medium text-on-surface">{kw}</span>
                         <button
                           onClick={() => removeKeyword(kw)}
-                          className="text-error hover:opacity-80 text-xs font-bold uppercase tracking-wider"
+                          className="text-error hover:opacity-80 text-xs font-bold uppercase tracking-wider cursor-pointer"
                         >
                           Remove
                         </button>
@@ -466,11 +466,11 @@ export default function NewAuditPage() {
                 </p>
               </div>
               <div className="pt-4">
-                <div className="bg-surface-container-lowest rounded-2xl overflow-hidden border border-white/5 mb-4">
+                <div className="bg-surface-container-lowest rounded-2xl overflow-hidden border border-outline-variant mb-4">
                   {intentPrompts.map((p, idx) => (
                     <div
                       key={p.prompt_id}
-                      className="flex gap-4 p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group"
+                      className="flex gap-4 p-4 border-b border-outline-variant last:border-0 hover:bg-white/5 transition-colors group"
                     >
                       <div className="flex items-start justify-center pt-2 w-8 text-primary/60 font-mono font-bold text-sm select-none">
                         {idx + 1}.
@@ -484,7 +484,8 @@ export default function NewAuditPage() {
                       />
                       <button
                         onClick={() => removePrompt(p.prompt_id)}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error opacity-40 group-hover:opacity-100 transition-all"
+                        aria-label="Remove"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error opacity-40 group-hover:opacity-100 transition-all cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-xl">close</span>
                       </button>
@@ -493,7 +494,7 @@ export default function NewAuditPage() {
                 </div>
                 <button
                   onClick={() => addNewPromptManually("intent")}
-                  className="text-primary hover:opacity-80 text-sm font-bold mt-2 inline-flex items-center gap-1"
+                  className="text-primary hover:opacity-80 text-sm font-bold mt-2 inline-flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   Add another query
@@ -514,11 +515,11 @@ export default function NewAuditPage() {
                 </p>
               </div>
               <div className="pt-4 max-h-[560px] overflow-y-auto pr-1">
-                <div className="bg-surface-container-lowest rounded-2xl overflow-hidden border border-white/5 mb-4">
+                <div className="bg-surface-container-lowest rounded-2xl overflow-hidden border border-outline-variant mb-4">
                   {rankingPrompts.map((p, idx) => (
                     <div
                       key={p.prompt_id}
-                      className="flex gap-4 p-4 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors group"
+                      className="flex gap-4 p-4 border-b border-outline-variant last:border-0 hover:bg-white/5 transition-colors group"
                     >
                       <div className="flex items-start justify-center pt-2 w-8 text-primary/60 font-mono font-bold text-sm select-none">
                         {idx + 1}.
@@ -532,7 +533,8 @@ export default function NewAuditPage() {
                       />
                       <button
                         onClick={() => removePrompt(p.prompt_id)}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error opacity-40 group-hover:opacity-100 transition-all"
+                        aria-label="Remove"
+                        className="w-10 h-10 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error opacity-40 group-hover:opacity-100 transition-all cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-xl">close</span>
                       </button>
@@ -541,7 +543,7 @@ export default function NewAuditPage() {
                 </div>
                 <button
                   onClick={() => addNewPromptManually("ranking")}
-                  className="text-primary hover:opacity-80 text-sm font-bold mt-2 inline-flex items-center gap-1"
+                  className="text-primary hover:opacity-80 text-sm font-bold mt-2 inline-flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   Add more ranking prompts
@@ -560,7 +562,7 @@ export default function NewAuditPage() {
           )}
 
           {/* FOOTER */}
-          <div className="mt-12 flex items-center justify-between pt-6 border-t border-white/5">
+          <div className="mt-12 flex items-center justify-between pt-6 border-t border-outline-variant">
             {step > 1 ? (
               <Button
                 variant="ghost"

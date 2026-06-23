@@ -200,7 +200,11 @@ export default function AgencyDetailPage() {
             Update the display name shown across the admin panel.
           </p>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <label htmlFor="agency-name-input" className="sr-only">
+              Agency name
+            </label>
             <input
+              id="agency-name-input"
               type="text"
               value={editName ?? (agency.agency_name || "")}
               onChange={(e) => setEditName(e.target.value)}
@@ -236,7 +240,11 @@ export default function AgencyDetailPage() {
             Top up or revoke credits. Positive = add, negative = revoke. Floors at 0.
           </p>
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14 }}>
+            <label htmlFor="credit-delta-input" className="sr-only">
+              Credit adjustment amount
+            </label>
             <input
+              id="credit-delta-input"
               type="number"
               value={creditDelta}
               onChange={(e) => setCreditDelta(parseInt(e.target.value || "0", 10))}
@@ -431,7 +439,24 @@ export default function AgencyDetailPage() {
           className="card pad-lg"
           style={{ borderColor: "var(--crit-line)", maxWidth: 560 }}
         >
-          <h2 style={{ fontSize: 18, margin: "0 0 4px", color: "var(--crit)" }}>Danger zone</h2>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "0 0 4px" }}>
+            <h2 style={{ fontSize: 18, margin: 0 }}>Danger zone</h2>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--crit)",
+                background: "var(--crit-weak)",
+                border: "1px solid var(--crit-line)",
+                borderRadius: 6,
+                padding: "2px 8px",
+              }}
+            >
+              Caution
+            </span>
+          </div>
           <p style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 18 }}>
             Permanently delete this agency, their clients, audits, and login. This cannot be undone.
           </p>

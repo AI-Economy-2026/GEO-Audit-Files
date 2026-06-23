@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { SarahPreset } from "@/app/api/ask-sarah/route";
 import type { DerivedPromptData } from "@/lib/opportunity-engine";
 
@@ -13,10 +13,50 @@ interface Props {
   engineBreakdown?: Record<string, { display_name: string; visibility_rate: number }>;
 }
 
-const PRESETS: { preset: SarahPreset; icon: string; label: string }[] = [
-  { preset: "explain", icon: "📊", label: "Explain this report to me" },
-  { preset: "priority", icon: "🎯", label: "What should we do first?" },
-  { preset: "content", icon: "✏️", label: "What content should we create next?" },
+const ICON_PROPS = {
+  width: 16,
+  height: 16,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
+const PRESETS: { preset: SarahPreset; icon: ReactNode; label: string }[] = [
+  {
+    preset: "explain",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <line x1="12" y1="20" x2="12" y2="10" />
+        <line x1="18" y1="20" x2="18" y2="4" />
+        <line x1="6" y1="20" x2="6" y2="16" />
+      </svg>
+    ),
+    label: "Explain this report to me",
+  },
+  {
+    preset: "priority",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="6" />
+        <circle cx="12" cy="12" r="2" />
+      </svg>
+    ),
+    label: "What should we do first?",
+  },
+  {
+    preset: "content",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </svg>
+    ),
+    label: "What content should we create next?",
+  },
 ];
 
 export default function AskSarah({
@@ -77,11 +117,11 @@ export default function AskSarah({
   }
 
   return (
-    <div className="glass-card rounded-xl border border-white/5 shadow-sm p-6 h-full flex flex-col">
+    <div className="glass-card rounded-xl shadow-sm p-6 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center text-on-primary-fixed font-bold text-sm"
-          style={{ background: "linear-gradient(135deg, #004AAD, #0BA5C9)" }}>
+          style={{ background: "linear-gradient(135deg, var(--primary), var(--tertiary))" }}>
           S
         </div>
         <div>
@@ -104,11 +144,11 @@ export default function AskSarah({
             className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left text-sm font-semibold transition-all
               ${activePreset === preset && (loading || response)
                 ? "bg-primary/10 border-primary/30 text-primary"
-                : "bg-white/5 border-white/5 text-on-surface hover:bg-primary/10 hover:border-primary/30 hover:text-primary hover:translate-x-1"
+                : "bg-surface-container border-outline-variant text-on-surface hover:bg-primary/10 hover:border-primary/30 hover:text-primary"
               }
               disabled:opacity-60 disabled:cursor-wait`}
           >
-            <span className="text-lg shrink-0">{icon}</span>
+            <span className="shrink-0 text-primary">{icon}</span>
             {label}
           </button>
         ))}

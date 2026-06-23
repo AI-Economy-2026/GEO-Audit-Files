@@ -360,8 +360,8 @@ export default function ActivatePage() {
                               width: 22,
                               height: 22,
                               borderRadius: 6,
-                              background: done ? "var(--mint)" : "var(--surface-2)",
-                              border: `1px solid ${done ? "var(--mint)" : "var(--border)"}`,
+                              background: done ? "var(--good)" : "var(--surface-2)",
+                              border: `1px solid ${done ? "var(--good-line)" : "var(--border)"}`,
                               cursor: pending ? "wait" : "pointer",
                               display: "grid",
                               placeItems: "center",
@@ -418,10 +418,10 @@ export default function ActivatePage() {
                               className={`tag`}
                               style={{
                                 background:
-                                  it.category === "technical" ? "var(--info-weak)" : "var(--mint-weak)",
+                                  it.category === "technical" ? "var(--info-weak)" : "var(--info-weak)",
                                 borderColor:
-                                  it.category === "technical" ? "var(--info-line)" : "var(--mint-line)",
-                                color: it.category === "technical" ? "var(--info)" : "var(--mint)",
+                                  it.category === "technical" ? "var(--info-line)" : "var(--info-line)",
+                                color: it.category === "technical" ? "var(--info)" : "var(--info)",
                               }}
                             >
                               {it.category === "technical" ? "Technical" : "Non-technical"}

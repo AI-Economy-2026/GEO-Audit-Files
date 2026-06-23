@@ -58,7 +58,7 @@ export default function NewClientPage() {
     : "";
 
   const inputCls =
-    "w-full px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
+    "w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
 
   return (
     <AppShell
@@ -154,7 +154,7 @@ export default function NewClientPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 bg-surface-container-lowest rounded-xl border border-white/5 p-3">
+              <div className="flex items-center gap-2 bg-surface-container-lowest rounded-xl border border-outline-variant p-3">
                 <code className="flex-1 text-sm text-on-surface break-all font-mono">
                   {intakeLink}
                 </code>

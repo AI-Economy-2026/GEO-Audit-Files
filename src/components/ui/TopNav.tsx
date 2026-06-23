@@ -24,7 +24,7 @@ export default function TopNav({
   const pathname = usePathname();
 
   return (
-    <nav className="fixed top-0 left-64 right-0 z-40 bg-[#061423]/40 backdrop-blur-xl flex items-center justify-between px-8 py-4 shadow-[0_20px_50px_rgba(68,216,241,0.05)]">
+    <nav className="fixed top-0 left-64 right-0 z-40 bg-surface/60 backdrop-blur-xl flex items-center justify-between px-8 py-4 shadow-[0_20px_50px_rgba(94,234,212,0.05)]">
       <div className="flex items-center gap-8">
         <span className="text-xl font-bold tracking-tighter text-primary">{brand}</span>
         {tabs.length > 0 && (
@@ -38,7 +38,7 @@ export default function TopNav({
                   className={
                     active
                       ? "text-primary border-b-2 border-primary pb-1 tracking-tight"
-                      : "text-slate-400 hover:text-slate-200 transition-colors tracking-tight"
+                      : "text-on-surface-variant hover:text-on-surface transition-colors tracking-tight"
                   }
                 >
                   {tab.label}

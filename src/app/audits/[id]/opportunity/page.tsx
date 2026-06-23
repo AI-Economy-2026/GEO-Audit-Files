@@ -408,13 +408,7 @@ export default function OpportunityPage() {
           </div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 18,
-          }}
-        >
+        <div className="grid-3">
           {cards.map((c, i) => (
             <div
               key={i}

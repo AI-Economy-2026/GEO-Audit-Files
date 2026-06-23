@@ -11,7 +11,7 @@ export default function ThirtyDayPlan({ prompts }: Props) {
   const plan = generateThirtyDayPlan(prompts);
 
   return (
-    <div className="glass-card rounded-xl border border-white/5 shadow-sm p-6 h-full">
+    <div className="glass-card rounded-xl shadow-sm p-6 h-full">
       <h4 className="text-base font-bold text-on-surface mb-1">30-Day Plan of Attack</h4>
       <p className="text-sm text-on-surface-variant mb-5">
         Auto-generated from your top 3 prompts by activation score.
@@ -19,7 +19,7 @@ export default function ThirtyDayPlan({ prompts }: Props) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {plan.map((week) => (
-          <div key={week.week} className="bg-white/5 rounded-xl border border-white/5 p-4">
+          <div key={week.week} className="bg-surface-container rounded-xl border border-outline-variant p-4">
             <div className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">
               Week {week.week}
             </div>

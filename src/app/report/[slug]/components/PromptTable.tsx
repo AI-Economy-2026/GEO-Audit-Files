@@ -69,10 +69,10 @@ export default function PromptTable({ prompts }: Props) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-white/5 glass-card shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-outline-variant glass-card shadow-sm">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/5">
+          <tr className="border-b border-outline-variant">
             {[
               { label: "Prompt", col: null },
               { label: "Your Result", col: "client_ratio" as SortKey },
@@ -94,7 +94,7 @@ export default function PromptTable({ prompts }: Props) {
         </thead>
         <tbody>
           {sorted.map((p) => (
-            <tr key={p.prompt_id} className="border-b border-white/5 hover:bg-white/5">
+            <tr key={p.prompt_id} className="border-b border-outline-variant hover:bg-surface-container">
               <td className="px-4 py-4 max-w-[260px]">
                 <div className="font-medium text-on-surface leading-snug">{p.prompt_text}</div>
                 <span className="mt-1 inline-block px-1.5 py-0 rounded text-[10px] font-bold uppercase tracking-wide bg-surface-container-high text-on-surface-variant">
@@ -138,7 +138,7 @@ export default function PromptTable({ prompts }: Props) {
                 </span>
               </td>
               <td className="px-4 py-4">
-                <span className="text-xs font-semibold px-2 py-1 rounded-md bg-primary/10 text-primary border border-[#004AAD]/10">
+                <span className="text-xs font-semibold px-2 py-1 rounded-md bg-primary/10 text-primary border border-primary/10">
                   {p.content_suggestion}
                 </span>
               </td>

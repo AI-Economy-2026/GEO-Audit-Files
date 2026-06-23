@@ -90,7 +90,7 @@ export default function PrioritiseTab({
       {/* Hero summary */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         {/* Left: summary + stats */}
-        <div className="lg:col-span-3 glass-card rounded-3xl border border-white/5 p-6">
+        <div className="lg:col-span-3 glass-card rounded-3xl border border-outline-variant p-6">
           <h2 className="text-xl font-bold text-on-surface mb-2 leading-snug">
             Turn your visibility gaps into a prioritised action plan.
           </h2>
@@ -105,7 +105,7 @@ export default function PrioritiseTab({
               { value: quickWins, label: "Quick wins" },
               { value: "30–60d", label: "Execution window" },
             ].map(({ value, label }) => (
-              <div key={label} className="bg-white/5 rounded-xl border border-white/5 px-4 py-3">
+              <div key={label} className="bg-surface-container rounded-xl border border-outline-variant px-4 py-3">
                 <div className="text-2xl font-extrabold text-on-surface leading-none mb-1">{value}</div>
                 <div className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">{label}</div>
               </div>

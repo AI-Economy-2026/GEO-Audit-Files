@@ -172,10 +172,9 @@ const ENGINE_LABELS: Record<string, string> = {
  * 15-35 is weak (amber/secondary). <15 is critical (red). Never in headlines.
  */
 function rateColor(rate: number) {
-  if (rate >= 60) return { text: "text-on-surface", bar: "bg-[#1D9E75]", badge: "bg-[#E1F5EE] text-[#1D9E75]" };
-  if (rate >= 35) return { text: "text-on-surface", bar: "bg-primary", badge: "bg-primary/10 text-primary" };
-  if (rate >= 15) return { text: "text-on-surface", bar: "bg-secondary", badge: "bg-secondary/10 text-secondary" };
-  return { text: "text-on-surface", bar: "bg-error", badge: "bg-error/10 text-error" };
+  if (rate >= 60) return { text: "text-on-surface", bar: "bg-good", badge: "bg-good/10 text-good" };
+  if (rate >= 35) return { text: "text-on-surface", bar: "bg-warn", badge: "bg-warn/10 text-warn" };
+  return { text: "text-on-surface", bar: "bg-crit", badge: "bg-crit/10 text-crit" };
 }
 
 function priorityLabel(gap: number) {
@@ -325,7 +324,7 @@ export default function ReportPage() {
   }, [audit?.id, audit?.status]);
 
   const brandedHeader = (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-outline-variant">
+    <header className="no-print sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-outline-variant">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
@@ -433,6 +432,17 @@ export default function ReportPage() {
 
   return (
     <div className="theme-light min-h-screen bg-ambient">
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+@media print {
+  .no-print { display: none !important; }
+  .theme-light, body { background: #fff !important; }
+  .glass-card, [class*="shadow"] { box-shadow: none !important; }
+  section, .glass-card { break-inside: avoid; page-break-inside: avoid; }
+}`,
+        }}
+      />
       {brandedHeader}
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
@@ -450,7 +460,7 @@ export default function ReportPage() {
 
         {/* In progress */}
         {isRunning && (
-          <section className="glass-card border border-white/5 rounded-3xl p-8 text-center">
+          <section className="glass-card border-0 rounded-3xl p-8 text-center">
             <h2 className="text-2xl font-bold text-on-surface mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
               Analysing AI Visibility
             </h2>
@@ -512,7 +522,7 @@ export default function ReportPage() {
         {isCompleted && (
           <>
             {/* Visibility Score Hero */}
-            <section className="glass-card border border-white/5 rounded-3xl p-10 text-center">
+            <section className="glass-card border-0 rounded-3xl p-10 text-center">
               <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">
                 GEO Audit &amp; Action Plan
               </p>
@@ -576,7 +586,7 @@ export default function ReportPage() {
               ].map((kpi) => (
                 <div
                   key={kpi.label}
-                  className={`glass-card border border-white/5 border-t-4 ${kpi.accent} rounded-2xl p-5 text-center`}
+                  className={`glass-card border-0 border-t-4 ${kpi.accent} rounded-2xl p-5 text-center`}
                 >
                   <div className={`text-3xl font-black ${kpi.color}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
                     {kpi.value}
@@ -590,7 +600,7 @@ export default function ReportPage() {
 
             {/* Re-Audit Button (hidden when any version is running/pending) */}
             {!history.some((h) => h.status === "running" || h.status === "pending") && (
-              <div className="flex justify-center">
+              <div className="no-print flex justify-center">
                 <button
                   onClick={handleReAudit}
                   disabled={reAuditLoading}
@@ -604,7 +614,7 @@ export default function ReportPage() {
 
             {/* Score History (shown when there are multiple versions) */}
             {history.length > 1 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -614,7 +624,7 @@ export default function ReportPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-white/5 text-on-surface-variant uppercase text-xs">
+                      <tr className="border-b border-outline-variant text-on-surface-variant uppercase text-xs">
                         <th className="text-left py-3 px-2">Version</th>
                         <th className="text-left py-3 px-2">Date</th>
                         <th className="text-center py-3 px-2">Visibility</th>
@@ -635,7 +645,7 @@ export default function ReportPage() {
                         return (
                           <tr
                             key={entry.id}
-                            className={`border-b border-white/5 ${isCurrent ? "bg-primary/10" : "hover:bg-white/5"}`}
+                            className={`border-b border-outline-variant ${isCurrent ? "bg-primary/10" : "hover:bg-surface-container"}`}
                           >
                             <td className="py-3 px-2 font-medium">
                               <button
@@ -693,12 +703,12 @@ export default function ReportPage() {
                               <span
                                 className={`text-xs px-2 py-1 rounded-full font-bold ${
                                   entry.status === "completed"
-                                    ? "bg-primary/10 text-primary"
+                                    ? "bg-good/10 text-good"
                                     : entry.status === "running"
-                                      ? "bg-blue-100 text-blue-700"
+                                      ? "bg-info/10 text-info"
                                       : entry.status === "failed"
-                                        ? "bg-error/10 text-error"
-                                        : "bg-surface-container-high text-on-surface-variant"
+                                        ? "bg-crit/10 text-crit"
+                                        : "bg-surface-container text-on-surface-variant"
                                 }`}
                               >
                                 {entry.status}
@@ -715,7 +725,7 @@ export default function ReportPage() {
 
             {/* Performance by AI Engine */}
             {sortedEngines.length > 0 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-6"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -731,7 +741,7 @@ export default function ReportPage() {
                     return (
                       <div
                         key={key}
-                        className="bg-white/5 border border-white/5 rounded-xl p-4"
+                        className="bg-surface-container border border-outline-variant rounded-xl p-4"
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-medium text-on-surface">
@@ -766,7 +776,7 @@ export default function ReportPage() {
 
             {/* Engine Gap Analysis Table */}
             {sortedEngines.length > 0 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -776,7 +786,7 @@ export default function ReportPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-white/5 text-on-surface-variant uppercase text-xs">
+                      <tr className="border-b border-outline-variant text-on-surface-variant uppercase text-xs">
                         <th className="text-left py-3 px-2">AI Engine</th>
                         <th className="text-center py-3 px-2">Queries</th>
                         <th className="text-center py-3 px-2">Mentioned</th>
@@ -795,7 +805,7 @@ export default function ReportPage() {
                         return (
                           <tr
                             key={key}
-                            className="border-b border-white/5 hover:bg-white/5"
+                            className="border-b border-outline-variant hover:bg-surface-container"
                           >
                             <td className="py-3 px-2 text-on-surface font-medium">
                               {stats.display_name || ENGINE_LABELS[key] || key}
@@ -832,7 +842,7 @@ export default function ReportPage() {
 
             {/* Category Performance */}
             {sortedCategories.length > 0 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -875,7 +885,7 @@ export default function ReportPage() {
 
             {/* Competitor Analysis */}
             {sortedCompetitors.length > 0 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -916,7 +926,7 @@ export default function ReportPage() {
                     return (
                       <div
                         key={name}
-                        className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-xl p-3"
+                        className="flex items-center gap-3 bg-surface-container border border-outline-variant rounded-xl p-3"
                       >
                         <span className="text-sm text-on-surface w-40 truncate">
                           {name}
@@ -946,7 +956,7 @@ export default function ReportPage() {
 
             {/* Sentiment Breakdown */}
             {totalSentiment > 0 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -958,20 +968,20 @@ export default function ReportPage() {
                     {
                       label: "Positive",
                       value: sentimentBreakdown?.positive || 0,
-                      color: "text-primary",
-                      bg: "bg-primary",
+                      color: "text-good",
+                      bg: "bg-good",
                     },
                     {
                       label: "Neutral",
                       value: sentimentBreakdown?.neutral || 0,
-                      color: "text-on-surface-variant",
-                      bg: "bg-outline",
+                      color: "text-info",
+                      bg: "bg-info",
                     },
                     {
                       label: "Negative",
                       value: sentimentBreakdown?.negative || 0,
-                      color: "text-error",
-                      bg: "bg-error",
+                      color: "text-crit",
+                      bg: "bg-crit",
                     },
                   ].map((s) => {
                     const pct =
@@ -981,7 +991,7 @@ export default function ReportPage() {
                     return (
                       <div
                         key={s.label}
-                        className="bg-white/5 border border-white/5 rounded-xl p-4 text-center"
+                        className="bg-surface-container border border-outline-variant rounded-xl p-4 text-center"
                       >
                         <div className={`text-2xl font-bold ${s.color}`}>
                           {pct}%
@@ -1004,7 +1014,7 @@ export default function ReportPage() {
 
             {/* Keyword Gap Analysis */}
             {keywordGaps.length > 0 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -1017,7 +1027,7 @@ export default function ReportPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-white/5 text-on-surface-variant uppercase text-xs">
+                      <tr className="border-b border-outline-variant text-on-surface-variant uppercase text-xs">
                         <th className="text-left py-3 px-2">Query</th>
                         <th className="text-center py-3 px-2">Category</th>
                         <th className="text-center py-3 px-2">Engines Missed</th>
@@ -1028,13 +1038,13 @@ export default function ReportPage() {
                     <tbody>
                       {keywordGaps.slice(0, 10).map((gap) => {
                         const sevColors: Record<string, string> = {
-                          critical: "bg-error/10 text-error",
-                          high: "bg-primary/10 text-primary",
-                          medium: "bg-primary/10 text-primary",
-                          low: "bg-primary/10 text-primary",
+                          critical: "bg-crit/10 text-crit",
+                          high: "bg-crit/10 text-crit",
+                          medium: "bg-warn/10 text-warn",
+                          low: "bg-info/10 text-info",
                         };
                         return (
-                          <tr key={gap.prompt_id} className="border-b border-white/5 hover:bg-white/5">
+                          <tr key={gap.prompt_id} className="border-b border-outline-variant hover:bg-surface-container">
                             <td className="py-3 px-2 text-on-surface max-w-xs truncate">{gap.prompt_text}</td>
                             <td className="py-3 px-2 text-center text-on-surface-variant">{gap.category}</td>
                             <td className="py-3 px-2 text-center text-error font-bold">
@@ -1057,13 +1067,13 @@ export default function ReportPage() {
 
                 {/* Strengths */}
                 {keywordStrengths.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-white/5">
+                  <div className="mt-6 pt-6 border-t border-outline-variant">
                     <h3 className="text-sm font-bold text-primary uppercase tracking-wider mb-3">
                       Your Strengths ({keywordStrengths.length} queries with visibility)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {keywordStrengths.slice(0, 6).map((s) => (
-                        <div key={s.prompt_id} className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between">
+                        <div key={s.prompt_id} className="bg-surface-container border border-outline-variant rounded-xl p-3 flex items-center justify-between">
                           <span className="text-sm text-on-surface truncate flex-1 mr-2">{s.prompt_text}</span>
                           <span className="text-xs font-bold text-primary whitespace-nowrap">{s.coverage_rate}%</span>
                         </div>
@@ -1074,7 +1084,7 @@ export default function ReportPage() {
 
                 {/* Low Competition Opportunities */}
                 {lowCompetition.length > 0 && (
-                  <div className="mt-6 pt-6 border-t border-white/5">
+                  <div className="mt-6 pt-6 border-t border-outline-variant">
                     <h3 className="text-sm font-bold text-tertiary uppercase tracking-wider mb-3">
                       Low-Competition Opportunities ({lowCompetition.length})
                     </h3>
@@ -1093,7 +1103,7 @@ export default function ReportPage() {
 
             {/* Directory & Citation Check */}
             {directoryCitations.length > 0 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -1109,23 +1119,25 @@ export default function ReportPage() {
                       key={dir.directory}
                       className={`border rounded-xl p-4 flex items-center gap-3 ${
                         dir.listed
-                          ? "bg-primary/10 border-primary/20"
-                          : "bg-error/10 border-error/20"
+                          ? "bg-good/10 border-good/20"
+                          : "bg-crit/10 border-crit/20"
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
-                        dir.listed ? "bg-primary text-on-primary-fixed" : "bg-error text-on-primary-fixed"
+                        dir.listed ? "bg-good text-on-primary-fixed" : "bg-crit text-on-primary-fixed"
                       }`}>
-                        {dir.listed ? "✓" : "✗"}
+                        <span aria-label={dir.listed ? "Listed" : "Not listed"} role="img">
+                          {dir.listed ? "✓" : "✗"}
+                        </span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-on-surface">{dir.directory}</p>
                         {dir.listed && dir.link ? (
-                          <a href={dir.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate block">
+                          <a href={dir.link} target="_blank" rel="noopener noreferrer" className="text-xs text-good hover:underline truncate block">
                             Listed
                           </a>
                         ) : (
-                          <p className="text-xs text-error">Not found</p>
+                          <p className="text-xs text-crit">Not found</p>
                         )}
                       </div>
                     </div>
@@ -1146,7 +1158,7 @@ export default function ReportPage() {
 
             {/* AI vs SEO Visibility */}
             {serpComparisons.length > 0 && serpAnalysis && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -1160,12 +1172,12 @@ export default function ReportPage() {
                 {/* Summary cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                   {[
-                    { label: "SEO Strong, AI Weak", value: serpAnalysis.summary.seo_strong_ai_weak, color: "text-primary", desc: "Priority GEO targets" },
-                    { label: "AI Strong, SEO Weak", value: serpAnalysis.summary.ai_strong_seo_weak, color: "text-tertiary", desc: "AI advantage" },
-                    { label: "Both Strong", value: serpAnalysis.summary.both_strong, color: "text-primary", desc: "Well positioned" },
-                    { label: "Both Weak", value: serpAnalysis.summary.both_weak, color: "text-error", desc: "Needs content" },
+                    { label: "SEO Strong, AI Weak", value: serpAnalysis.summary.seo_strong_ai_weak, color: "text-warn", desc: "Priority GEO targets" },
+                    { label: "AI Strong, SEO Weak", value: serpAnalysis.summary.ai_strong_seo_weak, color: "text-info", desc: "AI advantage" },
+                    { label: "Both Strong", value: serpAnalysis.summary.both_strong, color: "text-good", desc: "Well positioned" },
+                    { label: "Both Weak", value: serpAnalysis.summary.both_weak, color: "text-crit", desc: "Needs content" },
                   ].map((stat) => (
-                    <div key={stat.label} className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                    <div key={stat.label} className="bg-surface-container border border-outline-variant rounded-xl p-4 text-center">
                       <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
                       <div className="text-xs text-on-surface-variant mt-1 uppercase">{stat.label}</div>
                       <div className="text-[10px] text-on-surface-variant mt-1">{stat.desc}</div>
@@ -1177,7 +1189,7 @@ export default function ReportPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-white/5 text-on-surface-variant uppercase text-xs">
+                      <tr className="border-b border-outline-variant text-on-surface-variant uppercase text-xs">
                         <th className="text-left py-3 px-2">Query</th>
                         <th className="text-center py-3 px-2">Google Rank</th>
                         <th className="text-center py-3 px-2">AI Mentioned</th>
@@ -1187,10 +1199,10 @@ export default function ReportPage() {
                     <tbody>
                       {serpComparisons.slice(0, 10).map((comp) => {
                         const gapColors: Record<string, string> = {
-                          seo_strong_ai_weak: "bg-primary/10 text-primary",
-                          ai_strong_seo_weak: "bg-primary/10 text-primary",
-                          both_strong: "bg-primary/10 text-primary",
-                          both_weak: "bg-error/10 text-error",
+                          seo_strong_ai_weak: "bg-warn/10 text-warn",
+                          ai_strong_seo_weak: "bg-info/10 text-info",
+                          both_strong: "bg-good/10 text-good",
+                          both_weak: "bg-crit/10 text-crit",
                         };
                         const gapLabels: Record<string, string> = {
                           seo_strong_ai_weak: "SEO > AI",
@@ -1199,7 +1211,7 @@ export default function ReportPage() {
                           both_weak: "Weak",
                         };
                         return (
-                          <tr key={comp.prompt_id} className="border-b border-white/5 hover:bg-white/5">
+                          <tr key={comp.prompt_id} className="border-b border-outline-variant hover:bg-surface-container">
                             <td className="py-3 px-2 text-on-surface max-w-xs truncate">{comp.prompt_text}</td>
                             <td className="py-3 px-2 text-center">
                               {comp.organic_rank ? (
@@ -1210,9 +1222,9 @@ export default function ReportPage() {
                             </td>
                             <td className="py-3 px-2 text-center">
                               {comp.ai_mentioned ? (
-                                <span className="text-primary">Yes</span>
+                                <span className="text-good">Yes</span>
                               ) : (
-                                <span className="text-error">No</span>
+                                <span className="text-crit">No</span>
                               )}
                             </td>
                             <td className="py-3 px-2 text-center">
@@ -1229,7 +1241,7 @@ export default function ReportPage() {
 
                 {/* Site index info */}
                 {serpAnalysis.site_indexed && serpAnalysis.site_indexed.indexed_count > 0 && (
-                  <div className="mt-4 p-3 bg-white/5 border border-white/5 rounded-xl">
+                  <div className="mt-4 p-3 bg-surface-container border border-outline-variant rounded-xl">
                     <p className="text-sm text-on-surface-variant">
                       <span className="text-on-surface font-bold">{serpAnalysis.site_indexed.indexed_count.toLocaleString()}</span> pages indexed on Google
                     </p>
@@ -1240,7 +1252,7 @@ export default function ReportPage() {
 
             {/* Content Recommendations (Alice Brief) */}
             {contentRecs.length > 0 && (
-              <section className="glass-card border border-white/5 rounded-3xl p-6">
+              <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
@@ -1254,19 +1266,19 @@ export default function ReportPage() {
                 {/* Summary stats */}
                 {aliceBrief?.summary_stats && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                    <div className="bg-surface-container border border-outline-variant rounded-xl p-4 text-center">
                       <div className="text-2xl font-bold text-on-surface">{aliceBrief.summary_stats.total_recommendations}</div>
                       <div className="text-xs text-on-surface-variant mt-1 uppercase">Total Recommendations</div>
                     </div>
-                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                    <div className="bg-surface-container border border-outline-variant rounded-xl p-4 text-center">
                       <div className="text-2xl font-bold text-error">{aliceBrief.summary_stats.critical_count}</div>
                       <div className="text-xs text-on-surface-variant mt-1 uppercase">Critical Priority</div>
                     </div>
-                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                    <div className="bg-surface-container border border-outline-variant rounded-xl p-4 text-center">
                       <div className="text-2xl font-bold text-primary">{aliceBrief.summary_stats.directories_to_claim}</div>
                       <div className="text-xs text-on-surface-variant mt-1 uppercase">Directories to Claim</div>
                     </div>
-                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-center">
+                    <div className="bg-surface-container border border-outline-variant rounded-xl p-4 text-center">
                       <div className="text-2xl font-bold text-tertiary">{aliceBrief.summary_stats.content_pieces_needed}</div>
                       <div className="text-xs text-on-surface-variant mt-1 uppercase">Content Pieces Needed</div>
                     </div>
@@ -1294,7 +1306,7 @@ export default function ReportPage() {
                     return (
                       <div
                         key={rec.id}
-                        className={`bg-white/5 border border-white/5 border-l-4 ${sevBorder[rec.severity] || "border-l-white/20"} rounded-xl p-4`}
+                        className={`bg-surface-container border border-outline-variant border-l-4 ${sevBorder[rec.severity] || "border-l-outline-variant"} rounded-xl p-4`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <h4 className="text-sm font-bold text-on-surface flex-1">{rec.title}</h4>
@@ -1325,7 +1337,7 @@ export default function ReportPage() {
             )}
 
             {/* ── Tab navigation ── */}
-            <div className="flex gap-1 border-b border-white/5 pb-0">
+            <div className="no-print flex gap-1 border-b border-outline-variant pb-0">
               {(["overview", "prioritise"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -1384,7 +1396,7 @@ export default function ReportPage() {
                           setAdditionalQueries(updated);
                         }}
                         placeholder="e.g. best digital marketing agency in Sydney"
-                        className="flex-1 px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all"
+                        className="flex-1 px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all"
                       />
                       {additionalQueries.length > 1 && (
                         <button
@@ -1431,9 +1443,9 @@ export default function ReportPage() {
             )}
 
             {/* CTA: Agent Alice */}
-            <section className="glass-card border border-white/5 rounded-3xl overflow-hidden">
+            <section className="glass-card border-0 rounded-3xl overflow-hidden">
               {/* Header */}
-              <div className="px-10 pt-10 pb-8 text-center border-b border-white/5">
+              <div className="px-10 pt-10 pb-8 text-center border-b border-outline-variant">
                 <p className="text-xs font-bold text-primary uppercase tracking-widest mb-3">
                   Part 1 Complete
                 </p>
@@ -1471,7 +1483,7 @@ export default function ReportPage() {
                       desc: "Our AI agents implement the plan for you. Activate it, and watch your visibility climb.",
                     },
                   ].map((item) => (
-                    <div key={item.title} className="bg-white/5 border border-white/5 rounded-2xl p-6 text-center">
+                    <div key={item.title} className="bg-surface-container border border-outline-variant rounded-2xl p-6 text-center">
                       <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center mx-auto mb-3">
                         <svg className="w-6 h-6 text-on-primary-fixed" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
@@ -1520,7 +1532,7 @@ export default function ReportPage() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-surface-container-high border-t border-outline-variant py-6 mt-12">
+      <footer className="no-print bg-surface-container-high border-t border-outline-variant py-6 mt-12">
         <div className="max-w-6xl mx-auto px-4 text-center text-sm text-on-surface-variant">
           <p>
             Powered by{" "}

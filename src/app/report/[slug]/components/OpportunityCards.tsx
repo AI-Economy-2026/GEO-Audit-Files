@@ -54,7 +54,7 @@ function buildCards(
       tags: [
         { label: "Critical", style: "bg-error/10 text-error border border-error/20" },
         { label: "High impact", style: "bg-secondary/10 text-secondary border border-secondary/20" },
-        { label: "30-day play", style: "bg-primary/10 text-tertiary border border-tertiary/20" },
+        { label: "30-day play", style: "bg-info/10 text-info border border-info/20" },
       ],
       title: "Buyer-intent content opportunity",
       description: "Missing from high-intent prompts where buyers ask for services. Fixing this unlocks visibility before prospects know your brand.",
@@ -75,7 +75,7 @@ function buildCards(
   if (compPresent.length > 0) {
     cards.push({
       tags: [
-        { label: "Medium", style: "bg-primary/10 text-tertiary border border-tertiary/20" },
+        { label: "Medium", style: "bg-info/10 text-info border border-info/20" },
         { label: "Quick win", style: "bg-primary/10 text-primary border border-primary/20" },
       ],
       title: "Comparison-page capture",
@@ -97,8 +97,8 @@ function buildCards(
   if (weakPresence.length > 0) {
     cards.push({
       tags: [
-        { label: "Medium", style: "bg-primary/10 text-tertiary border border-tertiary/20" },
-        { label: "30-day play", style: "bg-primary/10 text-tertiary border border-tertiary/20" },
+        { label: "Medium", style: "bg-info/10 text-info border border-info/20" },
+        { label: "30-day play", style: "bg-info/10 text-info border border-info/20" },
       ],
       title: "Citation and authority building",
       description: "AI engines need more trusted external signals to confidently cite your brand in broad recommendation prompts.",
@@ -163,7 +163,7 @@ export default function OpportunityCards({ prompts, brandName, engineBreakdown }
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {cards.map((card, i) => (
-        <div key={i} className="glass-card rounded-xl border border-white/5 shadow-sm flex flex-col p-6 gap-3">
+        <div key={i} className="glass-card rounded-xl border border-outline-variant shadow-sm flex flex-col p-6 gap-3">
           {/* Tags */}
           <div className="flex flex-wrap gap-1.5">
             {card.tags.map((t) => (
@@ -178,7 +178,7 @@ export default function OpportunityCards({ prompts, brandName, engineBreakdown }
           <p className="text-sm text-on-surface-variant leading-relaxed">{card.description}</p>
 
           {/* Evidence */}
-          <div className="px-3 py-2 rounded-lg bg-white/5 border border-dashed border-white/5 font-mono text-xs text-on-surface-variant leading-relaxed">
+          <div className="px-3 py-2 rounded-lg bg-surface-container border border-dashed border-outline-variant font-mono text-xs text-on-surface-variant leading-relaxed">
             {card.evidence}
           </div>
 
@@ -193,10 +193,10 @@ export default function OpportunityCards({ prompts, brandName, engineBreakdown }
           </ul>
 
           {/* Footer */}
-          <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between">
+          <div className="mt-auto pt-3 border-t border-outline-variant flex items-center justify-between">
             <span className="text-xs text-on-surface-variant">{card.effort}</span>
             <div className="flex gap-2">
-              <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-white/5 text-on-surface-variant hover:bg-white/5">
+              <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container">
                 View fixes
               </button>
               <button className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-on-primary-fixed hover:opacity-90 transition-colors">

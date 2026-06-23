@@ -91,10 +91,10 @@ export default function IntakePage() {
   }
 
   const inputCls =
-    "w-full px-4 py-3 bg-surface-container-lowest border border-white/5 rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
+    "w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
 
   const header = (
-    <header className="border-b border-outline-variant bg-white/95 backdrop-blur-sm py-6">
+    <header className="border-b border-outline-variant bg-surface-bright/95 backdrop-blur-sm py-6">
       <div className="max-w-2xl mx-auto px-4 text-center">
         <div className="inline-flex items-center gap-2 mb-2">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
@@ -161,7 +161,7 @@ export default function IntakePage() {
         {header}
         <div className="max-w-lg mx-auto px-4 py-16">
           <GlassCard padding="xl" className="text-center">
-            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(68,216,241,0.4)]">
+            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(29,158,117,0.35)]">
               <span className="material-symbols-outlined text-on-primary-fixed text-3xl">
                 rocket_launch
               </span>
@@ -366,7 +366,7 @@ export default function IntakePage() {
         </form>
       </main>
 
-      <footer className="border-t border-white/5 py-6 mt-12">
+      <footer className="border-t border-outline-variant py-6 mt-12">
         <div className="max-w-2xl mx-auto px-4 text-center text-sm text-on-surface-variant">
           <p>
             Powered by{" "}

@@ -290,6 +290,22 @@ textarea::placeholder {
   color: var(--text-4);
 }
 
+/* Tailwind v4 Preflight resets <button> to cursor:default — restore the
+   pointer for all interactive elements so clickable controls feel clickable. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+label[for],
+input[type="submit"]:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="reset"]:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 ::selection {
   background: var(--mint);
   color: #052822;
@@ -1058,6 +1074,16 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
   --foreground: var(--on-surface);
   color-scheme: light;
 
+  /* Semantic palette — light-mode-appropriate values so prebuilt classes
+     (.chip-*, .kpi, bars, deltas) and report surfaces stay legible on white
+     and so "good" stays GREEN (never blue/brand). */
+  --mint:      #0F9E8E;  --mint-2:  #0B7E72;  --mint-weak: #E1F7F4;  --mint-line: rgba(15,158,142,.30);
+  --good:      #1D9E75;  --good-2:  #157A5A;  --good-weak: #E1F5EE;  --good-line: rgba(29,158,117,.34);
+  --warn:      #C2710C;  --warn-2:  #9A5A09;  --warn-weak: #FFF3E0;  --warn-line: rgba(194,113,12,.34);
+  --crit:      #DC2626;  --crit-2:  #B91C1C;  --crit-weak: #FEF2F2;  --crit-line: rgba(220,38,38,.34);
+  --info:      #0BA5C9;  --info-2:  #087B95;  --info-weak: #E0F5FA;  --info-line: rgba(11,165,201,.34);
+  --neutral-weak: rgba(15,23,42,.05); --neutral-line: rgba(15,23,42,.14);
+
   --color-surface: #F8FAFC;
   --color-surface-dim: #F1F5F9;
   --color-surface-container-lowest: #FFFFFF;
@@ -1113,6 +1139,13 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
 
   --color-background: #F8FAFC;
   --color-foreground: #0F172A;
+
+  /* Direct semantic utilities (bg-good / text-good / bg-warn …) follow light values */
+  --color-mint: #0F9E8E;
+  --color-good: #1D9E75;
+  --color-warn: #C2710C;
+  --color-crit: #DC2626;
+  --color-info: #0BA5C9;
 
   background: var(--surface);
   color: var(--on-surface);

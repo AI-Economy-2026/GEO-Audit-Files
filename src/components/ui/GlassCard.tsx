@@ -17,7 +17,7 @@ const PADDING = {
 const ROUNDED = {
   xl: "rounded-xl",
   "2xl": "rounded-2xl",
-  "3xl": "rounded-3xl",
+  "3xl": "rounded-[22px]",
 };
 
 export default function GlassCard({
@@ -29,7 +29,7 @@ export default function GlassCard({
 }: GlassCardProps) {
   return (
     <div
-      className={`glass-card ${PADDING[padding]} ${ROUNDED[rounded]} border border-white/5 ${className}`}
+      className={`glass-card ${PADDING[padding]} ${ROUNDED[rounded]} ${className}`}
       {...rest}
     >
       {children}
