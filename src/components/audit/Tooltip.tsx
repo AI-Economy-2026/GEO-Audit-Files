@@ -88,20 +88,42 @@ export default function Tooltip({
     setOpen(false);
   }
 
-  // Close on scroll / resize / Escape so a stale position never lingers
+  /** Tap / click / keyboard toggle — opens immediately (no hover delay) so the
+   *  popup is reachable on touch devices and by keyboard, not hover-only. */
+  function toggle(e: React.MouseEvent | React.KeyboardEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (open) {
+      hide();
+      return;
+    }
+    if (timer.current) clearTimeout(timer.current);
+    const c = computeCoords();
+    if (c) setCoords(c);
+    setOpen(true);
+  }
+
+  // Close on scroll / resize / Escape / outside-tap so a stale position never lingers
   useLayoutEffect(() => {
     if (!open) return;
     const handler = () => setOpen(false);
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
+    const outside = (e: PointerEvent) => {
+      if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
     window.addEventListener("scroll", handler, true);
     window.addEventListener("resize", handler);
     document.addEventListener("keydown", esc);
+    document.addEventListener("pointerdown", outside);
     return () => {
       window.removeEventListener("scroll", handler, true);
       window.removeEventListener("resize", handler);
       document.removeEventListener("keydown", esc);
+      document.removeEventListener("pointerdown", outside);
     };
   }, [open]);
 
@@ -115,6 +137,10 @@ export default function Tooltip({
     <>
       <span
         ref={triggerRef}
+        role="button"
+        tabIndex={0}
+        aria-label={label}
+        aria-expanded={open}
         style={{
           position: "relative",
           display: inline ? "inline-flex" : "inline-block",
@@ -124,6 +150,10 @@ export default function Tooltip({
         onMouseLeave={hide}
         onFocus={show}
         onBlur={hide}
+        onClick={toggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") toggle(e);
+        }}
       >
         {children}
       </span>

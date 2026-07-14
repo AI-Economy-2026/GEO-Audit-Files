@@ -444,6 +444,10 @@ button:disabled,
 .kpi-number.num-mint { color: var(--mint); }
 .kpi-number.num-info { color: var(--info); }
 .kpi-sub { font-size: 13px; color: var(--text-3); }
+/* Clickable KPI card — drill into the underlying view */
+.kpi.clickable { cursor: pointer; transition: border-color .18s var(--ease), transform .18s var(--ease); }
+.kpi.clickable:hover { border-color: var(--border-hi); transform: translateY(-1px); }
+.kpi.clickable:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 
 /* BENCHMARKS */
 .benchmark {

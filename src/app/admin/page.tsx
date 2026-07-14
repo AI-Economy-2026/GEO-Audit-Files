@@ -35,6 +35,20 @@ export default function AdminOverviewPage() {
     })();
   }, []);
 
+  // Makes a KPI card drill into the relevant admin view (keyboard + click).
+  const drill = (path: string) => ({
+    className: "kpi clickable",
+    role: "button" as const,
+    tabIndex: 0,
+    onClick: () => router.push(path),
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        router.push(path);
+      }
+    },
+  });
+
   return (
     <AdminShell
       title="Overview"
@@ -68,7 +82,7 @@ export default function AdminOverviewPage() {
       ) : stats ? (
         <>
           <div className="kpi-strip">
-            <div className="kpi">
+            <div {...drill("/admin/agencies")}>
               <div className="kpi-label">
                 <InfoTip label="Number of agencies in this workspace. Each agency can run audits using their credit pool.">
                   Agencies
@@ -80,7 +94,7 @@ export default function AdminOverviewPage() {
                 {stats.suspendedAgencies > 0 ? `, ${stats.suspendedAgencies} suspended` : ""}
               </div>
             </div>
-            <div className="kpi">
+            <div {...drill("/admin/agencies")}>
               <div className="kpi-label">
                 <InfoTip label="Credits available across every agency right now. Each audit costs 1 credit.">
                   Credits available
@@ -89,7 +103,7 @@ export default function AdminOverviewPage() {
               <div className="kpi-number num-good">{stats.totalCreditsRemaining}</div>
               <div className="kpi-sub">issued, unspent</div>
             </div>
-            <div className="kpi">
+            <div {...drill("/admin/agencies")}>
               <div className="kpi-label">
                 <InfoTip label="Credits spent on completed and in-progress audits across every agency.">
                   Credits spent
@@ -98,7 +112,7 @@ export default function AdminOverviewPage() {
               <div className="kpi-number">{stats.totalCreditsUsed}</div>
               <div className="kpi-sub">total spend</div>
             </div>
-            <div className="kpi">
+            <div {...drill("/admin/agencies")}>
               <div className="kpi-label">
                 <InfoTip label="Audits ever run on this deployment (across all agencies, all versions).">
                   Audits run
