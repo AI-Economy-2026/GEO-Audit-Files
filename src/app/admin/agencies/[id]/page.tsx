@@ -248,6 +248,7 @@ export default function AgencyDetailPage() {
               type="number"
               value={creditDelta}
               onChange={(e) => setCreditDelta(parseInt(e.target.value || "0", 10))}
+              placeholder="e.g. 10 or -5"
               style={{
                 flex: 1,
                 padding: "10px 14px",

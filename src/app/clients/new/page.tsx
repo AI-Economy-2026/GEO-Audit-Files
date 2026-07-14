@@ -64,7 +64,7 @@ export default function NewClientPage() {
     <AppShell
       topNav={
         <TopNav
-          brand="GEO Audit Pro"
+          brand="Gatha"
           tabs={[
             { href: "/audits", label: "Audits", match: (p) => p.startsWith("/audits") },
             { href: "/clients", label: "Clients", match: (p) => p.startsWith("/clients") },

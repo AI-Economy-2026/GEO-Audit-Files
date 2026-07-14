@@ -77,6 +77,14 @@ interface DirectoryCitation {
   error: string | null;
 }
 
+interface CitedDomain {
+  domain: string;
+  count: number;
+  share_percent: number;
+  engines: string[];
+  is_brand: boolean;
+}
+
 interface SerpComparison {
   prompt_id: number;
   prompt_text: string;
@@ -140,6 +148,7 @@ interface SummaryJson {
     competitor_advantages: { competitor: string; advantage_count: number; prompts_where_they_beat_us: string[] }[];
   };
   directory_citations?: DirectoryCitation[];
+  top_cited_domains?: CitedDomain[];
   serp_analysis?: {
     site_indexed: { indexed_count: number; top_pages: { title: string; link: string }[]; error: string | null };
     organic_rankings: { prompt_id: number; prompt_text: string; organic_rank: number | null; in_top_10: boolean }[];
@@ -331,7 +340,7 @@ export default function ReportPage() {
             <span className="material-symbols-outlined text-on-primary text-[20px]">radar</span>
           </div>
           <div>
-            <span className="text-sm font-black tracking-tighter text-primary">GEO Audit Pro</span>
+            <span className="text-sm font-black tracking-tighter text-primary">Gatha</span>
             <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">
               AI Visibility Report
             </p>
@@ -424,6 +433,9 @@ export default function ReportPage() {
   const keywordStrengths = summary?.keyword_gap_analysis?.strengths || [];
   const lowCompetition = summary?.keyword_gap_analysis?.low_competition || [];
   const directoryCitations = summary?.directory_citations || [];
+  const citationOpportunities = (summary?.top_cited_domains || [])
+    .filter((d) => !d.is_brand)
+    .slice(0, 5);
   const serpAnalysis = summary?.serp_analysis;
   const serpComparisons = serpAnalysis?.comparisons || [];
   const aliceBrief = summary?.alice_brief;
@@ -1153,6 +1165,43 @@ export default function ReportPage() {
                     </p>
                   </div>
                 )}
+              </section>
+            )}
+
+            {/* Citation Opportunities */}
+            {citationOpportunities.length > 0 && (
+              <section className="glass-card border-0 rounded-3xl p-6">
+                <h2
+                  className="text-xl font-bold text-on-surface mb-2"
+                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                >
+                  Citation Opportunities
+                </h2>
+                <p className="text-sm text-on-surface-variant mb-6">
+                  Sources AI engines already cite in your category. Getting featured on these
+                  high-trust domains improves your chances of being cited too.
+                </p>
+                <div className="space-y-2">
+                  {citationOpportunities.map((d, i) => (
+                    <div
+                      key={d.domain}
+                      className="flex items-center gap-3 bg-surface-container border border-outline-variant rounded-xl p-3"
+                    >
+                      <span className="text-xs font-bold text-on-surface-variant w-6 text-center">
+                        {i + 1}
+                      </span>
+                      <span className="text-sm font-medium text-on-surface flex-1 truncate">
+                        {d.domain}
+                      </span>
+                      <span className="text-xs text-on-surface-variant whitespace-nowrap">
+                        cited {d.count}×
+                      </span>
+                      <span className="text-sm font-bold text-good w-14 text-right">
+                        {d.share_percent}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
 

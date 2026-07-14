@@ -559,7 +559,7 @@ export default function OpportunityPage() {
         <a
           className="btn btn-primary"
           style={{ position: "relative", zIndex: 1, whiteSpace: "nowrap", textDecoration: "none" }}
-          href={`mailto:hello@rankco.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi — I'd like RankCo to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
+          href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi — I'd like Gatha to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
         >
           Get the quick fixes done →
         </a>

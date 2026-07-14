@@ -17,6 +17,7 @@ interface ActionItem {
   effort_label: string | null;
   sort_order: number;
   completed_at: string | null;
+  owner?: string | null;
   created_at: string;
 }
 
@@ -117,6 +118,33 @@ export default function ActivatePage() {
         next.delete(item.id);
         return next;
       });
+    }
+  }
+
+  async function saveOwner(item: ActionItem, value: string) {
+    const trimmed = value.trim();
+    const nextOwner = trimmed === "" ? null : trimmed;
+    if ((item.owner ?? null) === nextOwner) return;
+
+    // Optimistic
+    setItems((prev) =>
+      prev.map((it) => (it.id === item.id ? { ...it, owner: nextOwner } : it))
+    );
+
+    try {
+      const res = await fetch(`/api/geo-audits/${id}/action-plan/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owner: nextOwner ?? "" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update.");
+      setItems((prev) => prev.map((it) => (it.id === item.id ? data.item : it)));
+    } catch {
+      // Revert on failure
+      setItems((prev) =>
+        prev.map((it) => (it.id === item.id ? { ...it, owner: item.owner } : it))
+      );
     }
   }
 
@@ -413,7 +441,7 @@ export default function ActivatePage() {
                               {it.description}
                             </div>
                           )}
-                          <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                             <span
                               className={`tag`}
                               style={{
@@ -426,6 +454,27 @@ export default function ActivatePage() {
                             >
                               {it.category === "technical" ? "Technical" : "Non-technical"}
                             </span>
+                            <input
+                              type="text"
+                              aria-label="Owner"
+                              placeholder="Assign owner…"
+                              defaultValue={it.owner ?? ""}
+                              onBlur={(e) => saveOwner(it, e.currentTarget.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") e.currentTarget.blur();
+                              }}
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: 12,
+                                color: "var(--text)",
+                                background: "var(--surface-2)",
+                                border: "1px solid var(--border)",
+                                borderRadius: 6,
+                                padding: "3px 8px",
+                                width: 130,
+                                cursor: "text",
+                              }}
+                            />
                           </div>
                         </div>
 
@@ -480,7 +529,7 @@ export default function ActivatePage() {
         <a
           className="btn btn-primary"
           style={{ textDecoration: "none" }}
-          href={`mailto:hello@rankco.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi — I'd like RankCo to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
+          href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi — I'd like Gatha to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
         >
           Get the quick fixes done →
         </a>

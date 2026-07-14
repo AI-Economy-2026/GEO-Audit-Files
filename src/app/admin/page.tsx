@@ -50,7 +50,7 @@ export default function AdminOverviewPage() {
       <div className="page-head">
         <div>
           <h1>Workspace overview</h1>
-          <p>Top-level numbers across every agency in this RankCo deployment.</p>
+          <p>Top-level numbers across every agency in this Gatha deployment.</p>
         </div>
       </div>
 

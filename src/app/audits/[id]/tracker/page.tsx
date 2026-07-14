@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
 import Tooltip from "@/components/audit/Tooltip";
@@ -16,6 +16,23 @@ export default function TrackerPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { audit, history, loading } = useAuditData(id);
+  const [reAuditLoading, setReAuditLoading] = useState(false);
+  const [reAuditError, setReAuditError] = useState<string | null>(null);
+
+  /* Trigger a real re-audit: clones this audit, starts the worker, opens the new run. */
+  async function handleReAudit() {
+    setReAuditLoading(true);
+    setReAuditError(null);
+    try {
+      const res = await fetch(`/api/geo-audits/${id}/re-audit`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start re-audit.");
+      router.push(`/audits/${data.audit_id}`);
+    } catch (err) {
+      setReAuditError(err instanceof Error ? err.message : "Failed to start re-audit.");
+      setReAuditLoading(false);
+    }
+  }
 
   /* Movement over time — compare each audit to the previous */
   const movement = useMemo(() => {
@@ -59,11 +76,14 @@ export default function TrackerPage() {
         </div>
         <div className="card pad-lg" style={{ textAlign: "center" }}>
           <div style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 12 }}>
-            This is your baseline audit. Run another audit in 30 days to start tracking movement.
+            This is your baseline audit. Run another audit to start tracking movement.
           </div>
-          <button className="btn btn-primary" onClick={() => router.push(`/audits/${id}`)}>
-            Schedule re-audit
+          <button className="btn btn-primary" onClick={handleReAudit} disabled={reAuditLoading}>
+            {reAuditLoading ? "Starting re-audit…" : "Run re-audit now"}
           </button>
+          {reAuditError && (
+            <div style={{ marginTop: 12, fontSize: 13, color: "var(--crit)" }}>{reAuditError}</div>
+          )}
         </div>
       </AuditShell>
     );

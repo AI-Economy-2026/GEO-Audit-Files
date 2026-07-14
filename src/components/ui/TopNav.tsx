@@ -17,7 +17,7 @@ interface TopNavProps {
 }
 
 export default function TopNav({
-  brand = "GEO Audit Pro",
+  brand = "Gatha",
   tabs = [],
   right,
 }: TopNavProps) {

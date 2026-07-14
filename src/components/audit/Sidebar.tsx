@@ -206,16 +206,16 @@ export default function Sidebar({ auditId }: SidebarProps) {
             flexShrink: 0,
             padding: 7,
           }}
-          aria-label="RankCo"
+          aria-label="Gatha"
         >
-          {/* Navy-coloured RankCo mark on the mint gradient block */}
+          {/* Navy-coloured Gatha wedge mark on the mint gradient block */}
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
             <path d="M50 18 L82 78 L66 78 L50 48 L34 78 L18 78 Z" fill="#0E1A2D" />
           </svg>
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.01em", lineHeight: 1.15, color: "var(--text)" }}>
-            RankCo
+            Gatha
           </div>
           <div style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
             AI Visibility Rank
@@ -319,7 +319,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
           <a
             className="btn btn-sm"
             style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
-            href={`mailto:hello@rankco.ai?subject=${encodeURIComponent(
+            href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(
               `Credit top-up request — ${me.agencyName || me.email}`
             )}&body=${encodeURIComponent(
               `Hi, can I top up audit credits for ${me.agencyName || me.email}? Currently at ${me.creditsRemaining}.`
@@ -347,7 +347,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
           <a
             className="btn btn-primary btn-sm"
             style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
-            href="mailto:hello@rankco.ai?subject=Quick%20fixes%20-%20get%20us%20a%20hand"
+            href="mailto:hello@gatha.ai?subject=Quick%20fixes%20-%20get%20us%20a%20hand"
           >
             Get the quick fixes done
           </a>

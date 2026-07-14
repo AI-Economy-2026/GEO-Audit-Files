@@ -41,7 +41,7 @@ export default function LoginPage() {
         <div className="w-14 h-14 rounded-2xl bg-primary mx-auto mb-4 flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.3)]">
           <span className="material-symbols-outlined text-on-primary-fixed text-3xl">radar</span>
         </div>
-        <h1 className="text-3xl font-extrabold tracking-tighter text-on-surface">GEO Audit Pro</h1>
+        <h1 className="text-3xl font-extrabold tracking-tighter text-on-surface">Gatha</h1>
         <p className="text-on-surface-variant mt-2 text-sm">AI Visibility Auditing Platform</p>
       </div>
 
@@ -55,6 +55,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@agency.com"
               className={inputCls}
               required
               autoFocus
@@ -70,6 +71,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
                 className={`${inputCls} pr-12`}
                 required
               />
@@ -101,7 +103,7 @@ export default function LoginPage() {
       </GlassCard>
 
       <p className="text-center text-sm text-on-surface-variant mt-6">
-        Don&apos;t have an account? Ask your RankCo administrator for an invite.
+        Don&apos;t have an account? Ask your Gatha administrator for an invite.
       </p>
     </AuthShell>
   );

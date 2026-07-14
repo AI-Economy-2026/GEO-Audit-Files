@@ -29,6 +29,13 @@ export interface CitedDomain {
   is_brand: boolean;
 }
 
+export interface DirectoryCitation {
+  directory: string;
+  listed: boolean;
+  link: string | null;
+  error: string | null;
+}
+
 export interface SummaryJson {
   audit_metadata?: {
     brand: string;
@@ -45,6 +52,7 @@ export interface SummaryJson {
   keyword_gap_analysis?: { keyword_gaps: KeywordGap[] };
   top_cited_domains?: CitedDomain[];
   citation_totals?: { total_citations: number; unique_domains: number };
+  directory_citations?: DirectoryCitation[];
 }
 
 export interface AuditData {

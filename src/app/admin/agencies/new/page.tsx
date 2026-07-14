@@ -151,6 +151,7 @@ export default function NewAgencyPage() {
               min={0}
               value={credits}
               onChange={(e) => setCredits(Math.max(0, parseInt(e.target.value || "0", 10)))}
+              placeholder="e.g. 10"
               required
             />
           </Field>

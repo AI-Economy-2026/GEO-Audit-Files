@@ -83,7 +83,7 @@ export default function AdminSidebar() {
             flexShrink: 0,
             padding: 7,
           }}
-          aria-label="RankCo"
+          aria-label="Gatha"
         >
           <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
             <path d="M50 18 L82 78 L66 78 L50 48 L34 78 L18 78 Z" fill="#0E1A2D" />
@@ -91,7 +91,7 @@ export default function AdminSidebar() {
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.01em", lineHeight: 1.15, color: "var(--text)" }}>
-            RankCo
+            Gatha
           </div>
           <div style={{ fontSize: 10, color: "var(--mint)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
             Admin Console

@@ -141,7 +141,7 @@ export default function AuditsPage() {
           <a
             className="btn btn-sm"
             style={{ textDecoration: "none", whiteSpace: "nowrap" }}
-            href={`mailto:hello@rankco.ai?subject=${encodeURIComponent(
+            href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(
               `Credit top-up request — ${me?.agencyName || me?.email || ""}`
             )}`}
           >

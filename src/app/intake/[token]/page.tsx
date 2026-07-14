@@ -101,7 +101,7 @@ export default function IntakePage() {
             <span className="material-symbols-outlined text-on-primary">radar</span>
           </div>
           <span className="text-xl font-black tracking-tighter text-primary">
-            GEO Audit Pro
+            Gatha
           </span>
         </div>
         <p className="text-on-surface-variant text-[10px] uppercase tracking-widest font-bold mt-2">

@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL ||
       req.nextUrl.origin ||
-      "https://rankco.ai";
+      "https://gatha.ai";
     const loginUrl = `${siteUrl}/login`;
     const workerUrl = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
     const workerKey = process.env.GEO_WORKER_API_KEY || "";

@@ -3,22 +3,22 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "RankCo — AI Search Visibility Rank",
-    template: "%s · RankCo",
+    default: "Gatha — Be Seen in AI Search",
+    template: "%s · Gatha",
   },
   description:
     "See where your brand shows up across ChatGPT, Claude, Gemini, Perplexity, Grok, and Google AI — and where it doesn't. The GEO audit built for agencies.",
-  applicationName: "RankCo",
+  applicationName: "Gatha",
   openGraph: {
-    title: "RankCo — AI Search Visibility Rank",
+    title: "Gatha — Be Seen in AI Search",
     description:
       "See where your brand shows up across every major AI engine — and where it doesn't.",
-    siteName: "RankCo",
+    siteName: "Gatha",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "RankCo — AI Search Visibility Rank",
+    title: "Gatha — Be Seen in AI Search",
     description:
       "See where your brand shows up across every major AI engine — and where it doesn't.",
   },
