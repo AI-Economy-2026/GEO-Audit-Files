@@ -321,9 +321,9 @@ button:disabled,
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
+  padding: 6px 11px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
   border: 1px solid transparent;
@@ -335,7 +335,7 @@ button:disabled,
 .chip-info    { background: var(--info-weak);    color: var(--info);   border-color: var(--info-line); }
 .chip-mint    { background: var(--mint-weak);    color: var(--mint);   border-color: var(--mint-line); }
 .chip-neutral { background: var(--neutral-weak); color: var(--text-2); border-color: var(--neutral-line); }
-.chip-lg      { padding: 7px 14px; font-size: 12px; }
+.chip-lg      { padding: 8px 16px; font-size: 13px; }
 
 /* TAGS */
 .tag {
@@ -367,10 +367,10 @@ button:disabled,
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border-radius: 10px;
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   border: 1px solid var(--border);
   background: var(--surface-2);
@@ -384,7 +384,7 @@ button:disabled,
   border-color: var(--border-hi);
   color: var(--text);
 }
-.btn svg { width: 14px; height: 14px; }
+.btn svg { width: 16px; height: 16px; }
 .btn-primary {
   background: linear-gradient(180deg, var(--mint) 0%, var(--mint-2) 100%);
   border-color: var(--mint-2);
@@ -397,7 +397,7 @@ button:disabled,
   color: #052822;
   transform: translateY(-1px);
 }
-.btn-sm { padding: 7px 12px; font-size: 12px; }
+.btn-sm { padding: 9px 15px; font-size: 13px; }
 
 /* KPI BLOCK */
 .kpi {
@@ -413,7 +413,7 @@ button:disabled,
   overflow: hidden;
 }
 .kpi-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-3);
   text-transform: uppercase;
@@ -443,7 +443,7 @@ button:disabled,
 .kpi-number.num-crit { color: var(--crit); }
 .kpi-number.num-mint { color: var(--mint); }
 .kpi-number.num-info { color: var(--info); }
-.kpi-sub { font-size: 12px; color: var(--text-3); }
+.kpi-sub { font-size: 13px; color: var(--text-3); }
 
 /* BENCHMARKS */
 .benchmark {
@@ -531,12 +531,12 @@ button:disabled,
 table.data {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 table.data thead th {
   text-align: left;
   padding: 14px 18px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
