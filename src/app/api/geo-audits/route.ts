@@ -14,7 +14,7 @@ export async function GET() {
     const query = supabase
       .from("geo_audits")
       .select(
-        "id, brand_name, brand_url, status, visibility_rate, total_queries, total_mentioned, engines, created_at, completed_at, duration_seconds, parent_audit_id, version"
+        "id, brand_name, brand_url, status, visibility_rate, total_queries, total_mentioned, engines, created_at, completed_at, duration_seconds, parent_audit_id, version, dashboard_url"
       )
       .order("created_at", { ascending: false });
 
