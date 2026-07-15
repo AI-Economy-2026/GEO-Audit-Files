@@ -94,6 +94,18 @@ export default function AgencyDetailPage() {
     })();
   }, [id]);
 
+  /* Open an audit from the admin panel. Prefer the public client report
+     (works for anyone via the report API); fall back to the workspace
+     dashboard for audits not linked to a client. */
+  function openAudit(a: AuditRow) {
+    const slug = clients.find((c) => c.audit_id === a.id)?.report_slug;
+    if (slug) {
+      window.open(`/report/${slug}`, "_blank", "noopener");
+    } else {
+      router.push(`/audits/${a.id}/dashboard`);
+    }
+  }
+
   async function patch(body: Record<string, unknown>, op: string) {
     setBusy(op);
     setError(null);
@@ -338,11 +350,25 @@ export default function AgencyDetailPage() {
                     <th className="center">Visibility</th>
                     <th className="center">Engines</th>
                     <th>Date</th>
+                    <th className="center">View</th>
                   </tr>
                 </thead>
                 <tbody>
                   {audits.map((a) => (
-                    <tr key={a.id}>
+                    <tr
+                      key={a.id}
+                      className="clickable"
+                      onClick={() => openAudit(a)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openAudit(a);
+                        }
+                      }}
+                      title="Open this audit's report"
+                    >
                       <td>
                         <div style={{ fontWeight: 600, color: "var(--text)" }}>{a.brand_name}</div>
                         <div style={{ fontSize: 12, color: "var(--text-3)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
@@ -365,6 +391,9 @@ export default function AgencyDetailPage() {
                         {a.engines?.length || 0}
                       </td>
                       <td style={{ color: "var(--text-3)" }}>{formatDate(a.created_at)}</td>
+                      <td className="center">
+                        <span className="row-chevron" aria-hidden="true">›</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
