@@ -30,6 +30,28 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** Download the stored report HTML as a file instead of opening it in the tab. */
+async function downloadReport(a: Audit) {
+  if (!a.dashboard_url) return;
+  const filename = `${(a.brand_name || "gatha").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-gatha-report.html`;
+  try {
+    const res = await fetch(a.dashboard_url);
+    if (!res.ok) throw new Error("fetch failed");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch {
+    // Fallback (e.g. blocked by CORS): open the report so the user can save it.
+    window.open(a.dashboard_url, "_blank", "noopener");
+  }
+}
+
 export default function ReportsPage() {
   const router = useRouter();
   const [audits, setAudits] = useState<Audit[]>([]);
@@ -170,15 +192,13 @@ export default function ReportsPage() {
                     View report
                   </button>
                   {a.dashboard_url ? (
-                    <a
+                    <button
                       className="btn btn-sm"
-                      href={a.dashboard_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ flex: 1, justifyContent: "center", textDecoration: "none" }}
+                      style={{ flex: 1, justifyContent: "center" }}
+                      onClick={() => downloadReport(a)}
                     >
                       Download
-                    </a>
+                    </button>
                   ) : (
                     <button
                       className="btn btn-sm"

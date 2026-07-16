@@ -106,15 +106,35 @@ export interface AuditBundle {
   loading: boolean;
 }
 
+/** In-memory cache keyed by audit id. Lets tab switches within the same
+ *  audit render instantly (no loading flash) while we revalidate in the
+ *  background. Lives for the session; cleared on full page reload. */
+type CacheEntry = { audit: AuditData | null; history: HistoryEntry[]; results: ResultRow[] };
+const auditCache = new Map<string, CacheEntry>();
+
 /** Fetches audit + history + results for any audit tab page. */
 export function useAuditData(id: string): AuditBundle {
-  const [audit, setAudit] = useState<AuditData | null>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [results, setResults] = useState<ResultRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = () => auditCache.get(id);
+  const [audit, setAudit] = useState<AuditData | null>(() => cached()?.audit ?? null);
+  const [history, setHistory] = useState<HistoryEntry[]>(() => cached()?.history ?? []);
+  const [results, setResults] = useState<ResultRow[]>(() => cached()?.results ?? []);
+  // Only show the spinner on a genuine cache miss — cached tabs render instantly.
+  const [loading, setLoading] = useState(() => !auditCache.has(id));
 
   useEffect(() => {
     let cancelled = false;
+
+    // Serve any cached snapshot immediately, then refresh in the background.
+    const hit = auditCache.get(id);
+    if (hit) {
+      setAudit(hit.audit);
+      setHistory(hit.history);
+      setResults(hit.results);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     async function load() {
       const sb = createClient();
       const [auditRes, histRes, resRes] = await Promise.all([
@@ -129,9 +149,18 @@ export function useAuditData(id: string): AuditBundle {
           .order("prompt_id"),
       ]);
       if (cancelled) return;
-      if (auditRes.audit) setAudit(auditRes.audit);
-      if (histRes.history) setHistory(histRes.history);
-      if (resRes.data) setResults(resRes.data as ResultRow[]);
+
+      const nextAudit: AuditData | null = auditRes.audit ?? null;
+      const nextHistory: HistoryEntry[] = histRes.history ?? [];
+      const nextResults: ResultRow[] = (resRes.data as ResultRow[]) ?? [];
+
+      // Cache only a valid fetch so a transient error never poisons the cache.
+      if (nextAudit) {
+        auditCache.set(id, { audit: nextAudit, history: nextHistory, results: nextResults });
+        setAudit(nextAudit);
+      }
+      setHistory(nextHistory);
+      setResults(nextResults);
       setLoading(false);
     }
     load();
