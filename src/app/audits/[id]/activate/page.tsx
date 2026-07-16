@@ -172,17 +172,11 @@ export default function ActivatePage() {
 
   if (auditLoading || !audit) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "var(--text-3)",
-        }}
-      >
-        {auditLoading ? "Loading..." : "Audit not found."}
-      </div>
+      <AuditShell auditId={id} brandName={audit?.brand_name ?? "…"}>
+        <div style={{ padding: "80px 0", textAlign: "center", color: "var(--text-3)" }}>
+          {auditLoading ? "Loading..." : "Audit not found."}
+        </div>
+      </AuditShell>
     );
   }
 
