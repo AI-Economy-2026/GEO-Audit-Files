@@ -23,6 +23,13 @@ const STEP_LABELS = [
   "Ranking",
 ];
 
+// Keep in sync with engine/geo_locale.py COUNTRY_LOCALE keys.
+const COUNTRIES = [
+  "United Kingdom", "United States", "Australia", "India", "Canada",
+  "Ireland", "New Zealand", "Singapore", "United Arab Emirates",
+  "Germany", "France", "Netherlands", "Spain",
+];
+
 export default function NewAuditPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -31,6 +38,7 @@ export default function NewAuditPage() {
   const [userEmail, setUserEmail] = useState("");
   const [brandName, setBrandName] = useState("");
   const [brandUrl, setBrandUrl] = useState("");
+  const [country, setCountry] = useState("");
 
   const [competitorInput, setCompetitorInput] = useState("");
   const [competitors, setCompetitors] = useState<string[]>([]);
@@ -166,6 +174,7 @@ export default function NewAuditPage() {
           user_email: userEmail,
           brand_name: brandName,
           brand_url: brandUrl,
+          country: country || null,
           competitors,
           keywords,
           prompts: prompts.filter((p) => p.prompt_text.trim() !== ""),
@@ -347,6 +356,25 @@ export default function NewAuditPage() {
                     placeholder="e.g. acmelegal.com.au"
                     className={inputCls}
                   />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
+                    Country (optional)
+                  </label>
+                  <select
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className={inputCls}
+                    aria-label="Audit country"
+                  >
+                    <option value="">Global — no specific country</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-on-surface-variant opacity-70 mt-2">
+                    Localises AI answers and search rankings to this market. Leave as Global to run worldwide.
+                  </p>
                 </div>
               </div>
             </div>

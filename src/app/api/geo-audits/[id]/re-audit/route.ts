@@ -102,6 +102,7 @@ export async function POST(
         user_email: source.user_email || null,
         brand_name: source.brand_name,
         brand_url: source.brand_url,
+        ...(source.country ? { country: source.country } : {}),
         competitors: source.competitors || [],
         keywords: source.keywords || [],
         engines: source.engines,

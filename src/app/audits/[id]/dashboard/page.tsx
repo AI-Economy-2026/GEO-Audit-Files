@@ -112,6 +112,9 @@ export default function OverviewPage() {
           </p>
         </div>
         <div className="actions">
+          {audit.country && (
+            <span className="chip chip-info chip-lg">{audit.country}</span>
+          )}
           <span className="chip chip-neutral chip-lg">Completed {fmtDuration(audit.duration_seconds)}</span>
           {isFirstAudit ? (
             <span className="chip chip-mint chip-lg">Baseline audit</span>

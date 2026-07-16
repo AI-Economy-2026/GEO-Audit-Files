@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       user_email,
       brand_name,
       brand_url,
+      country,
       competitors,
       keywords,
       prompts,
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
       user_email: string;
       brand_name: string;
       brand_url: string;
+      country?: string | null;
       competitors: string[];
       keywords: string[];
       prompts: { prompt_id: number; category: string; prompt_text: string; prompt_type: string }[];
@@ -117,6 +119,9 @@ export async function POST(req: NextRequest) {
         user_email: user_email || null,
         brand_name,
         brand_url,
+        // Only sent when a country is chosen — keeps inserts working even
+        // before migration 120 adds the column.
+        ...(country ? { country } : {}),
         competitors: competitors || [],
         keywords: keywords || [],
         engines: allEngines,

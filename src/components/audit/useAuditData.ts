@@ -59,6 +59,7 @@ export interface AuditData {
   id: string;
   brand_name: string;
   brand_url: string;
+  country?: string | null;
   status: string;
   visibility_rate: number | null;
   total_queries: number | null;
