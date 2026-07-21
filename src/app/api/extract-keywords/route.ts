@@ -1,8 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
+
+/** AI fallback — many sites block scrapers (Cloudflare etc.), which used to
+ *  make "auto-suggest" fail outright. When the scrape fails or finds too
+ *  little, ask Claude to suggest realistic search queries for the domain. */
+async function suggestWithAnthropic(url: string): Promise<string[]> {
+  if (!process.env.ANTHROPIC_API_KEY) return [];
+  try {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const msg = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 500,
+      messages: [
+        {
+          role: "user",
+          content: `The business website is: ${url}
+Based on the domain and whatever you can infer about this business, suggest 10 short search keywords/queries a potential customer might use when looking for this kind of business (e.g. "wordpress development agency", "best crm for startups").
+Do not use em dashes. Return ONLY a JSON array of strings, no markdown.`,
+        },
+      ],
+    });
+    const raw = msg.content
+      .map((b) => ("text" in b ? b.text : ""))
+      .join("")
+      .replace(/```json|```/g, "")
+      .trim();
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr)
+      ? arr.filter((k): k is string => typeof k === "string" && k.length > 2).slice(0, 12)
+      : [];
+  } catch {
+    return [];
+  }
+}
 
 /**
  * GET /api/extract-keywords?url=example.com
- * Scrapes a website and extracts keywords from meta tags, headings, and content.
+ * Scrapes a website and extracts keywords from meta tags, headings, and
+ * content; falls back to AI suggestions when the site can't be scraped.
  */
 export async function GET(req: NextRequest) {
   const rawUrl = req.nextUrl.searchParams.get("url");
@@ -14,30 +49,40 @@ export async function GET(req: NextRequest) {
   let url = rawUrl.trim();
   if (!url.startsWith("http")) url = `https://${url}`;
 
+  let keywords: string[] = [];
   try {
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; GEOAuditBot/1.0; +https://aieconomy.ai)",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 GathaBot/1.0 (+https://gatha.ai)",
+        Accept: "text/html,application/xhtml+xml",
+        "Accept-Language": "en",
       },
       signal: AbortSignal.timeout(10000),
     });
+    if (res.ok) {
+      const html = await res.text();
+      keywords = extractKeywords(html);
+    }
+  } catch {
+    // scrape failed — fall through to the AI fallback
+  }
 
-    if (!res.ok) {
+  // Fallback: scrape blocked/failed or found too little to be useful
+  if (keywords.length < 3) {
+    const suggested = await suggestWithAnthropic(url);
+    if (suggested.length > 0) {
+      return NextResponse.json({ keywords: suggested, source: "ai" });
+    }
+    if (keywords.length === 0) {
       return NextResponse.json(
-        { error: `Failed to fetch website (${res.status})` },
+        { error: "We couldn't read that website. Please add keywords manually." },
         { status: 502 }
       );
     }
-
-    const html = await res.text();
-    const keywords = extractKeywords(html);
-
-    return NextResponse.json({ keywords });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to fetch website";
-    return NextResponse.json({ error: message }, { status: 502 });
   }
+
+  return NextResponse.json({ keywords, source: "scrape" });
 }
 
 function extractKeywords(html: string): string[] {

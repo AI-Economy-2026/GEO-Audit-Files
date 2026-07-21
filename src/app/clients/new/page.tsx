@@ -45,17 +45,30 @@ export default function NewClientPage() {
     }
   }
 
+  const siteBase = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "")
+  ).replace(/\/+$/, "");
+
+  const intakeLink = result ? `${siteBase}/intake/${result.intake_token}` : "";
+
   function copyLink() {
-    if (!result) return;
-    const link = `${window.location.origin}/intake/${result.intake_token}`;
-    navigator.clipboard.writeText(link);
+    if (!intakeLink) return;
+    navigator.clipboard.writeText(intakeLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const intakeLink = result
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/intake/${result.intake_token}`
-    : "";
+  function emailLink() {
+    if (!intakeLink) return;
+    const subject = encodeURIComponent(
+      "Complete your Gatha AI visibility intake"
+    );
+    const emailBody = encodeURIComponent(
+      `Hi,\n\nPlease complete your intake form so we can run your AI visibility audit:\n${intakeLink}\n\nThanks!`
+    );
+    window.location.href = `mailto:?subject=${subject}&body=${emailBody}`;
+  }
 
   const inputCls =
     "w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
@@ -160,6 +173,9 @@ export default function NewClientPage() {
                 </code>
                 <Button onClick={copyLink} size="sm" icon={copied ? "check" : "content_copy"}>
                   {copied ? "Copied" : "Copy"}
+                </Button>
+                <Button onClick={emailLink} size="sm" variant="secondary" icon="mail">
+                  Email link
                 </Button>
               </div>
             </GlassCard>

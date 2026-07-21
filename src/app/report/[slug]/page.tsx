@@ -336,12 +336,10 @@ export default function ReportPage() {
     <header className="no-print sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-outline-variant">
       <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-primary text-[20px]">radar</span>
-          </div>
           <div>
-            <span className="text-sm font-black tracking-tighter text-primary">Gatha</span>
-            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/gatha-wordmark-navy.svg" alt="Gatha" style={{ height: 22, width: "auto", display: "block" }} />
+            <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold mt-1">
               AI Visibility Report
             </p>
           </div>
@@ -536,7 +534,7 @@ export default function ReportPage() {
             {/* Visibility Score Hero */}
             <section className="glass-card border-0 rounded-3xl p-10 text-center">
               <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">
-                GEO Audit &amp; Action Plan
+                AI Visibility Audit &amp; Action Plan
               </p>
               <h1 className="text-3xl font-black text-on-surface mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 Visibility Dashboard

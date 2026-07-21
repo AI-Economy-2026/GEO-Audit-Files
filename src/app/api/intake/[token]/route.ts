@@ -54,9 +54,22 @@ export async function POST(
 ) {
   const { token } = await params;
   const body = await req.json();
-  const { competitors, keywords, website_url } = body;
+  const { competitors, keywords, website_url, queries } = body;
 
-  if (!keywords?.length) {
+  // Queries drive prompt generation. Older form payloads sent them as
+  // `keywords`, so fall back for backward compatibility.
+  const queryList: string[] = (
+    Array.isArray(queries) && queries.length ? queries : keywords || []
+  )
+    .map((q: unknown) => String(q).trim())
+    .filter(Boolean);
+
+  // Broad topic keywords (optional, separate from queries).
+  const keywordList: string[] = (Array.isArray(keywords) ? keywords : [])
+    .map((k: unknown) => String(k).trim())
+    .filter(Boolean);
+
+  if (!queryList.length) {
     return NextResponse.json(
       { error: "At least one query is required." },
       { status: 400 }
@@ -116,7 +129,7 @@ export async function POST(
 
   // Generate prompts from user queries
   const brandUrl = website_url || client.url;
-  const generatedPrompts = generatePrompts(keywords);
+  const generatedPrompts = generatePrompts(queryList);
   const engines = DEFAULT_ENGINES;
 
   // Create audit row (on behalf of the agency user)
@@ -130,6 +143,8 @@ export async function POST(
       engines,
       status: "pending",
       progress_total: generatedPrompts.length * engines.length,
+      // geo_audits has a keywords column; only include when non-empty.
+      ...(keywordList.length > 0 ? { keywords: keywordList } : {}),
     })
     .select("id")
     .single();
@@ -157,7 +172,9 @@ export async function POST(
     .update({
       url: brandUrl,
       competitors: competitors || [],
-      keywords,
+      // geo_clients.keywords stores the intake queries (the add-queries
+      // route merges further report queries into this same column).
+      keywords: queryList,
       audit_id: audit.id,
       status: "auditing",
       intake_completed_at: new Date().toISOString(),

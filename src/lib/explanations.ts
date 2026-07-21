@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { stripEmDashes } from "@/lib/text-clean";
 
 export type ExplainTargetType =
   | "opportunity_score"
@@ -45,10 +46,24 @@ const num = (v: unknown, fallback = 0): number =>
 const str = (v: unknown, fallback = ""): string =>
   typeof v === "string" ? v : fallback;
 
+/** Sanitize all client-facing text fields of an explanation payload. */
+function sanitizePayload(p: ExplanationPayload): ExplanationPayload {
+  return {
+    ...p,
+    summary: stripEmDashes(p.summary),
+    whyItMatters: stripEmDashes(p.whyItMatters),
+    whatToDoNext: p.whatToDoNext.map(stripEmDashes),
+  };
+}
+
 /* ════════════════════════════════════════════════════════════════════
    Phase 1 — deterministic templates per target type.
    ════════════════════════════════════════════════════════════════════ */
 export function buildTemplate(target: ExplainTargetContext): ExplanationPayload {
+  return sanitizePayload(buildTemplateRaw(target));
+}
+
+function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
   const meta = target.meta || {};
 
   switch (target.type) {
@@ -211,7 +226,8 @@ Rules:
 - Maximum 2 short paragraphs OR a numbered list of up to 4 items.
 - Reference actual prompts, competitors, or engines from the data when relevant.
 - Stay anchored to the element above — refuse questions that drift off-topic.
-- If the question is unclear, ask one clarifying question instead of guessing.`;
+- If the question is unclear, ask one clarifying question instead of guessing.
+- Do not use em dashes; use commas or full stops instead.`;
 
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
@@ -221,11 +237,13 @@ Rules:
     messages: [{ role: "user", content: question }],
   });
 
-  return message.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as { type: "text"; text: string }).text)
-    .join("")
-    .trim();
+  return stripEmDashes(
+    message.content
+      .filter((b) => b.type === "text")
+      .map((b) => (b as { type: "text"; text: string }).text)
+      .join("")
+      .trim()
+  );
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -350,6 +368,7 @@ YOUR JOB:
 - Use real prompts, competitors, engines, and domains from the audit context above
 - Give one concrete example the user can act on this week
 - Numbers matter — reference percentages, counts, or named entities
+- Do not use em dashes; use commas or full stops instead
 
 ${JSON_SCHEMA_PROMPT.replace("{brand}", auditCtx.brandName)}`;
 
@@ -379,7 +398,7 @@ ${JSON_SCHEMA_PROMPT.replace("{brand}", auditCtx.brandName)}`;
       .trim();
 
     const parsed = JSON.parse(cleaned) as RawExplanation;
-    return coerceExplanation(parsed, fallback);
+    return sanitizePayload(coerceExplanation(parsed, fallback));
   } catch (err) {
     console.error("generateContextualExplanation failed, falling back to template:", err);
     return fallback;

@@ -47,6 +47,12 @@ function buildDomainsFromResults(
     }));
 }
 
+/* "OpenAI (ChatGPT)" -> "ChatGPT"; names without parentheses pass through. */
+function shortEngineName(name: string): string {
+  const m = name.match(/\(([^)]+)\)/);
+  return (m ? m[1] : name).trim();
+}
+
 export default function CitationsPage() {
   const { id } = useParams<{ id: string }>();
   const { audit, results, loading } = useAuditData(id);
@@ -72,25 +78,70 @@ export default function CitationsPage() {
     [audit]
   );
 
-  /* Per-prompt "cited vs not" — cited if brand url_cited OR mentioned in ≥1 engine. */
+  /* Per-prompt "cited vs not" — cited if brand url_cited OR mentioned in ≥1 engine.
+     Also tracks WHICH engines cited the brand, and the most-cited non-brand domain
+     for each prompt (= the recommended source to target for not-cited queries). */
   const promptCitation = useMemo(() => {
-    const byPrompt = new Map<string, { prompt: string; cited: boolean; engines: number }>();
+    const brandDomain = (audit?.brand_url || "")
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .split("/")[0];
+    const isBrandDomain = (d: string) =>
+      brandDomain !== "" && (d === brandDomain || d.endsWith("." + brandDomain));
+
+    const byPrompt = new Map<
+      string,
+      {
+        prompt: string;
+        cited: boolean;
+        citedEngines: Set<string>;
+        allEngines: Set<string>;
+        domainCounts: Record<string, number>;
+      }
+    >();
     for (const r of results) {
       const key = String(r.prompt_id) || r.prompt_text;
-      const isCited = r.url_cited || r.brand_mentioned;
-      const existing = byPrompt.get(key);
-      if (existing) {
-        existing.cited = existing.cited || isCited;
-        existing.engines += 1;
-      } else {
-        byPrompt.set(key, { prompt: r.prompt_text, cited: isCited, engines: 1 });
+      let entry = byPrompt.get(key);
+      if (!entry) {
+        entry = {
+          prompt: r.prompt_text,
+          cited: false,
+          citedEngines: new Set(),
+          allEngines: new Set(),
+          domainCounts: {},
+        };
+        byPrompt.set(key, entry);
+      }
+      const engineName = shortEngineName(r.engine_display || r.engine);
+      entry.allEngines.add(engineName);
+      if (r.url_cited || r.brand_mentioned) {
+        entry.cited = true;
+        entry.citedEngines.add(engineName);
+      }
+      for (const raw of r.citations || []) {
+        try {
+          const d = new URL(raw).hostname.replace(/^www\./, "").toLowerCase();
+          if (d && !isBrandDomain(d)) entry.domainCounts[d] = (entry.domainCounts[d] || 0) + 1;
+        } catch {
+          // ignore malformed URLs
+        }
       }
     }
-    const rows = Array.from(byPrompt.values());
+    const rows = Array.from(byPrompt.values()).map((e) => {
+      const top = Object.entries(e.domainCounts).sort((a, b) => b[1] - a[1])[0];
+      return {
+        prompt: e.prompt,
+        cited: e.cited,
+        citedEngines: Array.from(e.citedEngines).sort(),
+        totalEngines: e.allEngines.size,
+        recSource: top ? top[0] : null,
+      };
+    });
     rows.sort((a, b) => (a.cited !== b.cited ? (a.cited ? 1 : -1) : a.prompt.localeCompare(b.prompt)));
     const citedCount = rows.filter((r) => r.cited).length;
     return { rows, citedCount, total: rows.length };
-  }, [results]);
+  }, [results, audit]);
 
   if (loading || !audit) {
     return (
@@ -111,19 +162,26 @@ export default function CitationsPage() {
         <div>
           <h1>Citations</h1>
           <p>
-            High-value places to earn citations, and exactly which queries {audit.brand_name} is —
-            and isn&apos;t — cited in across the AI engines.
+            When AI answers these queries, these are the sources it trusts. Below: where
+            you&apos;re already cited, where you&apos;re not, and the exact sources to target.
           </p>
         </div>
         {promptCitation.total > 0 && (
           <div className="actions">
-            <Tooltip label="Download every query with its cited / not-cited status">
+            <Tooltip label="Download every query with which engines cite you and the source to target">
               <button
                 className="btn btn-sm"
                 onClick={() => {
+                  const fallbackSource = opportunities[0]?.domain ?? "";
                   const rows: (string | number | boolean)[][] = [
-                    ["Query", "Engines tested", "Cited"],
-                    ...promptCitation.rows.map((r) => [r.prompt, r.engines, r.cited]),
+                    ["Query", "Engines tested", "Cited", "Cited engines", "Recommended source"],
+                    ...promptCitation.rows.map((r) => [
+                      r.prompt,
+                      r.totalEngines,
+                      r.cited,
+                      r.citedEngines.join("; "),
+                      r.cited ? "" : r.recSource ?? fallbackSource,
+                    ]),
                   ];
                   downloadCsv(`${safeFilename(audit.brand_name)}-citations`, rows);
                 }}
@@ -185,10 +243,11 @@ export default function CitationsPage() {
       <div className="section">
         <div className="section-head">
           <div>
-            <h2>High-value citation opportunities</h2>
+            <h2>Sources to get featured on</h2>
             <div className="sub">
-              AI engines cite these sources when answering questions in your category —
-              getting featured here directly improves your chances of being cited too.
+              These are the websites AI quotes most when answering questions in your category.
+              Get {audit.brand_name} listed or featured on them and AI is far more likely to
+              cite you too.
             </div>
           </div>
           <span className="chip chip-neutral">{opportunities.length} targets</span>
@@ -268,8 +327,9 @@ export default function CitationsPage() {
           <div>
             <h2>Where you&apos;re cited vs. not</h2>
             <div className="sub">
-              For each query we tested, whether {audit.brand_name} was cited or mentioned by
-              at least one AI engine. Not-cited queries are your biggest opportunities.
+              For each query we tested: which AI engines cite or mention {audit.brand_name},
+              and for the queries where none do, the source AI trusts most — your best
+              place to get featured for that query.
             </div>
           </div>
           {promptCitation.total > 0 && (
@@ -289,22 +349,70 @@ export default function CitationsPage() {
               <thead>
                 <tr>
                   <th>Query</th>
-                  <th className="center">Engines</th>
                   <th className="center">Status</th>
+                  <th>Engines</th>
+                  <th>Recommended source</th>
                 </tr>
               </thead>
               <tbody>
-                {promptCitation.rows.map((r, i) => (
-                  <tr key={`${r.prompt}-${i}`}>
-                    <td style={{ color: "var(--text)" }}>{r.prompt}</td>
-                    <td className="center" style={{ color: "var(--text-3)" }}>{r.engines}</td>
-                    <td className="center">
-                      <span className={`chip ${r.cited ? "chip-good" : "chip-crit"}`}>
-                        {r.cited ? "Cited" : "Not cited"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {promptCitation.rows.map((r, i) => {
+                  const missed = r.totalEngines - r.citedEngines.length;
+                  const recSource = r.cited ? null : r.recSource ?? opportunities[0]?.domain ?? null;
+                  return (
+                    <tr key={`${r.prompt}-${i}`}>
+                      <td style={{ color: "var(--text)" }}>{r.prompt}</td>
+                      <td className="center">
+                        <span
+                          className={`chip ${r.cited ? "chip-good" : "chip-crit"}`}
+                          style={{ whiteSpace: "nowrap" }}
+                        >
+                          {r.cited ? `Cited ${r.citedEngines.length}/${r.totalEngines}` : "Not cited"}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+                          {r.citedEngines.map((e) => (
+                            <span
+                              key={e}
+                              className="tag"
+                              style={{
+                                fontSize: 9,
+                                padding: "2px 6px",
+                                background: "rgba(94,234,212,.10)",
+                                borderColor: "rgba(94,234,212,.28)",
+                                color: "var(--text)",
+                              }}
+                            >
+                              {e}
+                            </span>
+                          ))}
+                          {r.citedEngines.length === 0 ? (
+                            <span style={{ fontSize: 11, color: "var(--text-4)", whiteSpace: "nowrap" }}>
+                              0 of {r.totalEngines} engines
+                            </span>
+                          ) : missed > 0 ? (
+                            <span style={{ fontSize: 10, color: "var(--text-4)", whiteSpace: "nowrap" }}>
+                              +{missed} not citing
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td>
+                        {recSource ? (
+                          <span
+                            className="tag"
+                            title="AI cites this source most for this query — get featured here"
+                            style={{ fontSize: 10, padding: "2px 7px", cursor: "help", wordBreak: "break-all" }}
+                          >
+                            {recSource}
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--text-4)" }}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

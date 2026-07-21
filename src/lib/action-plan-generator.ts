@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { stripEmDashes } from "@/lib/text-clean";
 
 export interface ActionItemSeed {
   week_number: number;
@@ -42,6 +43,7 @@ Plan rules:
 - Technical = schema, llms.txt, structured data, sitemaps, indexability, robots, server-side rendering.
 - Non-technical = content, comparison pages, landing pages, citations, partnerships, PR, reviews, entity normalisation across socials.
 - Do NOT mention specific dollar amounts or pricing.
+- Do not use em dashes; use commas or full stops instead.
 - Final week (13) must include "Re-run the audit and compare to baseline" as the last item.`;
 
 function buildUserPrompt(input: AuditPlanInput): string {
@@ -86,10 +88,13 @@ function coerceItem(raw: ParsedItem, fallbackOrder: number): ActionItemSeed | nu
   if (!Number.isInteger(week) || week < 1 || week > 13) return null;
   const cat = raw.category === "technical" || raw.category === "non_technical" ? raw.category : null;
   if (!cat) return null;
-  const title = typeof raw.title === "string" && raw.title.trim() ? raw.title.trim().slice(0, 200) : null;
+  const title =
+    typeof raw.title === "string" && raw.title.trim()
+      ? stripEmDashes(raw.title.trim()).slice(0, 200)
+      : null;
   if (!title) return null;
   const description =
-    typeof raw.description === "string" ? raw.description.trim().slice(0, 500) : "";
+    typeof raw.description === "string" ? stripEmDashes(raw.description.trim()).slice(0, 500) : "";
   const effort = typeof raw.effort_label === "string" ? raw.effort_label.trim().slice(0, 40) : "";
   const sort = Number.isInteger(Number(raw.sort_order)) ? Number(raw.sort_order) : fallbackOrder;
   return {

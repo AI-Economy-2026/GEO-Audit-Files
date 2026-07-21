@@ -71,29 +71,10 @@ export default function AdminSidebar() {
           borderBottom: "1px solid var(--border-soft)",
         }}
       >
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: "linear-gradient(135deg, var(--mint), var(--mint-2))",
-            display: "grid",
-            placeItems: "center",
-            boxShadow: "0 6px 18px rgba(94,234,212,.28)",
-            flexShrink: 0,
-            padding: 7,
-          }}
-          aria-label="Gatha"
-        >
-          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%" }}>
-            <path d="M50 18 L82 78 L66 78 L50 48 L34 78 L18 78 Z" fill="#0E1A2D" />
-          </svg>
-        </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, letterSpacing: "-0.01em", lineHeight: 1.15, color: "var(--text)" }}>
-            Gatha
-          </div>
-          <div style={{ fontSize: 10, color: "var(--mint)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/gatha-wordmark-mint.svg" alt="Gatha" style={{ height: 24, width: "auto", display: "block" }} />
+          <div style={{ fontSize: 10, color: "var(--mint)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 6 }}>
             Admin Console
           </div>
         </div>

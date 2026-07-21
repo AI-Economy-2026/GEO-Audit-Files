@@ -21,6 +21,8 @@ export default function IntakePage() {
 
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [competitors, setCompetitors] = useState<string[]>([""]);
+  const [queryInput, setQueryInput] = useState("");
+  const [queries, setQueries] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
 
@@ -49,17 +51,29 @@ export default function IntakePage() {
     loadClient();
   }, [token]);
 
+  function addQuery() {
+    const item = queryInput.trim();
+    if (item && !queries.includes(item)) {
+      setQueries([...queries, item]);
+      setQueryInput("");
+    }
+  }
+
   function addKeyword() {
-    const item = keywordInput.trim();
-    if (item && !keywords.includes(item)) {
-      setKeywords([...keywords, item]);
+    // Supports comma-separated bulk paste, e.g. "wordpress development, react agency"
+    const items = keywordInput
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean);
+    if (items.length) {
+      setKeywords((prev) => [...new Set([...prev, ...items])]);
       setKeywordInput("");
     }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (keywords.length === 0) {
+    if (queries.length === 0) {
       setErrorMsg("Please add at least one query.");
       return;
     }
@@ -73,6 +87,7 @@ export default function IntakePage() {
         body: JSON.stringify({
           website_url: websiteUrl,
           competitors: competitors.filter((c) => c.trim()),
+          queries,
           keywords,
         }),
       });
@@ -97,12 +112,8 @@ export default function IntakePage() {
     <header className="border-b border-outline-variant bg-surface-bright/95 backdrop-blur-sm py-6">
       <div className="max-w-2xl mx-auto px-4 text-center">
         <div className="inline-flex items-center gap-2 mb-2">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <span className="material-symbols-outlined text-on-primary">radar</span>
-          </div>
-          <span className="text-xl font-black tracking-tighter text-primary">
-            Gatha
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/gatha-wordmark-navy.svg" alt="Gatha" style={{ height: 28, width: "auto" }} />
         </div>
         <p className="text-on-surface-variant text-[10px] uppercase tracking-widest font-bold mt-2">
           AI Visibility Intake
@@ -172,7 +183,7 @@ export default function IntakePage() {
             <p className="text-on-surface-variant mb-6 leading-relaxed">
               We&apos;re analysing{" "}
               <strong className="text-on-surface">{client?.name}</strong>&apos;s visibility across
-              8 AI search engines. This typically takes 3–5 minutes.
+              every major AI search engine. This typically takes 3 to 5 minutes.
             </p>
             <a href={reportUrl}>
               <Button icon="arrow_forward" size="lg" className="w-full">
@@ -237,6 +248,75 @@ export default function IntakePage() {
             <div className="flex gap-2 mb-3">
               <input
                 type="text"
+                value={queryInput}
+                onChange={(e) => setQueryInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addQuery();
+                  }
+                }}
+                placeholder="e.g. best digital marketing agency in Sydney"
+                className={`flex-1 ${inputCls}`}
+              />
+              <Button type="button" onClick={addQuery} icon="add">
+                Add
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {queries.map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-sm"
+                >
+                  {item}
+                  <button
+                    type="button"
+                    onClick={() => setQueries(queries.filter((q) => q !== item))}
+                    className="hover:opacity-70"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </button>
+                </span>
+              ))}
+            </div>
+            {websiteUrl && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch(
+                      `/api/extract-keywords?url=${encodeURIComponent(websiteUrl)}`
+                    );
+                    const data = await res.json();
+                    if (data.keywords?.length) {
+                      setQueries((prev) => [...new Set([...prev, ...data.keywords])]);
+                    }
+                  } catch {
+                    /* ignore */
+                  }
+                }}
+                className="text-sm text-primary hover:opacity-80 font-bold mt-4 inline-flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                Auto-suggest queries from your website
+              </button>
+            )}
+          </GlassCard>
+
+          {/* Keywords */}
+          <GlassCard padding="lg">
+            <h3 className="text-lg font-bold text-on-surface mb-2 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">sell</span>
+              Keywords
+            </h3>
+            <p className="text-sm text-on-surface-variant mb-4">
+              Broad topics you want to be known for, e.g. WordPress development. Separate
+              multiple keywords with commas.
+            </p>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
                 value={keywordInput}
                 onChange={(e) => setKeywordInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -245,7 +325,7 @@ export default function IntakePage() {
                     addKeyword();
                   }
                 }}
-                placeholder="e.g. best digital marketing agency in Sydney"
+                placeholder="e.g. WordPress development, ecommerce SEO"
                 className={`flex-1 ${inputCls}`}
               />
               <Button type="button" onClick={addKeyword} icon="add">
@@ -269,28 +349,6 @@ export default function IntakePage() {
                 </span>
               ))}
             </div>
-            {websiteUrl && (
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const res = await fetch(
-                      `/api/extract-keywords?url=${encodeURIComponent(websiteUrl)}`
-                    );
-                    const data = await res.json();
-                    if (data.keywords?.length) {
-                      setKeywords((prev) => [...new Set([...prev, ...data.keywords])]);
-                    }
-                  } catch {
-                    /* ignore */
-                  }
-                }}
-                className="text-sm text-primary hover:opacity-80 font-bold mt-4 inline-flex items-center gap-1"
-              >
-                <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
-                Auto-suggest queries from your website
-              </button>
-            )}
           </GlassCard>
 
           {/* Competitors */}
@@ -350,7 +408,7 @@ export default function IntakePage() {
             size="lg"
             icon="rocket_launch"
             disabled={
-              pageState === "submitting" || !websiteUrl || keywords.length === 0
+              pageState === "submitting" || !websiteUrl || queries.length === 0
             }
             className="w-full"
           >
@@ -359,7 +417,7 @@ export default function IntakePage() {
               : "Start My AI Visibility Audit"}
           </Button>
 
-          <p className="text-xs text-on-surface-variant text-center opacity-70">
+          <p className="text-xs text-on-surface-variant text-center">
             Your audit will analyse visibility across ChatGPT, Claude, Gemini, Perplexity, Grok,
             Google AI, and Bing Copilot.
           </p>
@@ -371,12 +429,12 @@ export default function IntakePage() {
           <p>
             Powered by{" "}
             <a
-              href="https://aieconomy.ai"
+              href="https://gatha.ai"
               className="text-primary hover:opacity-80 font-bold"
             >
-              AI Economy
-            </a>{" "}
-            &middot; Balmer Agency
+              Gatha
+            </a>
+            {client?.name ? <> &middot; {client.name}</> : null}
           </p>
         </div>
       </footer>

@@ -48,8 +48,14 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
 
-  // Public routes (no auth required)
-  if (pathname.startsWith("/intake") || pathname.startsWith("/report")) {
+  // Public routes (no auth required). Note: /reset-password must stay
+  // reachable even with a session — the recovery link signs the user in.
+  if (
+    pathname.startsWith("/intake") ||
+    pathname.startsWith("/report") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password")
+  ) {
     return supabaseResponse;
   }
 
@@ -61,7 +67,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Login route — if already signed in, route based on role
-  if (pathname.startsWith("/login") || pathname.startsWith("/reset-password")) {
+  if (pathname.startsWith("/login")) {
     if (user) {
       const role = await loadRole(user.id);
       const url = request.nextUrl.clone();

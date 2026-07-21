@@ -26,7 +26,12 @@ export default function TopNav({
   return (
     <nav className="fixed top-0 left-64 right-0 z-40 bg-surface/60 backdrop-blur-xl flex items-center justify-between px-8 py-4 shadow-[0_20px_50px_rgba(94,234,212,0.05)]">
       <div className="flex items-center gap-8">
-        <span className="text-xl font-bold tracking-tighter text-primary">{brand}</span>
+        {brand === "Gatha" ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src="/gatha-wordmark-mint.svg" alt="Gatha" style={{ height: 20, width: "auto" }} />
+        ) : (
+          <span className="text-xl font-bold tracking-tighter text-primary">{brand}</span>
+        )}
         {tabs.length > 0 && (
           <div className="flex gap-6">
             {tabs.map((tab) => {

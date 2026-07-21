@@ -29,14 +29,10 @@ export default function Sidebar() {
 
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 border-r border-outline-variant bg-surface/60 backdrop-blur-2xl flex flex-col p-4 gap-2 z-50">
-      <Link href="/audits" className="flex items-center gap-3 px-2 py-4 mb-6">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-          <span className="material-symbols-outlined text-on-primary-fixed font-bold">radar</span>
-        </div>
-        <div>
-          <h1 className="text-primary font-black leading-tight tracking-tighter">GEO Audit</h1>
-          <p className="text-[10px] text-on-surface-variant uppercase tracking-widest">Console V1</p>
-        </div>
+      <Link href="/audits" className="flex flex-col gap-1.5 px-2 py-4 mb-6" aria-label="Gatha home">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/gatha-wordmark-mint.svg" alt="Gatha" style={{ height: 26, width: "auto" }} />
+        <p className="text-[10px] text-on-surface-variant uppercase tracking-widest">Be Seen in AI Search</p>
       </Link>
 
       <nav className="flex-1 flex flex-col gap-2">

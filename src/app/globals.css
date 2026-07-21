@@ -1020,6 +1020,25 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
    intake). Overrides raw and --color-* tokens locally.
    ════════════════════════════════════════════════════════════════════ */
 .theme-light {
+  /* Raw palette overrides — the base h1-h4 rule and many components use
+     var(--text)/var(--surface-2)/var(--border) directly. Without these,
+     dark-theme values leak into light surfaces and headings render
+     near-white on white (unreadable intake/report). */
+  --bg:         #F8FAFC;
+  --bg-grad-1:  #FFFFFF;
+  --inset:      #F1F5F9;
+  --text:   #0F172A;
+  --text-2: #334155;
+  --text-3: #64748B;
+  --text-4: #94A3B8;
+  --border:      #E2E8F0;
+  --border-soft: #EEF2F7;
+  --border-hi:   #CBD5E1;
+  --surface-2:   #F1F5F9;
+  --surface-3:   #E2E8F0;
+  --shadow-md: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  --shadow-lg: 0 10px 30px rgba(15,23,42,.10);
+
   --surface: #F8FAFC;
   --surface-dim: #F1F5F9;
   --surface-container-lowest: #FFFFFF;

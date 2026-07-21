@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { stripEmDashes } from "@/lib/text-clean";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -50,6 +51,7 @@ Rules:
 - Reference specific prompts and engines from the data below.
 - Do not use marketing language or upsell.
 - Do not say "I" or "As an AI". Just give the answer.
+- Do not use em dashes; use commas or full stops instead.
 
 Audit data:
 - Overall visibility: ${ctx.overallVisibility}% (${ctx.totalMentioned} mentions / ${ctx.totalQueries} queries)
@@ -91,7 +93,7 @@ export async function POST(req: NextRequest) {
       .map((b) => (b as { type: "text"; text: string }).text)
       .join("");
 
-    return NextResponse.json({ response: text });
+    return NextResponse.json({ response: stripEmDashes(text) });
   } catch (err) {
     console.error("Ask Sarah error:", err);
     return NextResponse.json({ error: "Failed to get response." }, { status: 500 });

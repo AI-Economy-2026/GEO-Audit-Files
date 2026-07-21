@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import AuthShell from "@/components/ui/AuthShell";
@@ -38,11 +39,14 @@ export default function LoginPage() {
   return (
     <AuthShell>
       <div className="text-center mb-8">
-        <div className="w-14 h-14 rounded-2xl bg-primary mx-auto mb-4 flex items-center justify-center shadow-[0_0_30px_rgba(94,234,212,0.3)]">
-          <span className="material-symbols-outlined text-on-primary-fixed text-3xl">radar</span>
-        </div>
-        <h1 className="text-3xl font-extrabold tracking-tighter text-on-surface">Gatha</h1>
-        <p className="text-on-surface-variant mt-2 text-sm">AI Visibility Auditing Platform</p>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/gatha-wordmark-mint.svg"
+          alt="Gatha"
+          className="mx-auto mb-3"
+          style={{ height: 34, width: "auto" }}
+        />
+        <p className="text-on-surface-variant mt-2 text-sm">Be Seen in AI Search</p>
       </div>
 
       <GlassCard padding="lg">
@@ -63,9 +67,17 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
-              Password
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                Password
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
