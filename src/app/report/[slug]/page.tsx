@@ -471,7 +471,7 @@ export default function ReportPage() {
         {/* In progress */}
         {isRunning && (
           <section className="glass-card border-0 rounded-3xl p-8 text-center">
-            <h2 className="text-2xl font-bold text-on-surface mb-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+            <h2 className="text-2xl font-bold text-on-surface mb-4" style={{ fontFamily: "var(--font-display)" }}>
               Analysing AI Visibility
             </h2>
             <p className="text-on-surface-variant mb-6">
@@ -536,11 +536,11 @@ export default function ReportPage() {
               <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">
                 AI Visibility Audit &amp; Action Plan
               </p>
-              <h1 className="text-3xl font-black text-on-surface mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <h1 className="text-3xl font-black text-on-surface mb-1" style={{ fontFamily: "var(--font-display)" }}>
                 Visibility Dashboard
               </h1>
               <p className="text-on-surface-variant mb-6 text-sm">How AI search engines see and recommend your business</p>
-              <div className={`text-8xl font-black ${visColors.text}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <div className={`text-8xl font-black ${visColors.text}`} style={{ fontFamily: "var(--font-display)" }}>
                 {Math.round(visRate)}%
               </div>
               <div className="w-16 h-1 bg-primary mx-auto my-4" />
@@ -598,7 +598,7 @@ export default function ReportPage() {
                   key={kpi.label}
                   className={`glass-card border-0 border-t-4 ${kpi.accent} rounded-2xl p-5 text-center`}
                 >
-                  <div className={`text-3xl font-black ${kpi.color}`} style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  <div className={`text-3xl font-black ${kpi.color}`} style={{ fontFamily: "var(--font-display)" }}>
                     {kpi.value}
                   </div>
                   <div className="text-xs text-on-surface-variant mt-1 font-medium">
@@ -615,7 +615,7 @@ export default function ReportPage() {
                   onClick={handleReAudit}
                   disabled={reAuditLoading}
                   className="px-8 py-3 bg-primary text-on-primary-fixed font-bold rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors uppercase tracking-wider text-sm"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   {reAuditLoading ? "Starting Re-Audit..." : "Re-Audit This Brand"}
                 </button>
@@ -627,7 +627,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Audit History &mdash; Score Changes
                 </h2>
@@ -738,7 +738,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-6"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Performance by AI Engine
                 </h2>
@@ -789,7 +789,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   AI Engine Gap Analysis
                 </h2>
@@ -855,7 +855,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Category Performance
                 </h2>
@@ -898,7 +898,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Competitor Mentions
                 </h2>
@@ -969,7 +969,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Sentiment Analysis
                 </h2>
@@ -1027,7 +1027,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Keyword Gap Analysis
                 </h2>
@@ -1116,7 +1116,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Directory &amp; Citation Check
                 </h2>
@@ -1171,7 +1171,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Citation Opportunities
                 </h2>
@@ -1208,7 +1208,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   AI vs SEO Visibility
                 </h2>
@@ -1302,7 +1302,7 @@ export default function ReportPage() {
               <section className="glass-card border-0 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Content Recommendations
                 </h2>
@@ -1423,7 +1423,7 @@ export default function ReportPage() {
               <section className="glass-card border-2 border-dashed border-primary/30 rounded-3xl p-6">
                 <h2
                   className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   Test More Queries
                 </h2>
@@ -1498,7 +1498,7 @@ export default function ReportPage() {
                 </p>
                 <h2
                   className="text-4xl md:text-5xl font-black text-on-surface mb-4"
-                  style={{ fontFamily: "'DM Sans', sans-serif" }}
+                  style={{ fontFamily: "var(--font-display)" }}
                 >
                   There&apos;s a Part 2 to This Report
                 </h2>
@@ -1536,7 +1536,7 @@ export default function ReportPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                         </svg>
                       </div>
-                      <h3 className="text-on-surface font-bold mb-2 text-sm" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                      <h3 className="text-on-surface font-bold mb-2 text-sm" style={{ fontFamily: "var(--font-display)" }}>
                         {item.title}
                       </h3>
                       <p className="text-on-surface-variant text-sm leading-relaxed">{item.desc}</p>
@@ -1562,7 +1562,7 @@ export default function ReportPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block px-10 py-4 bg-primary text-on-primary-fixed font-bold rounded-xl hover:opacity-90 transition-colors text-base uppercase tracking-wider"
-                    style={{ fontFamily: "'DM Sans', sans-serif" }}
+                    style={{ fontFamily: "var(--font-display)" }}
                   >
                     Activate the Plan
                   </a>

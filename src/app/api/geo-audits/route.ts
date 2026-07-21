@@ -99,15 +99,16 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient();
 
-    // Hardcode all available engines as requested
+    // The 5 live API engines. The scraper engines (google_ai_mode,
+    // google_ai_overview, bing_copilot) need Playwright/SerpAPI infra —
+    // without it they fail silently, inflate query counts and drag the
+    // visibility score down. Re-enable once scraping infra is deployed.
     const allEngines = [
       "openai",
       "anthropic",
       "google",
       "perplexity",
       "xai",
-      "google_ai_mode",
-      "google_ai_overview",
     ];
 
     // 1. Create the audit row

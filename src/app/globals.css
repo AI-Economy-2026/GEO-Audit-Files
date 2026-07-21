@@ -1024,75 +1024,75 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
      var(--text)/var(--surface-2)/var(--border) directly. Without these,
      dark-theme values leak into light surfaces and headings render
      near-white on white (unreadable intake/report). */
-  --bg:         #F8FAFC;
+  --bg:         #FAF9F5;
   --bg-grad-1:  #FFFFFF;
-  --inset:      #F1F5F9;
-  --text:   #0F172A;
-  --text-2: #334155;
-  --text-3: #64748B;
-  --text-4: #94A3B8;
-  --border:      #E2E8F0;
-  --border-soft: #EEF2F7;
-  --border-hi:   #CBD5E1;
-  --surface-2:   #F1F5F9;
-  --surface-3:   #E2E8F0;
+  --inset:      #F6F3EC;
+  --text:   #0F1A2E;
+  --text-2: #3B4655;
+  --text-3: #6B7280;
+  --text-4: #9AA1AC;
+  --border:      #EAE7E0;
+  --border-soft: #F0EDE6;
+  --border-hi:   #D8D3C8;
+  --surface-2:   #F6F3EC;
+  --surface-3:   #EAE7E0;
   --shadow-md: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
   --shadow-lg: 0 10px 30px rgba(15,23,42,.10);
 
-  --surface: #F8FAFC;
-  --surface-dim: #F1F5F9;
+  --surface: #FAF9F5;
+  --surface-dim: #F6F3EC;
   --surface-container-lowest: #FFFFFF;
-  --surface-container-low: #F8FAFC;
-  --surface-container: #F1F5F9;
-  --surface-container-high: #E2E8F0;
-  --surface-container-highest: #CBD5E1;
+  --surface-container-low: #FAF9F5;
+  --surface-container: #F6F3EC;
+  --surface-container-high: #EAE7E0;
+  --surface-container-highest: #D8D3C8;
   --surface-bright: #FFFFFF;
-  --surface-variant: #F1F5F9;
+  --surface-variant: #F6F3EC;
 
-  --primary: #004AAD;
-  --primary-fixed: #004AAD;
-  --primary-fixed-dim: #004AAD;
-  --primary-container: #E6F1FB;
+  --primary: #0F8A78;
+  --primary-fixed: #0F8A78;
+  --primary-fixed-dim: #0F8A78;
+  --primary-container: #DFF3EF;
   --on-primary: #FFFFFF;
   --on-primary-fixed: #FFFFFF;
-  --on-primary-container: #003A8C;
-  --on-primary-fixed-variant: #003A8C;
+  --on-primary-container: #0B6154;
+  --on-primary-fixed-variant: #0B6154;
 
-  --secondary: #E8890C;
-  --secondary-container: #FFF3E0;
-  --secondary-fixed: #E8890C;
-  --secondary-fixed-dim: #FFF3E0;
+  --secondary: #A8641C;
+  --secondary-container: #FBEEDD;
+  --secondary-fixed: #A8641C;
+  --secondary-fixed-dim: #FBEEDD;
   --on-secondary: #FFFFFF;
   --on-secondary-fixed: #FFFFFF;
-  --on-secondary-container: #E8890C;
-  --on-secondary-fixed-variant: #B36900;
+  --on-secondary-container: #A8641C;
+  --on-secondary-fixed-variant: #8A5412;
 
-  --tertiary: #0BA5C9;
-  --tertiary-fixed: #0BA5C9;
-  --tertiary-fixed-dim: #E0F5FA;
-  --tertiary-container: #E0F5FA;
+  --tertiary: #172A52;
+  --tertiary-fixed: #172A52;
+  --tertiary-fixed-dim: #E7ECF4;
+  --tertiary-container: #E7ECF4;
   --on-tertiary: #FFFFFF;
   --on-tertiary-fixed: #FFFFFF;
-  --on-tertiary-container: #0BA5C9;
-  --on-tertiary-fixed-variant: #087B95;
+  --on-tertiary-container: #172A52;
+  --on-tertiary-fixed-variant: #0C1830;
 
-  --on-surface: #0F172A;
-  --on-surface-variant: #64748B;
-  --on-background: #0F172A;
+  --on-surface: #0F1A2E;
+  --on-surface-variant: #6B7280;
+  --on-background: #0F1A2E;
 
-  --outline: #94A3B8;
-  --outline-variant: #E2E8F0;
+  --outline: #9AA1AC;
+  --outline-variant: #EAE7E0;
 
-  --error: #DC2626;
-  --error-container: #FEF2F2;
+  --error: #B4433A;
+  --error-container: #F9E9E7;
   --on-error: #FFFFFF;
-  --on-error-container: #DC2626;
+  --on-error-container: #B4433A;
 
-  --inverse-surface: #0F172A;
+  --inverse-surface: #0F1A2E;
   --inverse-on-surface: #FFFFFF;
-  --inverse-primary: #E6F1FB;
+  --inverse-primary: #DFF3EF;
 
-  --surface-tint: #004AAD;
+  --surface-tint: #0F8A78;
   --background: var(--surface);
   --foreground: var(--on-surface);
   color-scheme: light;
@@ -1100,75 +1100,75 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
   /* Semantic palette — light-mode-appropriate values so prebuilt classes
      (.chip-*, .kpi, bars, deltas) and report surfaces stay legible on white
      and so "good" stays GREEN (never blue/brand). */
-  --mint:      #0F9E8E;  --mint-2:  #0B7E72;  --mint-weak: #E1F7F4;  --mint-line: rgba(15,158,142,.30);
+  --mint:      #0F8A78;  --mint-2:  #0B7E72;  --mint-weak: #E1F7F4;  --mint-line: rgba(15,138,120,.30);
   --good:      #1D9E75;  --good-2:  #157A5A;  --good-weak: #E1F5EE;  --good-line: rgba(29,158,117,.34);
-  --warn:      #C2710C;  --warn-2:  #9A5A09;  --warn-weak: #FFF3E0;  --warn-line: rgba(194,113,12,.34);
-  --crit:      #DC2626;  --crit-2:  #B91C1C;  --crit-weak: #FEF2F2;  --crit-line: rgba(220,38,38,.34);
-  --info:      #0BA5C9;  --info-2:  #087B95;  --info-weak: #E0F5FA;  --info-line: rgba(11,165,201,.34);
+  --warn:      #C2710C;  --warn-2:  #9A5A09;  --warn-weak: #FBEEDD;  --warn-line: rgba(194,113,12,.34);
+  --crit:      #B4433A;  --crit-2:  #96352E;  --crit-weak: #F9E9E7;  --crit-line: rgba(180,67,58,.34);
+  --info:      #172A52;  --info-2:  #0C1830;  --info-weak: #E7ECF4;  --info-line: rgba(23,42,82,.28);
   --neutral-weak: rgba(15,23,42,.05); --neutral-line: rgba(15,23,42,.14);
 
-  --color-surface: #F8FAFC;
-  --color-surface-dim: #F1F5F9;
+  --color-surface: #FAF9F5;
+  --color-surface-dim: #F6F3EC;
   --color-surface-container-lowest: #FFFFFF;
-  --color-surface-container-low: #F8FAFC;
-  --color-surface-container: #F1F5F9;
-  --color-surface-container-high: #E2E8F0;
-  --color-surface-container-highest: #CBD5E1;
+  --color-surface-container-low: #FAF9F5;
+  --color-surface-container: #F6F3EC;
+  --color-surface-container-high: #EAE7E0;
+  --color-surface-container-highest: #D8D3C8;
   --color-surface-bright: #FFFFFF;
-  --color-surface-variant: #F1F5F9;
+  --color-surface-variant: #F6F3EC;
 
-  --color-primary: #004AAD;
-  --color-primary-fixed: #004AAD;
-  --color-primary-fixed-dim: #004AAD;
-  --color-primary-container: #E6F1FB;
+  --color-primary: #0F8A78;
+  --color-primary-fixed: #0F8A78;
+  --color-primary-fixed-dim: #0F8A78;
+  --color-primary-container: #DFF3EF;
   --color-on-primary: #FFFFFF;
   --color-on-primary-fixed: #FFFFFF;
-  --color-on-primary-container: #003A8C;
-  --color-on-primary-fixed-variant: #003A8C;
+  --color-on-primary-container: #0B6154;
+  --color-on-primary-fixed-variant: #0B6154;
 
-  --color-secondary: #E8890C;
-  --color-secondary-container: #FFF3E0;
-  --color-secondary-fixed: #E8890C;
-  --color-secondary-fixed-dim: #FFF3E0;
+  --color-secondary: #A8641C;
+  --color-secondary-container: #FBEEDD;
+  --color-secondary-fixed: #A8641C;
+  --color-secondary-fixed-dim: #FBEEDD;
   --color-on-secondary: #FFFFFF;
   --color-on-secondary-fixed: #FFFFFF;
-  --color-on-secondary-container: #E8890C;
-  --color-on-secondary-fixed-variant: #B36900;
+  --color-on-secondary-container: #A8641C;
+  --color-on-secondary-fixed-variant: #8A5412;
 
-  --color-tertiary: #0BA5C9;
-  --color-tertiary-fixed: #0BA5C9;
-  --color-tertiary-fixed-dim: #E0F5FA;
-  --color-tertiary-container: #E0F5FA;
+  --color-tertiary: #172A52;
+  --color-tertiary-fixed: #172A52;
+  --color-tertiary-fixed-dim: #E7ECF4;
+  --color-tertiary-container: #E7ECF4;
   --color-on-tertiary: #FFFFFF;
   --color-on-tertiary-fixed: #FFFFFF;
-  --color-on-tertiary-container: #0BA5C9;
-  --color-on-tertiary-fixed-variant: #087B95;
+  --color-on-tertiary-container: #172A52;
+  --color-on-tertiary-fixed-variant: #0C1830;
 
-  --color-on-surface: #0F172A;
-  --color-on-surface-variant: #64748B;
-  --color-on-background: #0F172A;
+  --color-on-surface: #0F1A2E;
+  --color-on-surface-variant: #6B7280;
+  --color-on-background: #0F1A2E;
 
-  --color-outline: #94A3B8;
-  --color-outline-variant: #E2E8F0;
+  --color-outline: #9AA1AC;
+  --color-outline-variant: #EAE7E0;
 
-  --color-error: #DC2626;
-  --color-error-container: #FEF2F2;
+  --color-error: #B4433A;
+  --color-error-container: #F9E9E7;
   --color-on-error: #FFFFFF;
-  --color-on-error-container: #DC2626;
+  --color-on-error-container: #B4433A;
 
-  --color-inverse-surface: #0F172A;
+  --color-inverse-surface: #0F1A2E;
   --color-inverse-on-surface: #FFFFFF;
-  --color-inverse-primary: #E6F1FB;
+  --color-inverse-primary: #DFF3EF;
 
-  --color-background: #F8FAFC;
-  --color-foreground: #0F172A;
+  --color-background: #FAF9F5;
+  --color-foreground: #0F1A2E;
 
   /* Direct semantic utilities (bg-good / text-good / bg-warn …) follow light values */
-  --color-mint: #0F9E8E;
+  --color-mint: #0F8A78;
   --color-good: #1D9E75;
   --color-warn: #C2710C;
-  --color-crit: #DC2626;
-  --color-info: #0BA5C9;
+  --color-crit: #B4433A;
+  --color-info: #172A52;
 
   background: var(--surface);
   color: var(--on-surface);
@@ -1179,7 +1179,7 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
   background: #FFFFFF;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #EAE7E0;
   box-shadow: 0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.03);
 }
 
@@ -1197,9 +1197,9 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
 
 .theme-light input::placeholder,
 .theme-light textarea::placeholder {
-  color: #94A3B8;
+  color: #9AA1AC;
 }
 
-.theme-light ::-webkit-scrollbar-track { background: #F1F5F9; }
-.theme-light ::-webkit-scrollbar-thumb { background: #CBD5E1; }
-.theme-light ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+.theme-light ::-webkit-scrollbar-track { background: #F6F3EC; }
+.theme-light ::-webkit-scrollbar-thumb { background: #D8D3C8; }
+.theme-light ::-webkit-scrollbar-thumb:hover { background: #9AA1AC; }

@@ -116,5 +116,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
+  // Exclude Next internals, API routes and any static file (paths with a
+  // dot, e.g. /gatha-wordmark-mint.svg) — otherwise logged-out visitors get
+  // brand assets 307-redirected to /login and see broken images.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api|.*\\..*).*)"],
 };
