@@ -57,7 +57,7 @@ export default function Sidebar() {
 
       <div className="mt-auto flex flex-col gap-2 border-t border-outline-variant pt-4">
         <a
-          href="mailto:support@balmeragency.com.au"
+          href="mailto:hello@gatha.ai"
           className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-primary/5 rounded-xl transition-colors duration-200"
         >
           <span className="material-symbols-outlined">help</span>
