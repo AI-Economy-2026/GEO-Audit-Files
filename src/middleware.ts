@@ -87,9 +87,11 @@ export async function middleware(request: NextRequest) {
   // Load role once for all protected routes
   const role = await loadRole(user.id);
 
-  // Admin — can only access /admin/* routes
+  // Admin — manages from /admin/*, and may VIEW any agency's audit
+  // workspace (read access granted by the admin RLS policies) so the
+  // admin panel can click through to an audit's dashboard.
   if (role === "admin") {
-    if (!pathname.startsWith("/admin")) {
+    if (!pathname.startsWith("/admin") && !pathname.startsWith("/audits")) {
       const url = request.nextUrl.clone();
       url.pathname = "/admin";
       return NextResponse.redirect(url);

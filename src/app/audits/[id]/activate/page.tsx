@@ -187,7 +187,7 @@ export default function ActivatePage() {
           <h1>Prioritise &amp; Activate</h1>
           <p>
             Your 90-day action plan, generated from this audit&rsquo;s findings. Tick items off as you
-            complete them — we&rsquo;ll track the date stamp.
+            complete them and we&rsquo;ll track the date stamp.
           </p>
         </div>
         <div className="actions no-print">
@@ -214,7 +214,7 @@ export default function ActivatePage() {
             {stats.total === 0
               ? "Your plan is being prepared. Once ready, it covers 13 weeks of prioritised technical and content work, calibrated to this audit&rsquo;s findings."
               : stats.done === 0
-                ? "Pick the easiest item in Week 1 and tick it off — momentum compounds. Filter to technical or non-technical to focus the team."
+                ? "Pick the easiest item in Week 1 and tick it off; momentum compounds. Filter to technical or non-technical to focus the team."
                 : `${stats.done} done, ${stats.total - stats.done} to go. Re-audit at the end of Month 3 to measure movement.`}
           </div>
           <div className="hero-benchmarks">
@@ -260,7 +260,7 @@ export default function ActivatePage() {
             <div className="hero-insight-text">
               <div className="title">Easiest first</div>
               <div className="body">
-                Items are ordered by effort within each week — start at the top.
+                Items are ordered by effort within each week, start at the top.
               </div>
             </div>
           </div>

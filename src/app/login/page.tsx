@@ -28,7 +28,15 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      router.push("/audits");
+      // Route by role — admins land on the admin panel, agencies on audits.
+      let dest = "/audits";
+      try {
+        const me = await fetch("/api/me").then((r) => r.json());
+        if (me?.role === "admin") dest = "/admin";
+      } catch {
+        // fall back to /audits; middleware corrects if needed
+      }
+      router.push(dest);
       router.refresh();
     }
   }
