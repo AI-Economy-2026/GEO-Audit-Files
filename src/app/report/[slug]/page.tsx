@@ -520,7 +520,7 @@ export default function ReportPage() {
               Something went wrong during the audit. Our team has been notified.
             </p>
             <a
-              href="https://balmeragency.com.au/contact"
+              href="mailto:hello@gatha.ai"
               className="inline-block px-8 py-3 bg-primary text-on-primary-fixed font-bold rounded-xl hover:opacity-90 transition-colors uppercase tracking-wider text-sm"
             >
               Contact Us to Re-Run
@@ -1558,7 +1558,7 @@ export default function ReportPage() {
                 {/* CTA */}
                 <div className="text-center pb-4">
                   <a
-                    href="https://balmeragency.com.au/contact"
+                    href="mailto:hello@gatha.ai"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-block px-10 py-4 bg-primary text-on-primary-fixed font-bold rounded-xl hover:opacity-90 transition-colors text-base uppercase tracking-wider"
@@ -1584,7 +1584,7 @@ export default function ReportPage() {
           <p>
             Powered by{" "}
             <a
-              href="https://balmeragency.com.au"
+              href="https://gatha.ai"
               className="text-primary hover:underline"
             >
               Balmer Agency

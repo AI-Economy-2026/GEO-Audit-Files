@@ -116,7 +116,7 @@ export default function PrioritiseTab({
         {/* Right: opportunity score */}
         <div className="lg:col-span-2 flex flex-col gap-3">
           <div className="flex-1 glass-card border border-outline-variant border-t-4 border-t-primary rounded-2xl p-6 flex flex-col justify-center">
-            <div className="text-5xl font-extrabold leading-none tracking-tight text-primary" style={{ fontFamily: "'DM Sans', sans-serif" }}>{avgActivation}</div>
+            <div className="text-5xl font-extrabold leading-none tracking-tight text-primary" style={{ fontFamily: "var(--font-display)" }}>{avgActivation}</div>
             <div className="text-sm font-semibold text-on-surface mt-2">Avg. Opportunity Score</div>
             <div className="text-xs text-on-surface-variant mt-1 leading-relaxed">
               Based on {derivedPrompts.length} scored prompts · {Math.round(overallVisibility)}% current visibility
@@ -179,19 +179,19 @@ export default function PrioritiseTab({
       {/* CTA banner */}
       <div className="bg-primary/10 border border-primary/20 rounded-2xl px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-5">
         <div>
-          <h4 className="text-base font-bold text-on-surface mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <h4 className="text-base font-bold text-on-surface mb-1" style={{ fontFamily: "var(--font-display)" }}>
             Ready to activate the plan?
           </h4>
           <p className="text-sm text-on-surface-variant max-w-md">
-            Talk to Balmer Agency about running a GEO Fix Sprint. We implement the recommendations for you.
+            Talk to us about running a GEO Fix Sprint. We implement the recommendations for you.
           </p>
         </div>
         <a
-          href="https://balmeragency.com.au/contact"
+          href="mailto:hello@gatha.ai"
           target="_blank"
           rel="noopener noreferrer"
           className="shrink-0 px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-colors text-sm"
-          style={{ fontFamily: "'DM Sans', sans-serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           Start GEO Fix Sprint →
         </a>
