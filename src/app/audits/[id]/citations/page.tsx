@@ -172,7 +172,8 @@ export default function CitationsPage() {
               <button
                 className="btn btn-sm"
                 onClick={() => {
-                  const fallbackSource = opportunities[0]?.domain ?? "";
+                  const fallbackSource =
+                    opportunities[0]?.domain ?? unlistedDirectories[0]?.directory ?? "";
                   const rows: (string | number | boolean)[][] = [
                     ["Query", "Engines tested", "Cited", "Cited engines", "Recommended source"],
                     ...promptCitation.rows.map((r) => [
@@ -357,7 +358,15 @@ export default function CitationsPage() {
               <tbody>
                 {promptCitation.rows.map((r, i) => {
                   const missed = r.totalEngines - r.citedEngines.length;
-                  const recSource = r.cited ? null : r.recSource ?? opportunities[0]?.domain ?? null;
+                  // Fallback chain: this query's top cited source -> audit-wide top
+                  // source -> a directory the brand isn't listed on yet. Ensures a
+                  // not-cited query always gets an actionable recommendation.
+                  const recSource = r.cited
+                    ? null
+                    : r.recSource ??
+                      opportunities[0]?.domain ??
+                      unlistedDirectories[0]?.directory ??
+                      null;
                   return (
                     <tr key={`${r.prompt}-${i}`}>
                       <td style={{ color: "var(--text)" }}>{r.prompt}</td>
