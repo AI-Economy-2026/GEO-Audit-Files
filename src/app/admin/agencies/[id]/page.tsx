@@ -220,7 +220,7 @@ export default function AgencyDetailPage() {
               type="text"
               value={editName ?? (agency.agency_name || "")}
               onChange={(e) => setEditName(e.target.value)}
-              placeholder="e.g. Balmer Agency"
+              placeholder="e.g. Acme Agency"
               style={{
                 flex: 1,
                 padding: "10px 14px",

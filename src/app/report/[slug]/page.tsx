@@ -1587,7 +1587,7 @@ export default function ReportPage() {
               href="https://gatha.ai"
               className="text-primary hover:underline"
             >
-              Balmer Agency
+              Gatha
             </a>
           </p>
         </div>

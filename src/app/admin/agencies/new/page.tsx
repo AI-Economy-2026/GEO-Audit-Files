@@ -113,7 +113,7 @@ export default function NewAgencyPage() {
               type="text"
               value={agencyName}
               onChange={(e) => setAgencyName(e.target.value)}
-              placeholder="e.g. Balmer Agency"
+              placeholder="e.g. Acme Agency"
               required
             />
           </Field>
@@ -137,7 +137,7 @@ export default function NewAgencyPage() {
               type="text"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
-              placeholder="e.g. Sarah Balmer"
+              placeholder="e.g. Sarah Smith"
             />
           </Field>
 
