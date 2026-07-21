@@ -109,11 +109,11 @@ export default function IntakePage() {
     "w-full px-4 py-3 bg-surface-container-lowest border border-outline-variant rounded-xl text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none transition-all";
 
   const header = (
-    <header className="border-b border-outline-variant bg-surface-bright/95 backdrop-blur-sm py-6">
+    <header className="border-b border-outline-variant bg-surface/80 backdrop-blur-sm py-6">
       <div className="max-w-2xl mx-auto px-4 text-center">
         <div className="inline-flex items-center gap-2 mb-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/gatha-wordmark-navy.svg" alt="Gatha" style={{ height: 28, width: "auto" }} />
+          <img src="/gatha-wordmark-mint.svg" alt="Gatha" style={{ height: 28, width: "auto" }} />
         </div>
         <p className="text-on-surface-variant text-[10px] uppercase tracking-widest font-bold mt-2">
           AI Visibility Intake
@@ -124,7 +124,7 @@ export default function IntakePage() {
 
   if (pageState === "loading") {
     return (
-      <div className="theme-light bg-ambient min-h-screen">
+      <div className="bg-ambient min-h-screen">
         {header}
         <div className="text-center py-20 text-on-surface-variant">Loading...</div>
       </div>
@@ -133,7 +133,7 @@ export default function IntakePage() {
 
   if (pageState === "error") {
     return (
-      <div className="theme-light bg-ambient min-h-screen">
+      <div className="bg-ambient min-h-screen">
         {header}
         <div className="max-w-lg mx-auto px-4 py-16">
           <GlassCard padding="lg" className="text-center border-error/30">
@@ -148,7 +148,7 @@ export default function IntakePage() {
 
   if (pageState === "already_done") {
     return (
-      <div className="theme-light bg-ambient min-h-screen">
+      <div className="bg-ambient min-h-screen">
         {header}
         <div className="max-w-lg mx-auto px-4 py-16">
           <GlassCard padding="lg" className="text-center">
@@ -168,11 +168,11 @@ export default function IntakePage() {
   if (pageState === "success") {
     const reportUrl = `${window.location.origin}/report/${reportSlug}`;
     return (
-      <div className="theme-light bg-ambient min-h-screen">
+      <div className="bg-ambient min-h-screen">
         {header}
         <div className="max-w-lg mx-auto px-4 py-16">
           <GlassCard padding="xl" className="text-center">
-            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(29,158,117,0.35)]">
+            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-[0_0_30px_rgba(94,234,212,0.3)]">
               <span className="material-symbols-outlined text-on-primary-fixed text-3xl">
                 rocket_launch
               </span>
@@ -197,7 +197,7 @@ export default function IntakePage() {
   }
 
   return (
-    <div className="theme-light bg-ambient min-h-screen">
+    <div className="bg-ambient min-h-screen">
       {header}
 
       <main className="max-w-2xl mx-auto px-4 py-10 relative z-10">
@@ -418,8 +418,7 @@ export default function IntakePage() {
           </Button>
 
           <p className="text-xs text-on-surface-variant text-center">
-            Your audit will analyse visibility across ChatGPT, Claude, Gemini, Perplexity, Grok,
-            Google AI, and Bing Copilot.
+            Your audit will analyse visibility across ChatGPT, Claude, Gemini, Perplexity and Grok.
           </p>
         </form>
       </main>

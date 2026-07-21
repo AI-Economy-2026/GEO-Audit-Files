@@ -364,10 +364,10 @@ export default function NewAuditPage() {
                   <select
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className={inputCls}
+                    className={`${inputCls} appearance-none`}
                     aria-label="Audit country"
                   >
-                    <option value="">Global — no specific country</option>
+                    <option value="">Global, no specific country</option>
                     {COUNTRIES.map((c) => (
                       <option key={c} value={c}>{c}</option>
                     ))}
