@@ -14,7 +14,7 @@ const BENCHMARKS = {
 };
 
 function Delta({ value, suffix = "" }: { value: number | null; suffix?: string }) {
-  if (value == null || isNaN(value)) return <span className="delta" style={{ color: "var(--text-4)" }}>—</span>;
+  if (value == null || isNaN(value)) return <span className="delta" style={{ color: "var(--text-4)" }}>-</span>;
   if (value === 0) return <span className="delta" style={{ color: "var(--text-4)" }}>±0{suffix}</span>;
   const up = value > 0;
   return (
@@ -25,7 +25,7 @@ function Delta({ value, suffix = "" }: { value: number | null; suffix?: string }
 }
 
 function fmtDuration(seconds: number | null): string {
-  if (!seconds) return "—";
+  if (!seconds) return "-";
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}m ${s}s`;
@@ -66,7 +66,7 @@ export default function OverviewPage() {
     if (!results.length) return [];
     const types: Array<"intent" | "ranking"> = ["intent", "ranking"];
     return types.map((t) => {
-      // Backend uses "informational" — alias it to "intent" for filtering.
+      // Backend uses "informational", so alias it to "intent" for filtering.
       const rows = results.filter((r) =>
         t === "ranking" ? r.prompt_type === "ranking" : r.prompt_type !== "ranking"
       );
@@ -110,7 +110,7 @@ export default function OverviewPage() {
           <h1>{audit.brand_name}</h1>
           <p>
             Your AI Search Visibility Rank across {audit.engines?.length ?? 0} AI engines and{" "}
-            {audit.summary_json?.audit_metadata?.total_prompts ?? "—"} buyer prompts.
+            {audit.summary_json?.audit_metadata?.total_prompts ?? "-"} buyer prompts.
           </p>
         </div>
         <div className="actions">
@@ -142,11 +142,11 @@ export default function OverviewPage() {
           <div className="hero-summary">
             {audit.brand_name} appears in about {Math.round(visRate)}% of AI answers for your category.
             {isFirstAudit
-              ? " This is your baseline — future audits will track movement from here."
+              ? " This is your baseline. Future audits will track movement from here."
               : deltaVsLast != null && deltaVsLast > 0
-                ? ` Up ${deltaVsLast} points since last audit — moving in the right direction.`
+                ? ` Up ${deltaVsLast} points since last audit. You are moving in the right direction.`
                 : deltaVsLast != null && deltaVsLast < 0
-                  ? ` Down ${Math.abs(deltaVsLast)} points since last audit — needs attention.`
+                  ? ` Down ${Math.abs(deltaVsLast)} points since last audit. This needs attention.`
                   : " Movement flat since last audit."}
           </div>
           <div className="hero-benchmarks">
@@ -214,7 +214,7 @@ export default function OverviewPage() {
               <div className="hero-insight-text">
                 <div className="title">Biggest strength</div>
                 <div className="body">
-                  {insights.strength.name} cites you on {Math.round(insights.strength.rate)}% of prompts — your strongest engine.
+                  {insights.strength.name} cites you on {Math.round(insights.strength.rate)}% of prompts, making it your strongest engine.
                 </div>
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function OverviewPage() {
               Prompts tested
             </InfoTip>
           </div>
-          <div className="kpi-number">{audit.summary_json?.audit_metadata?.total_prompts ?? "—"}</div>
+          <div className="kpi-number">{audit.summary_json?.audit_metadata?.total_prompts ?? "-"}</div>
           <div className="kpi-sub">across {audit.engines?.length ?? 0} engines</div>
           <div className="benchmark">
             <span className="benchmark-label">Industry</span>
@@ -253,7 +253,7 @@ export default function OverviewPage() {
         {sovStats && (
           <div className="kpi">
             <div className="kpi-label">
-              <InfoTip label="Your share of every brand mentioned in this category. 100% would mean only your brand is ever cited — anything above category average is healthy ground.">
+              <InfoTip label="Your share of every brand mentioned in this category. 100% would mean only your brand is ever cited. Anything above category average is healthy ground.">
                 Share of voice
               </InfoTip>
             </div>
@@ -269,7 +269,7 @@ export default function OverviewPage() {
         )}
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Upside score (0-100) — how much headroom you have to grow visibility. Higher = more gap left to close. Pair with the Opportunity Map for the priority plays.">
+            <InfoTip label="Upside score (0-100) showing how much headroom you have to grow visibility. Higher = more gap left to close. Pair with the Opportunity Map for the priority plays.">
               Opportunity
             </InfoTip>
           </div>

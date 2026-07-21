@@ -96,14 +96,14 @@ export default function PrioritiseTab({
           </h2>
           <p className="text-sm text-on-surface-variant mb-5 leading-relaxed">
             Each prompt has been scored for difficulty and activation potential using a deterministic rules engine.
-            No AI model — just your audit data.
+            No AI model, just your audit data.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { value: missedCount, label: "Missed opportunities" },
               { value: priorityPlays, label: "Priority plays" },
               { value: quickWins, label: "Quick wins" },
-              { value: "30–60d", label: "Execution window" },
+              { value: "30-60d", label: "Execution window" },
             ].map(({ value, label }) => (
               <div key={label} className="bg-surface-container rounded-xl border border-outline-variant px-4 py-3">
                 <div className="text-2xl font-extrabold text-on-surface leading-none mb-1">{value}</div>
@@ -183,7 +183,7 @@ export default function PrioritiseTab({
             Ready to activate the plan?
           </h4>
           <p className="text-sm text-on-surface-variant max-w-md">
-            Talk to Balmer Agency about running a GEO Fix Sprint — we implement the recommendations for you.
+            Talk to Balmer Agency about running a GEO Fix Sprint. We implement the recommendations for you.
           </p>
         </div>
         <a

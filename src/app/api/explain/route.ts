@@ -11,7 +11,7 @@ export type { ExplainTargetType, ExplainTargetContext, ExplanationPayload } from
 
 /* POST /api/explain
  * Stateless explanation generator. Use when there's no audit context to
- * key against — otherwise prefer /api/geo-audits/[id]/explanations which
+ * key against; otherwise prefer /api/geo-audits/[id]/explanations which
  * persists base + follow-ups for re-render on next open.
  */
 export async function POST(req: NextRequest) {

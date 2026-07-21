@@ -9,7 +9,7 @@ interface Props {
   children: ReactNode;
 }
 
-/** Navy admin shell — same look as WorkspaceShell, but with the admin
+/** Navy admin shell: same look as WorkspaceShell, but with the admin
  *  sidebar and an "ADMIN" badge in the topbar so it's never confused
  *  with the agency console. */
 export default function AdminShell({ title, actions, children }: Props) {

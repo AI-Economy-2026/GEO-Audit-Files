@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
       });
 
       if (error) {
-        // Only surface transport-level failures (network, rate limit) —
+        // Only surface transport-level failures (network, rate limit) and
         // never reveal whether the account exists.
         setError(error.message);
         setLoading(false);

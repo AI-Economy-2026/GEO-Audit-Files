@@ -42,7 +42,7 @@ export default function Topbar({ auditId, brandName }: TopbarProps) {
 
       {/* Actions */}
       <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <Tooltip label="Open the browser print dialog — save the current view as PDF">
+        <Tooltip label="Open the browser print dialog to save the current view as PDF">
           <button className="btn btn-sm" onClick={() => window.print()}>
             Export PDF
           </button>

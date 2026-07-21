@@ -273,7 +273,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
         </div>
       ))}
 
-      {/* Footer — credit balance for agencies, quick-fix CTA for admins */}
+      {/* Footer: credit balance for agencies, quick-fix CTA for admins */}
       {me?.role === "agency" ? (
         <div
           style={{
@@ -316,13 +316,13 @@ export default function Sidebar({ auditId }: SidebarProps) {
           <div style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 12 }}>
             {me.creditsRemaining > 0
               ? `${me.creditsUsed} used so far`
-              : "No credits left — ask your admin to top up"}
+              : "No credits left. Ask your admin to top up"}
           </div>
           <a
             className="btn btn-sm"
             style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}
             href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(
-              `Credit top-up request — ${me.agencyName || me.email}`
+              `Credit top-up request: ${me.agencyName || me.email}`
             )}&body=${encodeURIComponent(
               `Hi, can I top up audit credits for ${me.agencyName || me.email}? Currently at ${me.creditsRemaining}.`
             )}`}

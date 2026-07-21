@@ -3,24 +3,24 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Gatha — Be Seen in AI Search",
+    default: "Gatha: Be Seen in AI Search",
     template: "%s · Gatha",
   },
   description:
-    "See where your brand shows up across ChatGPT, Claude, Gemini, Perplexity, Grok, and Google AI — and where it doesn't. The GEO audit built for agencies.",
+    "See where your brand shows up across ChatGPT, Claude, Gemini, Perplexity, Grok, and Google AI, and where it doesn't. The GEO audit built for agencies.",
   applicationName: "Gatha",
   openGraph: {
-    title: "Gatha — Be Seen in AI Search",
+    title: "Gatha: Be Seen in AI Search",
     description:
-      "See where your brand shows up across every major AI engine — and where it doesn't.",
+      "See where your brand shows up across every major AI engine, and where it doesn't.",
     siteName: "Gatha",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Gatha — Be Seen in AI Search",
+    title: "Gatha: Be Seen in AI Search",
     description:
-      "See where your brand shows up across every major AI engine — and where it doesn't.",
+      "See where your brand shows up across every major AI engine, and where it doesn't.",
   },
 };
 

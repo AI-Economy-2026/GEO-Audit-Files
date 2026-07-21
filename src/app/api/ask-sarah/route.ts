@@ -22,8 +22,8 @@ interface AuditContext {
 }
 
 const PRESET_INSTRUCTIONS: Record<SarahPreset, string> = {
-  explain: "Explain what this GEO audit report means in plain English. Summarise the key findings — where the brand is visible, where it is not, and what that means for the business.",
-  priority: "Based on the audit data, what should the client do first? Give a numbered list of the top 3 priority actions. Be specific — reference the actual prompts and engines from the data.",
+  explain: "Explain what this GEO audit report means in plain English. Summarise the key findings: where the brand is visible, where it is not, and what that means for the business.",
+  priority: "Based on the audit data, what should the client do first? Give a numbered list of the top 3 priority actions. Be specific; reference the actual prompts and engines from the data.",
   content: "Which content should the client create next to improve their GEO visibility? Give a numbered list of the top 3 content pieces to create, with a one-sentence rationale for each.",
 };
 
@@ -31,7 +31,7 @@ function buildSystemPrompt(preset: SarahPreset, ctx: AuditContext): string {
   const topPromptsText = ctx.topPrompts
     .map(
       (p, i) =>
-        `${i + 1}. "${p.prompt_text}" — ${Math.round(p.client_ratio * 100)}% engine coverage, activation score ${p.activation_score}, difficulty ${p.difficulty_label}, suggested content: ${p.content_suggestion}`
+        `${i + 1}. "${p.prompt_text}": ${Math.round(p.client_ratio * 100)}% engine coverage, activation score ${p.activation_score}, difficulty ${p.difficulty_label}, suggested content: ${p.content_suggestion}`
     )
     .join("\n");
 

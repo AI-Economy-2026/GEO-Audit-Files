@@ -240,7 +240,7 @@ export default function ReportPage() {
         setHistory(data.history);
       }
     } catch {
-      // ignore — history is optional
+      // ignore; history is optional
     }
   }, [audit?.id]);
 
@@ -257,7 +257,7 @@ export default function ReportPage() {
         router.push(`/audits/${data.audit_id}`);
       }
     } catch {
-      // silently fail — user can retry
+      // silently fail; user can retry
     } finally {
       setReAuditLoading(false);
     }
@@ -629,7 +629,7 @@ export default function ReportPage() {
                   className="text-xl font-bold text-on-surface mb-4"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
-                  Audit History &mdash; Score Changes
+                  Audit History: Score Changes
                 </h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -682,7 +682,7 @@ export default function ReportPage() {
                             <td className="py-3 px-2 text-center font-bold">
                               {entry.visibility_rate != null
                                 ? <span className={rateColor(entry.visibility_rate).text}>{entry.visibility_rate}%</span>
-                                : "—"}
+                                : "-"}
                             </td>
                             <td className="py-3 px-2 text-center">
                               {delta != null ? (
@@ -701,13 +701,13 @@ export default function ReportPage() {
                                   {delta < 0 && <span>&#9660;</span>}
                                 </span>
                               ) : (
-                                <span className="text-on-surface-variant">&mdash;</span>
+                                <span className="text-on-surface-variant">-</span>
                               )}
                             </td>
                             <td className="py-3 px-2 text-center text-on-surface-variant">
                               {entry.total_mentioned != null
                                 ? `${entry.total_mentioned} / ${entry.total_queries}`
-                                : "—"}
+                                : "-"}
                             </td>
                             <td className="py-3 px-2 text-center">
                               <span
@@ -1061,7 +1061,7 @@ export default function ReportPage() {
                               {gap.engines_missed.length} / {gap.engines_tested}
                             </td>
                             <td className="py-3 px-2 text-center text-on-surface-variant">
-                              {gap.competitors_present.slice(0, 2).map((c) => c.name).join(", ") || "—"}
+                              {gap.competitors_present.slice(0, 2).map((c) => c.name).join(", ") || "-"}
                             </td>
                             <td className="py-3 px-2 text-center">
                               <span className={`text-xs px-2 py-1 rounded-full font-bold ${sevColors[gap.gap_severity] || sevColors.medium}`}>
@@ -1551,7 +1551,7 @@ export default function ReportPage() {
                     <strong className="text-primary">Agent Alice</strong> to do exactly this.
                   </p>
                   <p className="text-on-surface-variant text-sm max-w-xl mx-auto leading-relaxed">
-                    She analyses your gaps, creates the content plan, and writes on-brand content that gets you mentioned by AI search engines. Not generic AI slop &mdash; content designed to rank.
+                    She analyses your gaps, creates the content plan, and writes on-brand content that gets you mentioned by AI search engines. Not generic AI slop, but content designed to rank.
                   </p>
                 </div>
 
@@ -1567,7 +1567,7 @@ export default function ReportPage() {
                     Activate the Plan
                   </a>
                   <p className="text-on-surface-variant text-sm mt-3">
-                    Talk to us about Part 2 &mdash; your AI visibility action plan
+                    Talk to us about Part 2: your AI visibility action plan
                   </p>
                 </div>
               </div>

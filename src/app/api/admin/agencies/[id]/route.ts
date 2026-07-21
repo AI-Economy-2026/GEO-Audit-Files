@@ -74,7 +74,7 @@ export async function PATCH(
   }
 }
 
-/* DELETE /api/admin/agencies/[id] — permanently remove agency + auth user */
+/* DELETE /api/admin/agencies/[id]: permanently remove agency + auth user */
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -117,7 +117,7 @@ export async function DELETE(
   }
 }
 
-/* GET /api/admin/agencies/[id] — single agency with audits and clients */
+/* GET /api/admin/agencies/[id]: single agency with audits and clients */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

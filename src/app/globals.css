@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 /* ════════════════════════════════════════════════════════════════════
-   AI SEARCH VISIBILITY — DESIGN SYSTEM v5 (Sarah spec)
+   AI SEARCH VISIBILITY - DESIGN SYSTEM v5 (Sarah spec)
 
    PALETTE (navy-safe)
-   Mint  #5EEAD4 — BRAND ONLY (logo, active nav, primary CTA, "you")
-   Sage  #4ADE80 — positive / good metric
-   Gold  #EAB308 — caution
-   Rose  #F87171 — critical
-   Sky   #7DD3FC — info
-   Slate #BFCADB — neutral meta
+   Mint  #5EEAD4 - BRAND ONLY (logo, active nav, primary CTA, "you")
+   Sage  #4ADE80 - positive / good metric
+   Gold  #EAB308 - caution
+   Rose  #F87171 - critical
+   Sky   #7DD3FC - info
+   Slate #BFCADB - neutral meta
 
    RULES
    - Headlines never coloured (stay white/text)
    - Every KPI has benchmark or delta beneath
-   - Mint reserved for brand — never as "good" indicator
+   - Mint reserved for brand - never as "good" indicator
    - Sage (not mint) is the "good" color
    ════════════════════════════════════════════════════════════════════ */
 :root {
@@ -48,25 +48,25 @@
   --mint-weak:  rgba(94,234,212,.10);
   --mint-line:  rgba(94,234,212,.28);
 
-  /* Semantic — good (sage) */
+  /* Semantic - good (sage) */
   --good:       #4ADE80;
   --good-2:     #22C55E;
   --good-weak:  rgba(74,222,128,.12);
   --good-line:  rgba(74,222,128,.32);
 
-  /* Semantic — caution (gold) */
+  /* Semantic - caution (gold) */
   --warn:       #EAB308;
   --warn-2:     #CA8A04;
   --warn-weak:  rgba(234,179,8,.13);
   --warn-line:  rgba(234,179,8,.32);
 
-  /* Semantic — critical (rose) */
+  /* Semantic - critical (rose) */
   --crit:       #F87171;
   --crit-2:     #EF4444;
   --crit-weak:  rgba(248,113,113,.12);
   --crit-line:  rgba(248,113,113,.32);
 
-  /* Semantic — info (sky) */
+  /* Semantic - info (sky) */
   --info:       #7DD3FC;
   --info-weak:  rgba(125,211,252,.12);
   --info-line:  rgba(125,211,252,.32);
@@ -85,7 +85,7 @@
   --r-xl: 22px;
   --ease: cubic-bezier(.2,.8,.2,1);
 
-  /* Legacy token bridge — preserves my earlier semantic tokens so existing pages
+  /* Legacy token bridge - preserves my earlier semantic tokens so existing pages
      keep working while adopting Sarah's palette. Primary is now mint (brand). */
   --primary:                    var(--mint);
   --primary-fixed:              var(--mint);
@@ -146,7 +146,7 @@
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Tailwind @theme bridge — utilities like bg-surface, text-primary,
+   Tailwind @theme bridge - utilities like bg-surface, text-primary,
    text-on-surface, bg-error, etc. resolve to the new palette at runtime.
    ════════════════════════════════════════════════════════════════════ */
 @theme {
@@ -243,7 +243,7 @@ body {
   min-height: 100vh;
 }
 
-/* Ambient layer 1 — soft radial gradients */
+/* Ambient layer 1 - soft radial gradients */
 body::before {
   content: "";
   position: fixed;
@@ -256,7 +256,7 @@ body::before {
     linear-gradient(180deg, var(--bg-grad-1) 0%, var(--bg) 65%);
 }
 
-/* Ambient layer 2 — subtle grid */
+/* Ambient layer 2 - subtle grid */
 body::after {
   content: "";
   position: fixed;
@@ -270,7 +270,7 @@ body::after {
   background-size: 64px 64px;
 }
 
-/* Headlines NEVER coloured — always text-white */
+/* Headlines NEVER coloured - always text-white */
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 700;
@@ -290,7 +290,7 @@ textarea::placeholder {
   color: var(--text-4);
 }
 
-/* Tailwind v4 Preflight resets <button> to cursor:default — restore the
+/* Tailwind v4 Preflight resets <button> to cursor:default - restore the
    pointer for all interactive elements so clickable controls feel clickable. */
 button:not(:disabled),
 [role="button"]:not([aria-disabled="true"]),
@@ -313,7 +313,7 @@ button:disabled,
 
 /* ════════════════════════════════════════════════════════════════════
    Utility classes from the reference design
-   Composable building blocks — use alongside Tailwind
+   Composable building blocks - use alongside Tailwind
    ════════════════════════════════════════════════════════════════════ */
 
 /* CHIPS */
@@ -444,7 +444,7 @@ button:disabled,
 .kpi-number.num-mint { color: var(--mint); }
 .kpi-number.num-info { color: var(--info); }
 .kpi-sub { font-size: 13px; color: var(--text-3); }
-/* Clickable KPI card — drill into the underlying view */
+/* Clickable KPI card - drill into the underlying view */
 .kpi.clickable { cursor: pointer; transition: border-color .18s var(--ease), transform .18s var(--ease); }
 .kpi.clickable:hover { border-color: var(--border-hi); transform: translateY(-1px); }
 .kpi.clickable:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
@@ -566,7 +566,7 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
 
 @keyframes tt-fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* Print stylesheet — used by "Export PDF" via window.print() */
+/* Print stylesheet - used by "Export PDF" via window.print() */
 @media print {
   body { background: #fff !important; color: #111 !important; }
   body::before, body::after { display: none !important; }
@@ -973,7 +973,7 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
 .comp-mentions { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text); text-align: center; letter-spacing: -0.02em; }
 
 /* ════════════════════════════════════════════════════════════════════
-   Legacy utility class — kept for existing usage in components.
+   Legacy utility class - kept for existing usage in components.
    Now resolves to the navy-surface treatment instead of glass blur.
    ════════════════════════════════════════════════════════════════════ */
 .glass-card {
@@ -1016,11 +1016,11 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
 ::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
 
 /* ════════════════════════════════════════════════════════════════════
-   .theme-light — LIGHT-THEME SCOPE (public report, embedded dashboard,
+   .theme-light - LIGHT-THEME SCOPE (public report, embedded dashboard,
    intake). Overrides raw and --color-* tokens locally.
    ════════════════════════════════════════════════════════════════════ */
 .theme-light {
-  /* Raw palette overrides — the base h1-h4 rule and many components use
+  /* Raw palette overrides - the base h1-h4 rule and many components use
      var(--text)/var(--surface-2)/var(--border) directly. Without these,
      dark-theme values leak into light surfaces and headings render
      near-white on white (unreadable intake/report). */
@@ -1097,7 +1097,7 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
   --foreground: var(--on-surface);
   color-scheme: light;
 
-  /* Semantic palette — light-mode-appropriate values so prebuilt classes
+  /* Semantic palette - light-mode-appropriate values so prebuilt classes
      (.chip-*, .kpi, bars, deltas) and report surfaces stay legible on white
      and so "good" stays GREEN (never blue/brand). */
   --mint:      #0F8A78;  --mint-2:  #0B7E72;  --mint-weak: #E1F7F4;  --mint-line: rgba(15,138,120,.30);

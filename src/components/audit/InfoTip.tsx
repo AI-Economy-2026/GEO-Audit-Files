@@ -12,7 +12,7 @@ interface Props {
   children: ReactNode;
 }
 
-/** Makes a label hoverable — wraps its children in a Tooltip and renders a
+/** Makes a label hoverable: wraps its children in a Tooltip and renders a
  *  small inline info icon at the end as the visual affordance. The whole
  *  children area becomes the hover target, not just the icon. */
 export default function InfoTip({ label, side = "top", children }: Props) {

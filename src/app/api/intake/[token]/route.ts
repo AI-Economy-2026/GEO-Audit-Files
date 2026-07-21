@@ -6,7 +6,7 @@ const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
 
 // Keep in sync with the wizard (/api/geo-audits). Only the 5 live API
-// engines — the scraper engines (google_ai_mode, google_ai_overview,
+// engines: the scraper engines (google_ai_mode, google_ai_overview,
 // bing_copilot) need Playwright infra and otherwise fail silently,
 // inflating query counts and dragging visibility to 0%.
 const DEFAULT_ENGINES = [
@@ -100,7 +100,7 @@ export async function POST(
     );
   }
 
-  // Credit gate — the audit is billed to the agency that owns this client.
+  // Credit gate: the audit is billed to the agency that owns this client.
   // If the agency's credits are exhausted or their account is suspended,
   // refuse to create the audit so the intake form can show a clear error.
   const { data: ownerProfile, error: ownerErr } = await admin
@@ -111,13 +111,13 @@ export async function POST(
 
   if (ownerErr || !ownerProfile) {
     return NextResponse.json(
-      { error: "This agency's account is missing — contact your administrator." },
+      { error: "This agency's account is missing. Contact your administrator." },
       { status: 403 }
     );
   }
   if (ownerProfile.status === "suspended") {
     return NextResponse.json(
-      { error: "This agency's account is suspended — contact them directly to resolve." },
+      { error: "This agency's account is suspended. Contact them directly to resolve." },
       { status: 403 }
     );
   }
@@ -218,7 +218,7 @@ export async function POST(
     }
   }
 
-  // Decrement agency's credit (only for agencies — admin-owned clients,
+  // Decrement agency's credit (only for agencies; admin-owned clients,
   // if any, run free).
   if (ownerProfile.role === "agency") {
     const { data: latest } = await admin

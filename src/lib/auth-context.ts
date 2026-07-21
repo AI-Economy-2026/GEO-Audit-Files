@@ -44,7 +44,7 @@ export async function getAuthContext(): Promise<AuthContext> {
 }
 
 /** Returns the full app_users profile for the current user. Always uses
- *  service role to read so we don't depend on the user's RLS — useful in
+ *  service role to read so we don't depend on the user's RLS; useful in
  *  middleware-style checks. Throws AuthError if no session. */
 export async function getProfile(): Promise<UserProfile> {
   const ctx = await getAuthContext();

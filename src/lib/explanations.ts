@@ -57,7 +57,7 @@ function sanitizePayload(p: ExplanationPayload): ExplanationPayload {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Phase 1 — deterministic templates per target type.
+   Phase 1: deterministic templates per target type.
    ════════════════════════════════════════════════════════════════════ */
 export function buildTemplate(target: ExplainTargetContext): ExplanationPayload {
   return sanitizePayload(buildTemplateRaw(target));
@@ -78,7 +78,7 @@ function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
 
       return {
         summary: high
-          ? `Your opportunity score is ${score}/100 — high for your category (average is ${categoryAvg}). Most of the remaining gap is closable with a few targeted moves.`
+          ? `Your opportunity score is ${score}/100, which is high for your category (average is ${categoryAvg}). Most of the remaining gap is closable with a few targeted moves.`
           : aboveAvg
             ? `Your opportunity score is ${score}/100, slightly above the category average of ${categoryAvg}. Solid base to build on.`
             : `Your opportunity score is ${score}/100, below the category average of ${categoryAvg}. There's meaningful room to recover.`,
@@ -86,7 +86,7 @@ function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
           "A higher opportunity score means more headroom to be cited in AI answers for buyer-intent prompts. That translates to qualified traffic and demos from people already close to choosing.",
         whatToDoNext: [
           quickFixCount > 0
-            ? `Ship the ${quickFixCount} quick fixes first — they unlock momentum without heavy lift.`
+            ? `Ship the ${quickFixCount} quick fixes first; they unlock momentum without heavy lift.`
             : "Identify the technical quick wins (schema, llms.txt) before larger content moves.",
           lift > 0
             ? `The biggest single move is worth an estimated +${lift} points. Start there.`
@@ -105,11 +105,11 @@ function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
 
       return {
         summary: `${target.label} is your highest-impact gap. Currently you appear in ${currentRate}% of relevant prompts; closing this gap is worth roughly +${liftPct} points to your overall rank.`,
-        whyItMatters: `${engineName} is a major answer surface for category-discovery questions — being absent means buyers don't see you when they're shopping the category, even if they're searching for what you do.`,
+        whyItMatters: `${engineName} is a major answer surface for category-discovery questions. Being absent means buyers don't see you when they're shopping the category, even if they're searching for what you do.`,
         whatToDoNext: [
           "Add structured data (FAQPage, ItemList) to your priority service pages.",
           "Publish one buyer-intent landing page targeting your highest-activation prompt.",
-          "Strengthen third-party citations — directory listings, partner posts, category listicles.",
+          "Strengthen third-party citations: directory listings, partner posts, category listicles.",
         ],
         effortLevel: "medium",
         expectedImpact: "high",
@@ -121,7 +121,7 @@ function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
       const rate = num(meta.rate, 0);
 
       return {
-        summary: `${engineName} cites you on ${rate}% of prompts — your strongest surface. The pattern there can be replicated across weaker engines.`,
+        summary: `${engineName} cites you on ${rate}% of prompts, your strongest surface. The pattern there can be replicated across weaker engines.`,
         whyItMatters:
           "Concentrating effort where you already rank multiplies returns: dedicated pages on those prompts lock in the win and capture additional citations within a week.",
         whatToDoNext: [
@@ -139,7 +139,7 @@ function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
       const promptText = str(meta.promptText, target.label);
 
       return {
-        summary: `You're absent from "${promptText}". ${compsPresent > 0 ? `${compsPresent} competitor${compsPresent === 1 ? " is" : "s are"} already cited here.` : "No one in your category is cited yet — first-mover advantage is open."}`,
+        summary: `You're absent from "${promptText}". ${compsPresent > 0 ? `${compsPresent} competitor${compsPresent === 1 ? " is" : "s are"} already cited here.` : "No one in your category is cited yet, so first-mover advantage is open."}`,
         whyItMatters:
           compsPresent > 0
             ? "When buyers ask this question, AI engines pick from a small set of brands. Each citation you miss is a competitor mention you compound."
@@ -160,13 +160,13 @@ function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
       const high = activation >= 75;
 
       return {
-        summary: `${target.label} scores ${activation} on activation — ${high ? "high-priority work" : "a worthwhile play"}. Difficulty: ${difficulty}.`,
+        summary: `${target.label} scores ${activation} on activation: ${high ? "high-priority work" : "a worthwhile play"}. Difficulty: ${difficulty}.`,
         whyItMatters: high
           ? "High-activation prompts are the ones buyers actually ask before a purchase decision. Winning these directly increases qualified pipeline."
           : "Each priority play compounds visibility: even mid-activation wins shift you up the ranked list of brands AI surfaces.",
         whatToDoNext: [
           "Map this play to a single owner and a deadline this month.",
-          "Draft the page or content piece end-to-end before publishing — partial answers don't get cited.",
+          "Draft the page or content piece end-to-end before publishing; partial answers don't get cited.",
           "Add an internal link from your services hub to reinforce relevance.",
         ],
         effortLevel: difficulty === "hard" ? "high" : difficulty === "easier" ? "low" : "medium",
@@ -178,13 +178,13 @@ function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
       const effortDays = str(meta.effortDays, "under 1 week");
 
       return {
-        summary: `${target.label} is a quick fix — ${effortDays} of effort with proportionally high return.`,
+        summary: `${target.label} is a quick fix: ${effortDays} of effort with proportionally high return.`,
         whyItMatters:
           "Quick fixes remove friction AI engines hit when deciding whether to cite you (entity ambiguity, missing schema, no llms.txt). They unlock everything else.",
         whatToDoNext: [
           "Assign this to one engineer and ship it this sprint.",
           "Verify with a re-crawl test or a single search to confirm the change took.",
-          "Move to the next quick fix on the list — momentum compounds.",
+          "Move to the next quick fix on the list; momentum compounds.",
         ],
         effortLevel: "low",
         expectedImpact: "medium",
@@ -194,7 +194,7 @@ function buildTemplateRaw(target: ExplainTargetContext): ExplanationPayload {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Phase 2 — LLM follow-up grounded in the deterministic explanation.
+   Phase 2: LLM follow-up grounded in the deterministic explanation.
    ════════════════════════════════════════════════════════════════════ */
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -225,7 +225,7 @@ Rules:
 - Plain language. No marketing speak. No "As an AI".
 - Maximum 2 short paragraphs OR a numbered list of up to 4 items.
 - Reference actual prompts, competitors, or engines from the data when relevant.
-- Stay anchored to the element above — refuse questions that drift off-topic.
+- Stay anchored to the element above; refuse questions that drift off-topic.
 - If the question is unclear, ask one clarifying question instead of guessing.
 - Do not use em dashes; use commas or full stops instead.`;
 
@@ -247,7 +247,7 @@ Rules:
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Contextual explanations — LLM-generated, grounded in real audit data.
+   Contextual explanations: LLM-generated, grounded in real audit data.
    Used for first-time card opens; deterministic buildTemplate stays as
    a fallback when audit context isn't available or the LLM call fails.
    ════════════════════════════════════════════════════════════════════ */
@@ -274,7 +274,7 @@ function formatAuditContext(ctx: AuditExplanationContext): string {
     .slice(0, 6)
     .map(
       (b, i) =>
-        `  ${i + 1}. "${b.prompt}"${b.competitors.length ? ` — cited instead: ${b.competitors.join(", ")}` : ""}`
+        `  ${i + 1}. "${b.prompt}"${b.competitors.length ? `, cited instead: ${b.competitors.join(", ")}` : ""}`
     )
     .join("\n");
 
@@ -289,7 +289,7 @@ function formatAuditContext(ctx: AuditExplanationContext): string {
     .join("\n");
 
   return `AUDIT CONTEXT for ${ctx.brandName} (${ctx.brandUrl}):
-- Overall visibility: ${Math.round(ctx.visibilityRate)}% — appears in ${ctx.totalMentioned} of ${ctx.totalQueries} engine responses
+- Overall visibility: ${Math.round(ctx.visibilityRate)}%, appearing in ${ctx.totalMentioned} of ${ctx.totalQueries} engine responses
 
 Per-engine visibility (worst first):
 ${engines || "  (no engine data)"}
@@ -343,7 +343,7 @@ export async function generateContextualExplanation(
   target: ExplainTargetContext,
   auditCtx: AuditExplanationContext
 ): Promise<ExplanationPayload> {
-  // Always compute the deterministic baseline — used both as fallback and
+  // Always compute the deterministic baseline; used both as fallback and
   // as grounding context so the LLM doesn't drift from the metric semantics.
   const fallback = buildTemplate(target);
 
@@ -357,7 +357,7 @@ THE CARD THIS USER CLICKED:
 - Value: ${target.value ?? "n/a"}
 - Meta: ${JSON.stringify(target.meta || {})}
 
-DETERMINISTIC BASELINE (use as semantic anchor — do not contradict the metric direction):
+DETERMINISTIC BASELINE (use as semantic anchor; do not contradict the metric direction):
 - Summary: ${fallback.summary}
 - Why it matters: ${fallback.whyItMatters}
 - Next steps: ${fallback.whatToDoNext.join(" / ")}
@@ -367,7 +367,7 @@ YOUR JOB:
 - Rewrite the baseline so it's specific to ${auditCtx.brandName}'s situation
 - Use real prompts, competitors, engines, and domains from the audit context above
 - Give one concrete example the user can act on this week
-- Numbers matter — reference percentages, counts, or named entities
+- Numbers matter: reference percentages, counts, or named entities
 - Do not use em dashes; use commas or full stops instead
 
 ${JSON_SCHEMA_PROMPT.replace("{brand}", auditCtx.brandName)}`;

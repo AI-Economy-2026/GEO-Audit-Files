@@ -32,7 +32,7 @@ export default function OpportunityPage() {
   const engineBreakdown = audit?.summary_json?.engine_breakdown || {};
   const keywordGaps = audit?.summary_json?.keyword_gap_analysis?.keyword_gaps || [];
 
-  /* Opportunity score — rough inverse of gap */
+  /* Opportunity score: rough inverse of gap */
   const visRate = audit?.visibility_rate ?? 0;
   const oppScore = Math.min(100, Math.round((100 - visRate) * 0.85));
 
@@ -54,9 +54,9 @@ export default function OpportunityPage() {
     const worst = engines[0];
     const best = engines[engines.length - 1];
     const worstRate = worst ? worst[1].visibility_rate : 0;
-    const worstName = worst ? worst[1].display_name : "—";
+    const worstName = worst ? worst[1].display_name : "-";
     const bestRate = best ? best[1].visibility_rate : 0;
-    const bestName = best ? best[1].display_name : "—";
+    const bestName = best ? best[1].display_name : "-";
 
     const built: OppCard[] = [];
 
@@ -96,7 +96,7 @@ export default function OpportunityPage() {
       body:
         rankingRate < 30
           ? "You are missing from recommendation prompts, where buyers are closest to choosing."
-          : "You appear in commercial prompts — good position, compound it with more comparison content.",
+          : "You appear in commercial prompts. Good position, so compound it with more comparison content.",
       metrics: [
         { label: "Current", value: `${rankingRate}`, unit: "%", tone: tone(rankingRate) },
         { label: "Target", value: "50", unit: "%", tone: "good" },
@@ -179,7 +179,7 @@ export default function OpportunityPage() {
       });
     }
 
-    // 6. Foundational — structured data
+    // 6. Foundational: structured data
     built.push({
       id: "foundational",
       severity: "info",
@@ -220,7 +220,7 @@ export default function OpportunityPage() {
           <p>Your audit findings turned into practical plays, ranked by impact.</p>
         </div>
         <div className="actions no-print">
-          <Tooltip label="Open the browser print dialog — save the opportunity map as PDF">
+          <Tooltip label="Open the browser print dialog to save the opportunity map as PDF">
             <button className="btn btn-sm" onClick={() => window.print()}>
               Export PDF
             </button>
@@ -299,7 +299,7 @@ export default function OpportunityPage() {
               </div>
               <div className="hero-insight-text">
                 <div className="title">Start here</div>
-                <div className="body">{cards[0].title} — biggest single lift available right now.</div>
+                <div className="body">{cards[0].title} is the biggest single lift available right now.</div>
               </div>
               <ExplainButton
                 target={{
@@ -347,7 +347,7 @@ export default function OpportunityPage() {
       <div className="kpi-strip">
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Prompts where NO engine mentioned you — every blind spot is a buyer asking a question you have no answer in front of.">
+            <InfoTip label="Prompts where NO engine mentioned you. Every blind spot is a buyer asking a question you have no answer in front of.">
               Missed opportunities
             </InfoTip>
           </div>
@@ -373,7 +373,7 @@ export default function OpportunityPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Plays you can ship in under a week — schema, llms.txt, a single comparison page. Bank these for momentum before larger content work.">
+            <InfoTip label="Plays you can ship in under a week: schema, llms.txt, a single comparison page. Bank these for momentum before larger content work.">
               Quick fixes
             </InfoTip>
           </div>
@@ -561,7 +561,7 @@ export default function OpportunityPage() {
         <a
           className="btn btn-primary"
           style={{ position: "relative", zIndex: 1, whiteSpace: "nowrap", textDecoration: "none" }}
-          href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi — I'd like Gatha to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
+          href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi, I'd like Gatha to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
         >
           Get the quick fixes done →
         </a>

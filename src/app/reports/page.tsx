@@ -97,7 +97,7 @@ export default function ReportsPage() {
       <div className="page-head">
         <div>
           <h1>Reports</h1>
-          <p>Every completed audit — view the full report, download it, or share the score.</p>
+          <p>Every completed audit. View the full report, download it, or share the score.</p>
         </div>
         {completed.length > 0 && (
           <div className="actions">
@@ -169,7 +169,7 @@ export default function ReportsPage() {
 
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                   <span className={`num-xl num-${t}`}>
-                    {a.visibility_rate != null ? a.visibility_rate : "—"}
+                    {a.visibility_rate != null ? a.visibility_rate : "-"}
                     {a.visibility_rate != null && (
                       <span style={{ fontSize: 15, color: "var(--text-3)", fontWeight: 500 }}>%</span>
                     )}

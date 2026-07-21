@@ -99,7 +99,7 @@ export default function SourcesPage() {
         <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
           {audit.status !== "completed"
             ? `Citation data will be available once the audit finishes (current status: ${audit.status}).`
-            : "No citations were parsed from any AI engine response. This usually means engines returned answers without inline URL citations — re-run the audit if you want fresh data."}
+            : "No citations were parsed from any AI engine response. This usually means engines returned answers without inline URL citations. Re-run the audit if you want fresh data."}
         </div>
       </AuditShell>
     );
@@ -156,7 +156,7 @@ export default function SourcesPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Number of distinct domains those citations point to. Smaller pool = AI keeps reaching for the same 10-20 sites — those are the ones to target.">
+            <InfoTip label="Number of distinct domains those citations point to. Smaller pool = AI keeps reaching for the same 10-20 sites, and those are the ones to target.">
               Unique domains
             </InfoTip>
           </div>
@@ -174,12 +174,12 @@ export default function SourcesPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Where your own domain sits in the ranked list of cited sources. #1 means you're the most-cited site in your category; '—' means no engine cited you at all.">
+            <InfoTip label="Where your own domain sits in the ranked list of cited sources. #1 means you're the most-cited site in your category; '-' means no engine cited you at all.">
               Your domain rank
             </InfoTip>
           </div>
           <div className={`kpi-number num-${brandRank ? "good" : "crit"}`}>
-            {brandRank ? `#${brandRank}` : "—"}
+            {brandRank ? `#${brandRank}` : "-"}
           </div>
           <div className="kpi-sub">
             {brandRank ? "in the top sources" : "not cited by any engine"}
@@ -339,8 +339,8 @@ export default function SourcesPage() {
           content placed on the top-ranked domains above. For each top source, ask: <em>can we
           contribute a guest post, an answer, a profile, or a citation here?</em>{" "}
           {brandRank
-            ? `You currently rank #${brandRank} in your own category — work the list above to climb.`
-            : "Your domain isn't cited by any engine yet — that's your starting point."}
+            ? `You currently rank #${brandRank} in your own category. Work the list above to climb.`
+            : "Your domain isn't cited by any engine yet, so that's your starting point."}
         </p>
       </div>
     </AuditShell>

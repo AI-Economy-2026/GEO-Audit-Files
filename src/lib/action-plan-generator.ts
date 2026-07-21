@@ -56,7 +56,7 @@ function buildUserPrompt(input: AuditPlanInput): string {
     .slice(0, 8)
     .map(
       (b, i) =>
-        `  ${i + 1}. "${b.prompt_text}"${b.competitors_present.length ? ` — competitors cited: ${b.competitors_present.join(", ")}` : " — no one cited"}`
+        `  ${i + 1}. "${b.prompt_text}"${b.competitors_present.length ? `, competitors cited: ${b.competitors_present.join(", ")}` : ", no one cited"}`
     )
     .join("\n");
 
@@ -66,7 +66,7 @@ Overall visibility: ${Math.round(input.visibilityRate)}% (${input.totalMentioned
 Engine performance (worst first):
 ${engineLines || "  (no engine breakdown available)"}
 
-Top blind spots — prompts where the brand is missing:
+Top blind spots (prompts where the brand is missing):
 ${blindSpotLines || "  (no blind spots identified)"}
 
 Competitors tracked: ${input.competitors.join(", ") || "(none)"}

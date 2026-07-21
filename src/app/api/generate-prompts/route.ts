@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Preferred path — the Python worker
+    // 1. Preferred path: the Python worker
     if (WORKER_URL && WORKER_API_KEY) {
       try {
         const response = await fetch(`${WORKER_URL}/api/generate-prompts`, {
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Fallback — generate directly with Anthropic
+    // 2. Fallback: generate directly with Anthropic
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(
         { error: "Prompt generation is unavailable. Please try again shortly." },

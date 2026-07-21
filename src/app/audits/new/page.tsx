@@ -439,7 +439,7 @@ export default function NewAuditPage() {
                   What keywords do you want to be found for?
                 </h2>
                 <p className="text-on-surface-variant text-lg">
-                  Paste multiple separated by commas — we&apos;ll split them for you. e.g. Criminal Lawyer, Melbourne Lawyer, Family Lawyer
+                  Paste multiple separated by commas and we&apos;ll split them for you. e.g. Criminal Lawyer, Melbourne Lawyer, Family Lawyer
                 </p>
               </div>
               <div className="pt-4">
@@ -583,7 +583,7 @@ export default function NewAuditPage() {
                 <p className="text-sm text-on-surface leading-relaxed">
                   <strong className="text-primary">Ready to launch.</strong> We&apos;ll fire
                   these {prompts.filter((p) => p.prompt_text).length} prompts at ChatGPT, Claude,
-                  Gemini, Perplexity, Grok, and Google AI. Usually takes 2–3 minutes.
+                  Gemini, Perplexity, Grok, and Google AI. Usually takes 2 to 3 minutes.
                 </p>
               </div>
             </div>

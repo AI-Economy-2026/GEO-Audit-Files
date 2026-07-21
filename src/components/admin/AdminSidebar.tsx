@@ -15,7 +15,7 @@ const NAV: NavItem[] = [
   {
     href: "/admin",
     label: "Overview",
-    hint: "Workspace KPIs — total agencies, credits issued, audits run",
+    hint: "Workspace KPIs: total agencies, credits issued, audits run",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="7" height="9" />
@@ -39,7 +39,7 @@ const NAV: NavItem[] = [
   },
 ];
 
-/** Admin-flavoured sidebar — same theme as agency Sidebar, different nav. */
+/** Admin-flavoured sidebar: same theme as agency Sidebar, different nav. */
 export default function AdminSidebar() {
   const pathname = usePathname();
   return (
@@ -143,7 +143,7 @@ export default function AdminSidebar() {
             Logged in as admin
           </div>
           <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5 }}>
-            Agencies log in at the same URL — middleware routes them away from /admin automatically.
+            Agencies log in at the same URL; middleware routes them away from /admin automatically.
           </div>
         </div>
 

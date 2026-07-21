@@ -89,7 +89,7 @@ export default function CompetitorsPage() {
           </div>
         </div>
         <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
-          No competitor data yet — audit results still loading or none available.
+          No competitor data yet. Audit results are still loading or none are available.
         </div>
       </AuditShell>
     );
@@ -140,7 +140,7 @@ export default function CompetitorsPage() {
           <div className={`kpi-number num-${tone(clientSov)}`}>
             {clientSov}<span className="unit">%</span>
           </div>
-          <div className="kpi-sub">rank #{clientRow?.rank ?? "—"} in category</div>
+          <div className="kpi-sub">rank #{clientRow?.rank ?? "-"} in category</div>
           <div className="benchmark">
             <span className="benchmark-label">Category avg</span>
             <span className="benchmark-val">15%</span>
@@ -160,7 +160,7 @@ export default function CompetitorsPage() {
           <div className={`kpi-number num-${leader?.isClient ? "good" : "warn"}`}>
             {leader?.sov ?? 0}<span className="unit">%</span>
           </div>
-          <div className="kpi-sub">{leader?.brand ?? "—"}</div>
+          <div className="kpi-sub">{leader?.brand ?? "-"}</div>
           <div className="benchmark">
             <span className="benchmark-label">Industry #1</span>
             <span className="benchmark-val">38%</span>
@@ -263,12 +263,12 @@ export default function CompetitorsPage() {
             <span className="chip chip-crit">{beatYou.length} gaps</span>
           </div>
           {beatYou.length === 0 ? (
-            <div style={{ color: "var(--text-3)", fontSize: 13 }}>No competitor-only prompts — strong position.</div>
+            <div style={{ color: "var(--text-3)", fontSize: 13 }}>No competitor-only prompts. Strong position.</div>
           ) : (
             <ul className="action-list" style={{ fontSize: 13.5 }}>
               {beatYou.map((b, i) => (
                 <li key={i}>
-                  <strong style={{ color: "var(--text)" }}>{b.prompt}</strong> — {b.comps.slice(0, 3).join(", ")}{b.comps.length > 3 ? "…" : ""}
+                  <strong style={{ color: "var(--text)" }}>{b.prompt}</strong>: {b.comps.slice(0, 3).join(", ")}{b.comps.length > 3 ? "…" : ""}
                 </li>
               ))}
             </ul>
@@ -284,12 +284,12 @@ export default function CompetitorsPage() {
             <span className="chip chip-good">{youWin.length} wins</span>
           </div>
           {youWin.length === 0 ? (
-            <div style={{ color: "var(--text-3)", fontSize: 13 }}>No solo wins yet — start with comparison pages to capture some.</div>
+            <div style={{ color: "var(--text-3)", fontSize: 13 }}>No solo wins yet. Start with comparison pages to capture some.</div>
           ) : (
             <ul className="action-list" style={{ fontSize: 13.5 }}>
               {youWin.map((w, i) => (
                 <li key={i}>
-                  <strong style={{ color: "var(--text)" }}>{w.prompt}</strong> — cited on {w.engines.slice(0, 3).join(", ")}{w.engines.length > 3 ? "…" : ""}
+                  <strong style={{ color: "var(--text)" }}>{w.prompt}</strong>: cited on {w.engines.slice(0, 3).join(", ")}{w.engines.length > 3 ? "…" : ""}
                 </li>
               ))}
             </ul>

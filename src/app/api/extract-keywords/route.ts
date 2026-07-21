@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-/** AI fallback — many sites block scrapers (Cloudflare etc.), which used to
+/** AI fallback: many sites block scrapers (Cloudflare etc.), which used to
  *  make "auto-suggest" fail outright. When the scrape fails or finds too
  *  little, ask Claude to suggest realistic search queries for the domain. */
 async function suggestWithAnthropic(url: string): Promise<string[]> {
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
       keywords = extractKeywords(html);
     }
   } catch {
-    // scrape failed — fall through to the AI fallback
+    // scrape failed; fall through to the AI fallback
   }
 
   // Fallback: scrape blocked/failed or found too little to be useful
@@ -169,7 +169,7 @@ function extractPhrases(text: string): string[] {
   const phrases: string[] = [];
 
   // Split by common delimiters
-  const parts = clean.split(/[|–—\-:,•·]/);
+  const parts = clean.split(/[|\u2013\u2014\-:,•·]/);
   for (const part of parts) {
     const trimmed = part.trim().toLowerCase();
     if (trimmed.length > 3 && trimmed.length < 60) {

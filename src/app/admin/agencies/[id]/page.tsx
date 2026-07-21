@@ -384,7 +384,7 @@ export default function AgencyDetailPage() {
                         {a.visibility_rate != null ? (
                           <span className="num-big">{a.visibility_rate}<span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>%</span></span>
                         ) : (
-                          <span style={{ color: "var(--text-3)" }}>—</span>
+                          <span style={{ color: "var(--text-3)" }}>-</span>
                         )}
                       </td>
                       <td className="center" style={{ color: "var(--text-2)" }}>

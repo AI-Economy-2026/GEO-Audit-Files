@@ -11,7 +11,7 @@ interface AuditShellProps {
 }
 
 /**
- * Shared layout for all audit tab pages — fixed navy sidebar + topbar + main content area.
+ * Shared layout for all audit tab pages: fixed navy sidebar + topbar + main content area.
  * Matches the reference HTML's sidebar + topbar structure exactly.
  */
 export default function AuditShell({ auditId, brandName, children }: AuditShellProps) {

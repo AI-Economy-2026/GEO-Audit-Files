@@ -5,7 +5,7 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
 
-// GET /api/geo-audits — list audits for the user's org
+// GET /api/geo-audits: list audits for the user's org
 export async function GET() {
   try {
     const ctx = await getAuthContext();
@@ -34,7 +34,7 @@ export async function GET() {
   }
 }
 
-// POST /api/geo-audits — create a new audit and trigger the worker
+// POST /api/geo-audits: create a new audit and trigger the worker
 export async function POST(req: NextRequest) {
   try {
     const ctx = await getAuthContext();
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Credit gate — admins bypass, agencies must have credits + active
+    // Credit gate: admins bypass, agencies must have credits + active
     // status. We use the service-role client because app_users isn't
     // writable from the user's own session (RLS denies).
     const admin = createAdminClient();
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
 
     // The 5 live API engines. The scraper engines (google_ai_mode,
-    // google_ai_overview, bing_copilot) need Playwright/SerpAPI infra —
+    // google_ai_overview, bing_copilot) need Playwright/SerpAPI infra;
     // without it they fail silently, inflate query counts and drag the
     // visibility score down. Re-enable once scraping infra is deployed.
     const allEngines = [
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
         user_email: user_email || null,
         brand_name,
         brand_url,
-        // Only sent when a country is chosen — keeps inserts working even
+        // Only sent when a country is chosen; keeps inserts working even
         // before migration 120 adds the column.
         ...(country ? { country } : {}),
         competitors: competitors || [],
@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({ audit_id: audit.id }),
         });
       } catch (workerErr) {
-        // Worker trigger failed — mark audit as failed
+        // Worker trigger failed; mark audit as failed
         await supabase
           .from("geo_audits")
           .update({
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4. Decrement credits (agencies only — admins run without cost).
+    // 4. Decrement credits (agencies only; admins run without cost).
     //    Done after worker handoff so failed audits don't consume credits.
     if (profile.role === "agency") {
       await admin

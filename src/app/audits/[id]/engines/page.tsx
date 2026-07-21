@@ -12,7 +12,7 @@ const LOG_PREFIX = "[engines]";
 /** Defensively coerce one engine entry; returns null if it's not usable. */
 function coerceEngineEntry(key: string, raw: unknown): [string, EngineStats] | null {
   if (!raw || typeof raw !== "object") {
-    console.warn(`${LOG_PREFIX} skipping engine "${key}" — value is not an object`, raw);
+    console.warn(`${LOG_PREFIX} skipping engine "${key}": value is not an object`, raw);
     return null;
   }
   const e = raw as Record<string, unknown>;
@@ -21,7 +21,7 @@ function coerceEngineEntry(key: string, raw: unknown): [string, EngineStats] | n
   const total_queries = typeof e.total_queries === "number" ? e.total_queries : 0;
   const display_name = typeof e.display_name === "string" && e.display_name ? e.display_name : key;
   if (Number.isNaN(visibility_rate)) {
-    console.warn(`${LOG_PREFIX} skipping engine "${key}" — missing/invalid visibility_rate`, e);
+    console.warn(`${LOG_PREFIX} skipping engine "${key}": missing/invalid visibility_rate`, e);
     return null;
   }
   return [key, { display_name, visibility_rate, brand_mentioned, total_queries }];
@@ -31,7 +31,7 @@ export default function EngineGapsPage() {
   const { id } = useParams<{ id: string }>();
   const { audit, results, loading } = useAuditData(id);
 
-  // Diagnostic logging — fires once per data update so we can see the shape
+  // Diagnostic logging. Fires once per data update so we can see the shape
   // in production browser console when something looks off.
   useEffect(() => {
     if (loading) return;
@@ -81,13 +81,13 @@ export default function EngineGapsPage() {
       ? Math.round((strongest[1]?.visibility_rate ?? 0) - (weakest[1]?.visibility_rate ?? 0))
       : 0;
 
-  /* Engine × prompt-type matrix — guarded against malformed result rows */
+  /* Engine × prompt-type matrix, guarded against malformed result rows */
   const matrix = useMemo(() => {
     try {
       if (!audit || !results.length) return null;
       const engines = Object.keys(engineBreakdown);
       if (engines.length === 0) {
-        console.warn(`${LOG_PREFIX} no engines in breakdown — matrix skipped`);
+        console.warn(`${LOG_PREFIX} no engines in breakdown, matrix skipped`);
         return null;
       }
       const types: Array<"intent" | "ranking"> = ["intent", "ranking"];
@@ -124,7 +124,7 @@ export default function EngineGapsPage() {
     );
   }
 
-  // Empty-state — engine_breakdown missing or unusable
+  // Empty-state: engine_breakdown missing or unusable
   if (sortedEngines.length === 0) {
     return (
       <AuditShell auditId={id} brandName={audit.brand_name}>
@@ -163,7 +163,7 @@ export default function EngineGapsPage() {
           <div className={`kpi-number num-${strongest ? tone(strongest[1].visibility_rate) : "crit"}`}>
             {strongest ? Math.round(strongest[1].visibility_rate) : 0}<span className="unit">%</span>
           </div>
-          <div className="kpi-sub">{strongest ? strongest[1].display_name : "—"}</div>
+          <div className="kpi-sub">{strongest ? strongest[1].display_name : "-"}</div>
           <div className="benchmark">
             <span className="benchmark-label">Industry</span>
             <span className="benchmark-val">{INDUSTRY_ENGINE_AVG}%</span>
@@ -171,14 +171,14 @@ export default function EngineGapsPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="The AI engine that cites you least (often 0%). This is usually the single biggest lift opportunity — fix what makes this engine ignore you and your overall rank jumps.">
+            <InfoTip label="The AI engine that cites you least (often 0%). This is usually the single biggest lift opportunity: fix what makes this engine ignore you and your overall rank jumps.">
               Weakest engine
             </InfoTip>
           </div>
           <div className={`kpi-number num-${weakest ? tone(weakest[1].visibility_rate) : "crit"}`}>
             {weakest ? Math.round(weakest[1].visibility_rate) : 0}<span className="unit">%</span>
           </div>
-          <div className="kpi-sub">{weakest ? weakest[1].display_name : "—"}</div>
+          <div className="kpi-sub">{weakest ? weakest[1].display_name : "-"}</div>
           <div className="benchmark">
             <span className="benchmark-label">Industry</span>
             <span className="benchmark-val">19%</span>
@@ -186,7 +186,7 @@ export default function EngineGapsPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Gap between your best and worst engine in percentage points. Low spread = consistent visibility. High spread = you're winning some engines but invisible on others — target the laggards.">
+            <InfoTip label="Gap between your best and worst engine in percentage points. Low spread = consistent visibility. High spread = you're winning some engines but invisible on others, so target the laggards.">
               Engine spread
             </InfoTip>
           </div>

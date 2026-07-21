@@ -24,7 +24,7 @@ function buildCards(
 ): OppCard[] {
   const cards: OppCard[] = [];
 
-  // Card 1 — AI Overview / engine coverage gap
+  // Card 1: AI Overview / engine coverage gap
   const notMentioned = prompts.filter((p) => p.client_ratio === 0);
   if (notMentioned.length > 0) {
     cards.push({
@@ -34,7 +34,7 @@ function buildCards(
         { label: "Quick win", style: "bg-primary/10 text-primary border border-primary/20" },
       ],
       title: "AI engine visibility gap",
-      description: `${brandName} is absent from ${notMentioned.length} prompt${notMentioned.length > 1 ? "s" : ""} entirely — missing key answer surfaces.`,
+      description: `${brandName} is absent from ${notMentioned.length} prompt${notMentioned.length > 1 ? "s" : ""} entirely, missing key answer surfaces.`,
       evidence: `0 mentions across ${notMentioned.length} prompt${notMentioned.length > 1 ? "s" : ""} → ${notMentioned.length * (prompts[0]?.total_engines ?? 7)} missed opportunities`,
       fixes: [
         "Add schema-rich FAQ and comparison content to priority service pages",
@@ -45,7 +45,7 @@ function buildCards(
     });
   }
 
-  // Card 2 — Commercial intent gap
+  // Card 2: Commercial intent gap
   const commercialMissed = prompts.filter(
     (p) => p.intent_type === "commercial" && p.client_ratio < 0.3
   );
@@ -68,7 +68,7 @@ function buildCards(
     });
   }
 
-  // Card 3 — Comparison opportunity
+  // Card 3: Comparison opportunity
   const compPresent = prompts.filter(
     (p) => p.prompt_type === "comparison" && p.client_ratio > 0
   );
@@ -79,7 +79,7 @@ function buildCards(
         { label: "Quick win", style: "bg-primary/10 text-primary border border-primary/20" },
       ],
       title: "Comparison-page capture",
-      description: "Already showing up on comparison prompts — strong chance to own VS and alternative-style queries.",
+      description: "Already showing up on comparison prompts: a strong chance to own VS and alternative-style queries.",
       evidence: `Mentioned in ${compPresent[0].client_mentions}/${compPresent[0].total_engines} engines on comparison prompts`,
       fixes: [
         "Create comparison pages against named competitors",
@@ -90,7 +90,7 @@ function buildCards(
     });
   }
 
-  // Card 4 — Citation / authority building
+  // Card 4: Citation / authority building
   const weakPresence = prompts.filter(
     (p) => p.client_ratio > 0 && p.client_ratio < 0.5 && p.top_competitors.length > 0
   );
@@ -112,7 +112,7 @@ function buildCards(
     });
   }
 
-  // Card 5 — Best-performing engine: replicate patterns
+  // Card 5: Best-performing engine, replicate patterns
   const bestEngineEntry = engineBreakdown
     ? Object.entries(engineBreakdown).sort((a, b) => b[1].visibility_rate - a[1].visibility_rate)[0]
     : null;
@@ -126,8 +126,8 @@ function buildCards(
         { label: "Quick win", style: "bg-primary/10 text-primary border border-primary/20" },
       ],
       title: `Replicate ${bestEngine} success patterns`,
-      description: `${bestEngine} is the strongest engine — existing content patterns are already resonating and can be reused elsewhere.`,
-      evidence: `${bestEngine} ${rate}% mention rate — highest performing engine`,
+      description: `${bestEngine} is the strongest engine; existing content patterns are already resonating and can be reused elsewhere.`,
+      evidence: `${bestEngine} ${rate}% mention rate, the highest performing engine`,
       fixes: [
         `Analyse pages currently being cited by ${bestEngine}`,
         "Reuse structure and evidence style on weaker service pages",
@@ -137,7 +137,7 @@ function buildCards(
     });
   }
 
-  // Card 6 — Technical / structured data (always recommended)
+  // Card 6: Technical / structured data (always recommended)
   cards.push({
     tags: [
       { label: "Technical", style: "bg-surface-container-high text-on-surface-variant" },

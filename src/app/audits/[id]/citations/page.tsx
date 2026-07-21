@@ -8,7 +8,7 @@ import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, type CitedDomain } from "@/components/audit/useAuditData";
 import { downloadCsv, safeFilename } from "@/lib/csv";
 
-/* Fallback for audits run before top_cited_domains was persisted — rebuild
+/* Fallback for audits run before top_cited_domains was persisted: rebuild
    the cited-domain list client-side from each result's citations array. */
 function buildDomainsFromResults(
   results: { engine: string; citations: string[] | null }[],
@@ -69,7 +69,7 @@ export default function CitationsPage() {
     return idx === -1 ? null : idx + 1;
   }, [domains]);
 
-  /* High-value opportunities — non-brand domains AI already trusts. */
+  /* High-value opportunities: non-brand domains AI already trusts. */
   const opportunities = useMemo(() => domains.filter((d) => !d.is_brand).slice(0, 10), [domains]);
 
   /* Directories the brand is NOT listed on = quick wins. */
@@ -78,7 +78,7 @@ export default function CitationsPage() {
     [audit]
   );
 
-  /* Per-prompt "cited vs not" — cited if brand url_cited OR mentioned in ≥1 engine.
+  /* Per-prompt "cited vs not": cited if brand url_cited OR mentioned in ≥1 engine.
      Also tracks WHICH engines cited the brand, and the most-cited non-brand domain
      for each prompt (= the recommended source to target for not-cited queries). */
   const promptCitation = useMemo(() => {
@@ -209,18 +209,18 @@ export default function CitationsPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Where your own domain sits among all cited sources. '—' means no engine cited you.">
+            <InfoTip label="Where your own domain sits among all cited sources. '-' means no engine cited you.">
               Your domain rank
             </InfoTip>
           </div>
           <div className={`kpi-number num-${brandRank ? "good" : "crit"}`}>
-            {brandRank ? `#${brandRank}` : "—"}
+            {brandRank ? `#${brandRank}` : "-"}
           </div>
           <div className="kpi-sub">{brandRank ? "among cited sources" : "not cited yet"}</div>
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Non-brand domains AI already trusts — the best places to get featured.">
+            <InfoTip label="Non-brand domains AI already trusts. These are the best places to get featured.">
               Opportunities
             </InfoTip>
           </div>
@@ -229,7 +229,7 @@ export default function CitationsPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Directories AI leans on where your brand isn't listed yet — quick wins.">
+            <InfoTip label="Directories AI leans on where your brand isn't listed yet. These are quick wins.">
               Quick-win directories
             </InfoTip>
           </div>
@@ -257,7 +257,7 @@ export default function CitationsPage() {
         <div className="card pad-lg">
           {opportunities.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text-3)", fontSize: 13 }}>
-              No citation opportunities yet — no non-brand domains were cited.
+              No citation opportunities yet. No non-brand domains were cited.
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -306,7 +306,7 @@ export default function CitationsPage() {
           {unlistedDirectories.length > 0 && (
             <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px dashed var(--border-soft)" }}>
               <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-3)", marginBottom: 10 }}>
-                Quick-win directories — not listed yet
+                Quick-win directories: not listed yet
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 {unlistedDirectories.map((dir) => (
@@ -314,7 +314,7 @@ export default function CitationsPage() {
                 ))}
               </div>
               <p style={{ margin: "10px 0 0", fontSize: 12, color: "var(--text-3)", lineHeight: 1.55 }}>
-                Claiming these listings is a fast way to earn citations — AI engines lean on
+                Claiming these listings is a fast way to earn citations because AI engines lean on
                 directories when recommending brands.
               </p>
             </div>
@@ -329,7 +329,7 @@ export default function CitationsPage() {
             <h2>Where you&apos;re cited vs. not</h2>
             <div className="sub">
               For each query we tested: which AI engines cite or mention {audit.brand_name},
-              and for the queries where none do, the source AI trusts most — your best
+              and for the queries where none do, the source AI trusts most: your best
               place to get featured for that query.
             </div>
           </div>
@@ -410,13 +410,13 @@ export default function CitationsPage() {
                         {recSource ? (
                           <span
                             className="tag"
-                            title="AI cites this source most for this query — get featured here"
+                            title="AI cites this source most for this query, so get featured here"
                             style={{ fontSize: 10, padding: "2px 7px", cursor: "help", wordBreak: "break-all" }}
                           >
                             {recSource}
                           </span>
                         ) : (
-                          <span style={{ color: "var(--text-4)" }}>—</span>
+                          <span style={{ color: "var(--text-4)" }}>-</span>
                         )}
                       </td>
                     </tr>
@@ -440,8 +440,8 @@ export default function CitationsPage() {
           How to use this
         </h3>
         <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)", lineHeight: 1.6 }}>
-          AI engines pull from a small set of high-trust sources. Work the opportunity list above —
-          for each one ask: <em>can we contribute a guest post, an answer, a profile, or a citation here?</em>{" "}
+          AI engines pull from a small set of high-trust sources. Work the opportunity list above,
+          and for each one ask: <em>can we contribute a guest post, an answer, a profile, or a citation here?</em>{" "}
           Then focus your content on the not-cited queries to close those gaps.
         </p>
       </div>

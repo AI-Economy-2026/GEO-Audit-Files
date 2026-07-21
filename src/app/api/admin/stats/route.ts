@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { AuthError, requireAdmin } from "@/lib/auth-context";
 import { createAdminClient } from "@/lib/supabase/server";
 
-/* GET /api/admin/stats — top-line numbers for the admin overview. */
+/* GET /api/admin/stats: top-line numbers for the admin overview. */
 export async function GET() {
   try {
     await requireAdmin();

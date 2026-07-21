@@ -1,5 +1,5 @@
 /**
- * Opportunity Engine — deterministic rules layer.
+ * Opportunity Engine: deterministic rules layer.
  *
  * Pure functions only. No API calls, no side effects.
  * Mirrors the scoring logic in the developer handoff doc exactly.
@@ -77,7 +77,7 @@ function getVisibilityLabel(ratio: number): DerivedPromptData["visibility_label"
 }
 
 // ---------------------------------------------------------------------------
-// Competitor summary — top 3 by frequency across engines
+// Competitor summary: top 3 by frequency across engines
 // ---------------------------------------------------------------------------
 
 function getTopCompetitors(engines: EngineResult[]): string[] {
@@ -187,7 +187,7 @@ export function getActions(promptType: PromptType): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Main derive function — call this once per prompt
+// Main derive function; call this once per prompt
 // ---------------------------------------------------------------------------
 
 export function derivePromptData(
@@ -228,7 +228,7 @@ export function derivePromptData(
 }
 
 // ---------------------------------------------------------------------------
-// 30-Day Plan generation — from top 3 prompts by activation score
+// 30-Day Plan generation from the top 3 prompts by activation score
 // ---------------------------------------------------------------------------
 
 export interface WeekPlan {

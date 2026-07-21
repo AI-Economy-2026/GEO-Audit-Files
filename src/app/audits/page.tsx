@@ -56,7 +56,7 @@ export default function AuditsPage() {
   }
 
   function formatDuration(seconds: number | null) {
-    if (!seconds) return "—";
+    if (!seconds) return "-";
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}m ${secs}s`;
@@ -142,7 +142,7 @@ export default function AuditsPage() {
             className="btn btn-sm"
             style={{ textDecoration: "none", whiteSpace: "nowrap" }}
             href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(
-              `Credit top-up request — ${me?.agencyName || me?.email || ""}`
+              `Credit top-up request from ${me?.agencyName || me?.email || ""}`
             )}`}
           >
             Request top-up
@@ -170,7 +170,7 @@ export default function AuditsPage() {
           <div className="kpi">
             <div className="kpi-label">Avg visibility</div>
             <div className={`kpi-number num-${tone(avgVisibility)}`}>
-              {completedAudits.length ? avgVisibility : "—"}
+              {completedAudits.length ? avgVisibility : "-"}
               {completedAudits.length ? <span className="unit">%</span> : null}
             </div>
             <div className="kpi-sub">across completed runs</div>
@@ -313,7 +313,7 @@ export default function AuditsPage() {
                             <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>%</span>
                           </span>
                         ) : (
-                          <span style={{ color: "var(--text-3)" }}>—</span>
+                          <span style={{ color: "var(--text-3)" }}>-</span>
                         )}
                       </td>
                       <td className="center" style={{ color: "var(--text-2)" }}>

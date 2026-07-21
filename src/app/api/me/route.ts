@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { AuthError, getProfile } from "@/lib/auth-context";
 
-/* GET /api/me — the current user's profile (role, credits, status). Used
+/* GET /api/me: the current user's profile (role, credits, status). Used
  *  by client components to show credit balance and gate UI by role. */
 export async function GET() {
   try {

@@ -8,7 +8,7 @@ import { useAuditData, tone } from "@/components/audit/useAuditData";
 import { downloadCsv, safeFilename } from "@/lib/csv";
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
 }
 
@@ -34,7 +34,7 @@ export default function TrackerPage() {
     }
   }
 
-  /* Movement over time — compare each audit to the previous */
+  /* Movement over time: compare each audit to the previous */
   const movement = useMemo(() => {
     if (history.length === 0) return null;
     const baseline = history[0];
@@ -236,7 +236,7 @@ export default function TrackerPage() {
                   </div>
                   <div className="history-label">
                     Visibility audit v{h.version}
-                    {prevEntry ? ` — ${prevEntry.version} → ${h.version}` : " — baseline"}
+                    {prevEntry ? ` (${prevEntry.version} → ${h.version})` : " (baseline)"}
                   </div>
                   <div className={`history-metric ${t}`}>
                     {Math.round(rate)}

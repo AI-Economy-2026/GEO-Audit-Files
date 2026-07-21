@@ -32,7 +32,7 @@ interface TopDomainRow {
 
 /** Pulls the minimum audit data the LLM needs to ground its answer in
  *  this brand's actual situation. Returns null if the audit is missing
- *  or not yet completed — caller falls back to deterministic template. */
+ *  or not yet completed; caller falls back to deterministic template. */
 async function loadAuditContext(
   supabase: Awaited<ReturnType<typeof createClient>>,
   auditId: string
@@ -161,7 +161,7 @@ export async function POST(
     }
 
     let row: ExplanationRow;
-    // Load audit context once — used both for first-time generation and
+    // Load audit context once; used both for first-time generation and
     // for grounding follow-up Q&A in real data.
     const auditCtx = await loadAuditContext(supabase, auditId);
 

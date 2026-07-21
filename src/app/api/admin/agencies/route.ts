@@ -5,8 +5,8 @@ import { createAdminClient } from "@/lib/supabase/server";
 /* ════════════════════════════════════════════════════════════════════
  * /api/admin/agencies
  *
- * GET  — list every agency with credits + status + counts
- * POST — invite a new agency by email; sets agency_name + initial credits
+ * GET: list every agency with credits + status + counts
+ * POST: invite a new agency by email; sets agency_name + initial credits
  *
  * Every call is guarded by requireAdmin(). All DB work uses the service
  * role client so we don't depend on the caller's RLS.
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
 
     const admin = createAdminClient();
 
-    // Create user with a password directly — no magic link needed.
+    // Create user with a password directly; no magic link needed.
     // email_confirm: true skips the confirmation step.
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
 
     const newUserId = created.user.id;
 
-    // Upsert profile — handles trigger race condition
+    // Upsert profile to handle trigger race condition
     const { error: profileErr } = await admin
       .from("app_users")
       .upsert({
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
       });
       emailSent = emailRes.ok;
     } catch {
-      // Non-fatal — credentials returned to admin as fallback
+      // Non-fatal; credentials returned to admin as fallback
     }
 
     return NextResponse.json(

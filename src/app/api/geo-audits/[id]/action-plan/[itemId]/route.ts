@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 /* PATCH /api/geo-audits/[id]/action-plan/[itemId]
    Body: { completed?: boolean, owner?: string }
-   - completed: toggles completed_at — NOW() when true, NULL when false.
+   - completed: toggles completed_at (NOW() when true, NULL when false).
    - owner: sets the free-text owner (trimmed, or NULL when empty).
    Only fields present in the body are updated. */
 export async function PATCH(

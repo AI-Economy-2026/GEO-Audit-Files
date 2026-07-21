@@ -28,7 +28,7 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      // Route by role — admins land on the admin panel, agencies on audits.
+      // Route by role: admins land on the admin panel, agencies on audits.
       let dest = "/audits";
       try {
         const me = await fetch("/api/me").then((r) => r.json());

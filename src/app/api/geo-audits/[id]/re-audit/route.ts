@@ -21,7 +21,7 @@ export async function POST(
     const { id: sourceAuditId } = await params;
     const supabase = await createClient();
 
-    // Credit gate — admins bypass, agencies must have credits + active
+    // Credit gate: admins bypass, agencies must have credits + active
     const admin = createAdminClient();
     const { data: profile, error: profileErr } = await admin
       .from("app_users")

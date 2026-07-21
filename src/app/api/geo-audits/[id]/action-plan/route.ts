@@ -17,7 +17,7 @@ interface KeywordGapRow {
   competitors_present: { name: string; count: number }[];
 }
 
-/* GET /api/geo-audits/[id]/action-plan — returns the plan, generating on first call. */
+/* GET /api/geo-audits/[id]/action-plan: returns the plan, generating on first call. */
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -27,7 +27,7 @@ export async function GET(
     const { id } = await params;
     const supabase = await createClient();
 
-    // First — return existing plan if present
+    // First, return existing plan if present
     const existing = await supabase
       .from("geo_audit_action_items")
       .select("*")

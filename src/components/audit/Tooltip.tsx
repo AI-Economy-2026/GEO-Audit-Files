@@ -88,7 +88,7 @@ export default function Tooltip({
     setOpen(false);
   }
 
-  /** Tap / click / keyboard toggle — opens immediately (no hover delay) so the
+  /** Tap / click / keyboard toggle: opens immediately (no hover delay) so the
    *  popup is reachable on touch devices and by keyboard, not hover-only. */
   function toggle(e: React.MouseEvent | React.KeyboardEvent) {
     e.preventDefault();

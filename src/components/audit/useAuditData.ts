@@ -118,7 +118,7 @@ export function useAuditData(id: string): AuditBundle {
   const [audit, setAudit] = useState<AuditData | null>(() => cached()?.audit ?? null);
   const [history, setHistory] = useState<HistoryEntry[]>(() => cached()?.history ?? []);
   const [results, setResults] = useState<ResultRow[]>(() => cached()?.results ?? []);
-  // Only show the spinner on a genuine cache miss — cached tabs render instantly.
+  // Only show the spinner on a genuine cache miss; cached tabs render instantly.
   const [loading, setLoading] = useState(() => !auditCache.has(id));
 
   useEffect(() => {

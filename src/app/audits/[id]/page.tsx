@@ -93,7 +93,7 @@ export default function AuditDetailPage() {
         router.push(`/audits/${data.audit_id}`);
       }
     } catch {
-      // silently fail — user can retry
+      // silently fail, user can retry
     } finally {
       setReAuditLoading(false);
     }
@@ -259,7 +259,7 @@ export default function AuditDetailPage() {
         </div>
       </div>
 
-      {/* RUNNING — progress card */}
+      {/* RUNNING: progress card */}
       {isRunning && (
         <div className="card pad-lg" style={{ marginBottom: 24 }}>
           <div
@@ -348,7 +348,7 @@ export default function AuditDetailPage() {
         </div>
       )}
 
-      {/* FAILED — error banner */}
+      {/* FAILED: error banner */}
       {isFailed && (
         <div
           className="card pad-lg"
@@ -398,7 +398,7 @@ export default function AuditDetailPage() {
         </div>
       )}
 
-      {/* COMPLETED — fallback view (page redirects to /dashboard, this only flashes briefly) */}
+      {/* COMPLETED: fallback view (page redirects to /dashboard, this only flashes briefly) */}
       {isCompleted && (
         <>
           <div className="kpi-strip">
@@ -499,7 +499,7 @@ export default function AuditDetailPage() {
             <div className="table-wrap">
               <div className="table-head-bar">
                 <div>
-                  <h3>Audit history — score changes</h3>
+                  <h3>Audit history and score changes</h3>
                   <div className="sub">All versions for this brand.</div>
                 </div>
               </div>
@@ -580,7 +580,7 @@ export default function AuditDetailPage() {
                                 <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>%</span>
                               </span>
                             ) : (
-                              <span style={{ color: "var(--text-3)" }}>—</span>
+                              <span style={{ color: "var(--text-3)" }}>-</span>
                             )}
                           </td>
                           <td className="center">
@@ -601,13 +601,13 @@ export default function AuditDetailPage() {
                                 {dDir === "up" ? "▲" : dDir === "down" ? "▼" : "±"} {Math.abs(delta)}%
                               </span>
                             ) : (
-                              <span style={{ color: "var(--text-3)" }}>—</span>
+                              <span style={{ color: "var(--text-3)" }}>-</span>
                             )}
                           </td>
                           <td className="center" style={{ color: "var(--text-2)" }}>
                             {entry.total_mentioned != null
                               ? `${entry.total_mentioned} / ${entry.total_queries}`
-                              : "—"}
+                              : "-"}
                           </td>
                           <td className="center">
                             <span className={`chip ${AUDIT_STATUS_CHIP[entry.status] || "chip-neutral"}`}>

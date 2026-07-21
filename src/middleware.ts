@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes (no auth required). Note: /reset-password must stay
-  // reachable even with a session — the recovery link signs the user in.
+  // reachable even with a session : the recovery link signs the user in.
   if (
     pathname.startsWith("/intake") ||
     pathname.startsWith("/report") ||
@@ -59,14 +59,14 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Signup is closed — bounce to login
+  // Signup is closed : bounce to login
   if (pathname.startsWith("/signup")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // Login route — if already signed in, route based on role
+  // Login route : if already signed in, route based on role
   if (pathname.startsWith("/login")) {
     if (user) {
       const role = await loadRole(user.id);
@@ -77,7 +77,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Protected routes — must be signed in
+  // Protected routes : must be signed in
   if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -87,7 +87,7 @@ export async function middleware(request: NextRequest) {
   // Load role once for all protected routes
   const role = await loadRole(user.id);
 
-  // Admin — manages from /admin/*, and may VIEW any agency's audit
+  // Admin : manages from /admin/*, and may VIEW any agency's audit
   // workspace (read access granted by the admin RLS policies) so the
   // admin panel can click through to an audit's dashboard.
   if (role === "admin") {
@@ -99,7 +99,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Agency — cannot access /admin/* routes
+  // Agency : cannot access /admin/* routes
   if (role === "agency") {
     if (pathname === "/admin" || pathname.startsWith("/admin/")) {
       const url = request.nextUrl.clone();
@@ -109,7 +109,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // No role found (app_users row missing) — send to login
+  // No role found (app_users row missing) : send to login
   const url = request.nextUrl.clone();
   url.pathname = "/login";
   return NextResponse.redirect(url);
@@ -117,7 +117,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Exclude Next internals, API routes and any static file (paths with a
-  // dot, e.g. /gatha-wordmark-mint.svg) — otherwise logged-out visitors get
+  // dot, e.g. /gatha-wordmark-mint.svg) : otherwise logged-out visitors get
   // brand assets 307-redirected to /login and see broken images.
   matcher: ["/((?!_next/static|_next/image|favicon.ico|api|.*\\..*).*)"],
 };

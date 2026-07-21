@@ -9,7 +9,7 @@ interface Props {
   variant?: "icon" | "text";
 }
 
-/** Small "Explain this" affordance — pairs with ExplainDrawer at page level. */
+/** Small "Explain this" affordance that pairs with ExplainDrawer at page level. */
 export default function ExplainButton({ target, onOpen, variant = "icon" }: Props) {
   if (variant === "text") {
     return (

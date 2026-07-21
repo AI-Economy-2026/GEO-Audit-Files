@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext, AuthError } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 
-// GET /api/geo-audits/[id] — get a single audit with summary
+// GET /api/geo-audits/[id]: get a single audit with summary
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -34,7 +34,7 @@ export async function GET(
   }
 }
 
-// PATCH /api/geo-audits/[id] — cancel a running audit
+// PATCH /api/geo-audits/[id]: cancel a running audit
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

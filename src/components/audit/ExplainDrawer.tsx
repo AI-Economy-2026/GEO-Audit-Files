@@ -31,7 +31,7 @@ export default function ExplainDrawer({ open, target, onClose, auditId }: Props)
 
   const endpoint = auditId ? `/api/geo-audits/${auditId}/explanations` : "/api/explain";
 
-  // Fetch explanation when drawer opens with a new target — also restores
+  // Fetch explanation when drawer opens with a new target; also restores
   // any persisted follow-up history when called with auditId.
   useEffect(() => {
     if (!open || !target) return;
@@ -111,13 +111,13 @@ export default function ExplainDrawer({ open, target, onClose, auditId }: Props)
       } else {
         setFollowUps((prev) => [
           ...prev,
-          { question: q, answer: data.error || "Couldn't answer that one — try rephrasing." },
+          { question: q, answer: data.error || "Couldn't answer that one. Try rephrasing." },
         ]);
       }
     } catch {
       setFollowUps((prev) => [
         ...prev,
-        { question: q, answer: "Network error — please try again." },
+        { question: q, answer: "Network error. Please try again." },
       ]);
     } finally {
       setAskingFollowUp(false);

@@ -74,7 +74,7 @@ export default function ActivatePage() {
     };
   }, [id]);
 
-  // Detect "still generating" state for UX clarity — fires before the API responds
+  // Detect "still generating" state for UX clarity. Fires before the API responds
   useEffect(() => {
     if (planLoading && items.length === 0) {
       const t = setTimeout(() => setGenerating(true), 800);
@@ -191,7 +191,7 @@ export default function ActivatePage() {
           </p>
         </div>
         <div className="actions no-print">
-          <Tooltip label="Open the browser print dialog — save the 90-day plan as PDF">
+          <Tooltip label="Open the browser print dialog to save the 90-day plan as PDF">
             <button className="btn btn-sm" onClick={() => window.print()}>
               Export PDF
             </button>
@@ -220,7 +220,7 @@ export default function ActivatePage() {
           <div className="hero-benchmarks">
             <div className="hero-bm-item">
               <div className="hero-bm-label">
-                <InfoTip label="Engineering work in this plan — schema, llms.txt, sitemaps, indexability fixes. Filter the list to just these to hand off to a developer.">
+                <InfoTip label="Engineering work in this plan: schema, llms.txt, sitemaps, indexability fixes. Filter the list to just these to hand off to a developer.">
                   Technical
                 </InfoTip>
               </div>
@@ -230,7 +230,7 @@ export default function ActivatePage() {
             </div>
             <div className="hero-bm-item">
               <div className="hero-bm-label">
-                <InfoTip label="Content and authority work — landing pages, comparison pages, citations, PR. Filter to just these to hand off to a content team.">
+                <InfoTip label="Content and authority work: landing pages, comparison pages, citations, PR. Filter to just these to hand off to a content team.">
                   Non-technical
                 </InfoTip>
               </div>
@@ -240,7 +240,7 @@ export default function ActivatePage() {
             </div>
             <div className="hero-bm-item">
               <div className="hero-bm-label">
-                <InfoTip label="Total time the plan covers — 13 weeks across 3 months. Last week always includes a re-audit step to measure movement.">
+                <InfoTip label="Total time the plan covers: 13 weeks across 3 months. Last week always includes a re-audit step to measure movement.">
                   Window
                 </InfoTip>
               </div>
@@ -322,7 +322,7 @@ export default function ActivatePage() {
       {planLoading ? (
         <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
           {generating
-            ? "Generating your 90-day plan from this audit's findings — one moment, this can take 15-30 seconds."
+            ? "Generating your 90-day plan from this audit's findings. One moment, this can take 15-30 seconds."
             : "Loading plan..."}
         </div>
       ) : error ? (
@@ -487,7 +487,7 @@ export default function ActivatePage() {
                             marginTop: 2,
                           }}
                         >
-                          {it.effort_label || "—"}
+                          {it.effort_label || "-"}
                         </div>
 
                         {/* Date stamp */}
@@ -523,7 +523,7 @@ export default function ActivatePage() {
         <a
           className="btn btn-primary"
           style={{ textDecoration: "none" }}
-          href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi — I'd like Gatha to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
+          href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi, I'd like Gatha to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
         >
           Get the quick fixes done →
         </a>

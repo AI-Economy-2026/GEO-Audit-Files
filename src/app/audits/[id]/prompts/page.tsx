@@ -19,7 +19,7 @@ interface PromptAggregate {
   activation: number;
 }
 
-/* Deterministic activation/difficulty scoring — mirrors existing opportunity engine */
+/* Deterministic activation/difficulty scoring that mirrors the existing opportunity engine */
 function scorePrompt(p: PromptAggregate, avgClientRate: number): PromptAggregate {
   const text = p.prompt_text.toLowerCase();
   let difficulty = 0;
@@ -49,7 +49,7 @@ export default function PromptAnalysisPage() {
           prompt_id: r.prompt_id,
           prompt_text: r.prompt_text,
           category: r.category,
-          // Backend emits "informational" / "ranking". UI uses INTENT/RANKING — normalise.
+          // Backend emits "informational" / "ranking". UI uses INTENT/RANKING, so normalise.
           type: r.prompt_type === "ranking" ? "RANKING" : "INTENT",
           mentionedEngines: [],
           totalEngines: 0,
@@ -143,7 +143,7 @@ export default function PromptAnalysisPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="How many of those prompts mention your brand on at least one engine. This is your raw visibility coverage — the count of conversations you show up in.">
+            <InfoTip label="How many of those prompts mention your brand on at least one engine. This is your raw visibility coverage: the count of conversations you show up in.">
               You appear in
             </InfoTip>
           </div>
@@ -158,7 +158,7 @@ export default function PromptAnalysisPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Prompts where NO AI engine mentioned you. Pure gaps — buyers asking these questions never hear about you. Highest-priority targets for content work.">
+            <InfoTip label="Prompts where NO AI engine mentioned you. Pure gaps: buyers asking these questions never hear about you. Highest-priority targets for content work.">
               Blind spots
             </InfoTip>
           </div>
@@ -171,7 +171,7 @@ export default function PromptAnalysisPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Blind-spot prompts that look achievable — medium-or-easier difficulty, no entrenched competitor moat. The fastest wins to ship first.">
+            <InfoTip label="Blind-spot prompts that look achievable: medium-or-easier difficulty, no entrenched competitor moat. The fastest wins to ship first.">
               Winnable
             </InfoTip>
           </div>

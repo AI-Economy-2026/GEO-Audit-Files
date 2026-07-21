@@ -344,7 +344,7 @@ export default function ClientsPage() {
                               In progress
                             </span>
                           ) : (
-                            <span style={{ color: "var(--text-3)" }}>—</span>
+                            <span style={{ color: "var(--text-3)" }}>-</span>
                           )}
                         </td>
                         <td style={{ color: "var(--text-3)" }}>{formatDate(client.created_at)}</td>
@@ -448,7 +448,7 @@ export default function ClientsPage() {
                                               </span>
                                             </>
                                           ) : (
-                                            "—"
+                                            "-"
                                           )}
                                         </span>
                                         <span
@@ -466,7 +466,7 @@ export default function ClientsPage() {
                                           }}
                                         >
                                           {delta == null
-                                            ? "—"
+                                            ? "-"
                                             : `${delta > 0 ? "▲" : delta < 0 ? "▼" : "±"} ${Math.abs(delta)}%`}
                                         </span>
                                         <span
