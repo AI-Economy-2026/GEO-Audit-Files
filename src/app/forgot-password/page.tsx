@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import AuthShell from "@/components/ui/AuthShell";
 import GlassCard from "@/components/ui/GlassCard";
 import Button from "@/components/ui/Button";
@@ -19,15 +18,14 @@ export default function ForgotPasswordPage() {
     setError("");
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const res = await fetch("/api/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, redirectBase: window.location.origin }),
       });
 
-      if (error) {
-        // Only surface transport-level failures (network, rate limit) and
-        // never reveal whether the account exists.
-        setError(error.message);
+      if (!res.ok) {
+        setError("Something went wrong. Please try again in a moment.");
         setLoading(false);
         return;
       }

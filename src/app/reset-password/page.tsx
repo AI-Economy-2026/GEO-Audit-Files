@@ -23,23 +23,31 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createClient();
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get("token_hash");
 
-    // The recovery link signs the user in via URL params; the session may
-    // land synchronously or arrive via an auth event just after mount.
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) setSessionState("ready");
-      else if (event === "INITIAL_SESSION") setSessionState("missing");
-    });
+    (async () => {
+      // Already signed in from a prior verify (e.g. page refresh)?
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        setSessionState("ready");
+        return;
+      }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSessionState((prev) =>
-        prev === "ready" ? prev : session ? "ready" : "missing"
-      );
-    });
-
-    return () => subscription.unsubscribe();
+      // Verify the recovery token from our custom reset link. This establishes
+      // a short-lived session so updateUser() can set the new password.
+      if (tokenHash) {
+        const { error } = await supabase.auth.verifyOtp({
+          type: "recovery",
+          token_hash: tokenHash,
+        });
+        setSessionState(error ? "missing" : "ready");
+      } else {
+        setSessionState("missing");
+      }
+    })();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
