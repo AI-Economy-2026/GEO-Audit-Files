@@ -16,7 +16,7 @@ interface AuditShellProps {
  */
 export default function AuditShell({ auditId, brandName, children }: AuditShellProps) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", minHeight: "100vh" }}>
+    <div className="audit-shell" style={{ display: "grid", gridTemplateColumns: "260px 1fr", minHeight: "100vh" }}>
       <Sidebar auditId={auditId} />
       <main style={{ padding: "28px 36px 60px", minWidth: 0 }}>
         <Topbar auditId={auditId} brandName={brandName} />

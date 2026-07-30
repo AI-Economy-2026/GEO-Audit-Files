@@ -566,15 +566,43 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
 
 @keyframes tt-fade { from { opacity: 0; } to { opacity: 1; } }
 
-/* Print stylesheet - used by "Export PDF" via window.print() */
+/* Print stylesheet - used by "Export PDF" via window.print().
+   Repaints the dark dashboard as a clean, readable light document. */
 @media print {
-  body { background: #fff !important; color: #111 !important; }
+  /* Override the dark theme tokens with a light palette so text (which uses
+     var(--text) etc.) is dark-on-white instead of faded near-white. */
+  :root {
+    --bg: #ffffff; --bg-grad-1: #ffffff; --inset: #ffffff;
+    --surface: #ffffff; --surface-2: #ffffff; --surface-3: #f6f8fb;
+    --border: #d8dee8; --border-soft: #e6eaf1; --border-hi: #cbd5e2;
+    --text: #0f1a2e; --text-2: #33415a; --text-3: #55627a; --text-4: #6b7280;
+    --mint: #0f8a78; --mint-2: #0f8a78; --mint-line: rgba(15,138,120,.35);
+    --primary: #0f8a78; --primary-fixed: #0f8a78; --primary-fixed-dim: #0f8a78;
+  }
+  html, body { background: #fff !important; color: #0f1a2e !important; }
   body::before, body::after { display: none !important; }
-  .no-print, .sidebar, aside { display: none !important; }
+
+  /* Hide app chrome: sidebar + action buttons (Export/Re-audit etc.) */
+  .no-print, aside, .sidebar { display: none !important; }
+
+  /* Collapse the sidebar+main grid so content uses the full page width
+     (fixes the squeezed narrow-column print). */
+  .audit-shell { display: block !important; }
+  .audit-shell > main, main { padding: 0 !important; }
   .app { display: block !important; }
-  main { padding: 0 !important; }
-  .card, .kpi, .table-wrap, .hero, .engine-card, .opp-card { break-inside: avoid; page-break-inside: avoid; }
-  .hero { box-shadow: none !important; }
+
+  /* Light surfaces, no screen shadows, keep cards whole across pages. */
+  .hero, .card, .kpi, .engine-card, .opp-card, .plan-card, .table-wrap,
+  .movement-grid > *, .glass, .glass-card {
+    background: #fff !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Fewer columns so cards aren't crammed on A4. */
+  .plan, .grid-3, .grid-4, .kpi-strip { grid-template-columns: 1fr 1fr !important; }
+  .plan::before { display: none !important; }
 }
 
 /* Numeric displays */
