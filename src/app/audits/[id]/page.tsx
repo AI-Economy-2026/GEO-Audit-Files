@@ -64,6 +64,7 @@ export default function AuditDetailPage() {
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<AuditHistoryEntry[]>([]);
   const [reAuditLoading, setReAuditLoading] = useState(false);
+  const [reAuditError, setReAuditError] = useState<string | null>(null);
 
   const fetchAudit = useCallback(async () => {
     const res = await fetch(`/api/geo-audits/${id}`);
@@ -84,17 +85,16 @@ export default function AuditDetailPage() {
 
   async function handleReAudit() {
     setReAuditLoading(true);
+    setReAuditError(null);
     try {
       const res = await fetch(`/api/geo-audits/${id}/re-audit`, {
         method: "POST",
       });
       const data = await res.json();
-      if (data.audit_id) {
-        router.push(`/audits/${data.audit_id}`);
-      }
-    } catch {
-      // silently fail, user can retry
-    } finally {
+      if (!res.ok) throw new Error(data.error || "Failed to start re-audit.");
+      router.push(`/audits/${data.audit_id}`);
+    } catch (err) {
+      setReAuditError(err instanceof Error ? err.message : "Failed to start re-audit.");
       setReAuditLoading(false);
     }
   }
@@ -258,6 +258,15 @@ export default function AuditDetailPage() {
           )}
         </div>
       </div>
+
+      {reAuditError && (
+        <div
+          className="card pad"
+          style={{ borderColor: "var(--crit-line)", background: "var(--crit-weak)", color: "var(--text-2)", marginBottom: 24, fontSize: 13 }}
+        >
+          {reAuditError}
+        </div>
+      )}
 
       {/* RUNNING: progress card */}
       {isRunning && (

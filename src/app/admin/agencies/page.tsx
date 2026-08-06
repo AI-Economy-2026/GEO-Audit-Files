@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AdminShell from "@/components/admin/AdminShell";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 interface Agency {
   id: string;
@@ -24,6 +25,9 @@ export default function AgenciesListPage() {
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -41,9 +45,25 @@ export default function AgenciesListPage() {
     })();
   }, []);
 
+  async function handleDelete(agencyId: string) {
+    setBusyId(agencyId);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/admin/agencies/${agencyId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+      setAgencies((prev) => prev.filter((a) => a.id !== agencyId));
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setBusyId(null);
+      setConfirmDeleteId(null);
+    }
+  }
+
   return (
     <AdminShell
-      title="Agencies"
+      title="Network"
       actions={
         <button className="btn btn-sm btn-primary" onClick={() => router.push("/admin/agencies/new")}>
           New agency
@@ -52,10 +72,19 @@ export default function AgenciesListPage() {
     >
       <div className="page-head">
         <div>
-          <h1>Agencies</h1>
+          <h1>Network</h1>
           <p>Every agency in this workspace, with their credit balance and audit activity.</p>
         </div>
       </div>
+
+      {deleteError && (
+        <div
+          className="card pad"
+          style={{ borderColor: "var(--crit-line)", background: "var(--crit-weak)", color: "var(--text-2)", marginBottom: 18 }}
+        >
+          {deleteError}
+        </div>
+      )}
 
       {loading ? (
         <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
@@ -78,7 +107,7 @@ export default function AgenciesListPage() {
         <div className="table-wrap">
           <div className="table-head-bar">
             <div>
-              <h3>Agency roster</h3>
+              <h3>Dashboard</h3>
               <div className="sub">Click a row to manage credits and access.</div>
             </div>
           </div>
@@ -92,6 +121,7 @@ export default function AgenciesListPage() {
                   <th className="center">Audits</th>
                   <th className="center">Status</th>
                   <th>Added</th>
+                  <th>Actions</th>
                   <th></th>
                 </tr>
               </thead>
@@ -127,6 +157,51 @@ export default function AgenciesListPage() {
                       </span>
                     </td>
                     <td style={{ color: "var(--text-3)" }}>{formatDate(a.created_at)}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <button
+                          title="Edit"
+                          aria-label="Edit agency"
+                          onClick={() => router.push(`/admin/agencies/${a.id}`)}
+                          style={{
+                            background: "transparent",
+                            border: 0,
+                            padding: 4,
+                            cursor: "pointer",
+                            color: "var(--text-3)",
+                            display: "grid",
+                            placeItems: "center",
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                          </svg>
+                        </button>
+                        <button
+                          title="Delete"
+                          aria-label="Delete agency"
+                          onClick={() => setConfirmDeleteId(a.id)}
+                          style={{
+                            background: "transparent",
+                            border: 0,
+                            padding: 4,
+                            cursor: "pointer",
+                            color: "var(--crit)",
+                            display: "grid",
+                            placeItems: "center",
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
                     <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                       <span
                         style={{
@@ -153,6 +228,23 @@ export default function AgenciesListPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title="Delete agency"
+        message={
+          <>
+            Permanently delete{" "}
+            <strong>{agencies.find((a) => a.id === confirmDeleteId)?.agency_name || "this agency"}</strong>
+            ? All their clients, audits, and login access will be deleted. This cannot be undone.
+          </>
+        }
+        confirmLabel="Yes, delete"
+        danger
+        busy={busyId === confirmDeleteId}
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </AdminShell>
   );
 }

@@ -212,6 +212,7 @@ export default function ReportPage() {
   // Re-audit state
   const [history, setHistory] = useState<AuditHistoryEntry[]>([]);
   const [reAuditLoading, setReAuditLoading] = useState(false);
+  const [reAuditError, setReAuditError] = useState<string | null>(null);
 
   const fetchReport = useCallback(async () => {
     try {
@@ -247,18 +248,17 @@ export default function ReportPage() {
   async function handleReAudit() {
     if (!audit?.id) return;
     setReAuditLoading(true);
+    setReAuditError(null);
     try {
       const res = await fetch(`/api/geo-audits/${audit.id}/re-audit`, {
         method: "POST",
       });
       const data = await res.json();
-      if (data.audit_id) {
-        // Navigate to the new audit's detail page
-        router.push(`/audits/${data.audit_id}`);
-      }
-    } catch {
-      // silently fail; user can retry
-    } finally {
+      if (!res.ok) throw new Error(data.error || "Failed to start re-audit.");
+      // Navigate to the new audit's detail page
+      router.push(`/audits/${data.audit_id}`);
+    } catch (err) {
+      setReAuditError(err instanceof Error ? err.message : "Failed to start re-audit.");
       setReAuditLoading(false);
     }
   }
@@ -619,6 +619,14 @@ export default function ReportPage() {
                 >
                   {reAuditLoading ? "Starting Re-Audit..." : "Re-Audit This Brand"}
                 </button>
+              </div>
+            )}
+
+            {reAuditError && (
+              <div className="no-print flex justify-center">
+                <div className="text-sm text-on-error-container bg-error-container rounded-xl px-4 py-2">
+                  {reAuditError}
+                </div>
               </div>
             )}
 

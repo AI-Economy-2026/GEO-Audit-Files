@@ -5,21 +5,21 @@ import { generatePrompts } from "@/lib/prompt-generator";
 const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
 
-// Keep in sync with the wizard (/api/geo-audits). Only the 5 live API
+// Keep in sync with the wizard (/api/geo-audits). Only the 6 live API
 // engines: the scraper engines (google_ai_mode, google_ai_overview,
-// bing_copilot) need Playwright infra and otherwise fail silently,
-// inflating query counts and dragging visibility to 0%.
+// bing_copilot) need a working SERPAPI_API_KEY (SearchAPI.io) and otherwise
+// fail silently, inflating query counts and dragging visibility to 0%.
 const DEFAULT_ENGINES = [
   "openai",
   "anthropic",
   "google",
   "perplexity",
   "xai",
-  // "deepseek",           // Enable when DEEPSEEK_API_KEY is set
+  "deepseek",
   // "meta_llama",         // Enable when META_LLAMA_API_KEY is set
-  // "google_ai_mode",     // Needs Playwright/SerpAPI scraping infra
-  // "google_ai_overview", // Needs Playwright/SerpAPI scraping infra
-  // "bing_copilot",       // Needs Playwright/SerpAPI scraping infra
+  // "google_ai_mode",     // Enable when SERPAPI_API_KEY (SearchAPI.io) is set
+  // "google_ai_overview", // Enable when SERPAPI_API_KEY (SearchAPI.io) is set
+  // "bing_copilot",       // Enable when SERPAPI_API_KEY (SearchAPI.io) is set
 ];
 
 export async function GET(

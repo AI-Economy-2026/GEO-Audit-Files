@@ -130,23 +130,7 @@ export default function AdminSidebar() {
       </div>
 
       {/* Footer */}
-      <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div
-          style={{
-            padding: 16,
-            borderRadius: "var(--r-md)",
-            background: "var(--surface-2)",
-            border: "1px solid var(--border-soft)",
-          }}
-        >
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
-            Logged in as admin
-          </div>
-          <div style={{ fontSize: 12, color: "var(--text-3)", lineHeight: 1.5 }}>
-            Agencies log in at the same URL; middleware routes them away from /admin automatically.
-          </div>
-        </div>
-
+      <div style={{ marginTop: "auto" }}>
         <LogoutButton />
       </div>
     </aside>

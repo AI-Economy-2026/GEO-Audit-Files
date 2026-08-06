@@ -15,6 +15,9 @@ interface NavItem {
 interface Group {
   label: string;
   items: NavItem[];
+  /** Workspace-root links (e.g. "/audits") shouldn't stay highlighted while
+   *  deep inside one specific audit's own nav group — only exact matches count. */
+  exactMatchOnly?: boolean;
 }
 
 interface SidebarProps {
@@ -29,6 +32,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
 
   const workspaceGroup: Group = {
     label: "Workspace",
+    exactMatchOnly: true,
     items: [
       {
         href: "/clients",
@@ -242,7 +246,9 @@ export default function Sidebar({ auditId }: SidebarProps) {
           </div>
           <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {group.items.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              const active = group.exactMatchOnly
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}

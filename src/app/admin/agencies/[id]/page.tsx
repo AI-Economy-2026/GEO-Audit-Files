@@ -75,6 +75,8 @@ export default function AgencyDetailPage() {
   const [creditDelta, setCreditDelta] = useState<number>(0);
   const [editName, setEditName] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [resendResult, setResendResult] = useState<{ email: string; password: string; login_url: string; email_sent: boolean } | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -127,9 +129,24 @@ export default function AgencyDetailPage() {
     }
   }
 
+  async function resendInvite() {
+    setBusy("resend");
+    setResendError(null);
+    try {
+      const res = await fetch(`/api/admin/agencies/${id}/resend-invite`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to resend invite");
+      setResendResult({ ...data.credentials, email_sent: data.email_sent });
+    } catch (e) {
+      setResendError(e instanceof Error ? e.message : "Failed to resend invite");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   if (loading) {
     return (
-      <AdminShell title="Agencies → …">
+      <AdminShell title="Network → …">
         <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
           Loading agency...
         </div>
@@ -139,7 +156,7 @@ export default function AgencyDetailPage() {
 
   if (!agency) {
     return (
-      <AdminShell title="Agencies → Not found">
+      <AdminShell title="Network → Not found">
         <div className="card pad-lg" style={{ borderColor: "var(--crit-line)", background: "var(--crit-weak)" }}>
           {error || "Agency not found."}
         </div>
@@ -151,7 +168,7 @@ export default function AgencyDetailPage() {
 
   return (
     <AdminShell
-      title={`Agencies → ${agency.agency_name || agency.email}`}
+      title={`Network → ${agency.agency_name || agency.email}`}
       actions={
         <button className="btn btn-sm" onClick={() => router.push("/admin/agencies")}>
           ← All agencies
@@ -241,6 +258,73 @@ export default function AgencyDetailPage() {
               {busy === "name" ? "..." : "Save"}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Resend invite */}
+      <div className="section">
+        <div className="card pad-lg" style={{ maxWidth: 560 }}>
+          <h2 style={{ fontSize: 18, margin: "0 0 4px" }}>Resend invite</h2>
+          <p style={{ fontSize: 13, color: "var(--text-3)", marginBottom: 14 }}>
+            Issues a new temporary password and re-sends the welcome email. Useful if the original
+            never arrived (e.g. spam) or the agency lost it.
+          </p>
+
+          {resendError && (
+            <div
+              className="card pad"
+              style={{ borderColor: "var(--crit-line)", background: "var(--crit-weak)", color: "var(--text-2)", marginBottom: 14, fontSize: 13 }}
+            >
+              {resendError}
+            </div>
+          )}
+
+          {resendResult ? (
+            <>
+              {resendResult.email_sent ? (
+                <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
+                  A new welcome email has been sent to <strong>{resendResult.email}</strong>. Credentials are also shown below for your records.
+                </p>
+              ) : (
+                <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
+                  Email could not be sent (SMTP not configured). Share these credentials with the agency manually.
+                </p>
+              )}
+
+              <div style={{ background: "var(--inset)", border: "1px solid var(--border-soft)", borderRadius: "var(--r-md)", padding: "16px 20px", marginBottom: 14 }}>
+                {[
+                  { label: "Login URL", value: resendResult.login_url },
+                  { label: "Email", value: resendResult.email },
+                  { label: "Temporary password", value: resendResult.password },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-4)", marginBottom: 3 }}>{label}</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--mint)", wordBreak: "break-all" }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  className="btn btn-sm"
+                  onClick={() => navigator.clipboard.writeText(
+                    `Login: ${resendResult.login_url}\nEmail: ${resendResult.email}\nPassword: ${resendResult.password}`
+                  )}
+                >
+                  Copy credentials
+                </button>
+                <button className="btn btn-sm btn-primary" disabled={busy === "resend"} onClick={resendInvite}>
+                  {busy === "resend" ? "..." : "Resend again"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <Tooltip label="Generates a new temporary password and emails fresh login details to this agency.">
+              <button className="btn btn-sm btn-primary" disabled={busy === "resend"} onClick={resendInvite}>
+                {busy === "resend" ? "Sending..." : "Resend invite"}
+              </button>
+            </Tooltip>
+          )}
         </div>
       </div>
 

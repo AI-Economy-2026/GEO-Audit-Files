@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Tooltip from "./Tooltip";
@@ -11,6 +12,23 @@ interface TopbarProps {
 
 export default function Topbar({ auditId, brandName }: TopbarProps) {
   const router = useRouter();
+  const [reAuditLoading, setReAuditLoading] = useState(false);
+  const [reAuditError, setReAuditError] = useState<string | null>(null);
+
+  /* Trigger a real re-audit: clones this audit, starts the worker, opens the new run. */
+  async function handleReAudit() {
+    setReAuditLoading(true);
+    setReAuditError(null);
+    try {
+      const res = await fetch(`/api/geo-audits/${auditId}/re-audit`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start re-audit.");
+      router.push(`/audits/${data.audit_id}`);
+    } catch (err) {
+      setReAuditError(err instanceof Error ? err.message : "Failed to start re-audit.");
+      setReAuditLoading(false);
+    }
+  }
 
   return (
     <div
@@ -41,7 +59,7 @@ export default function Topbar({ auditId, brandName }: TopbarProps) {
       </div>
 
       {/* Actions */}
-      <div className="no-print" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div className="no-print" style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
         <Tooltip label="Open the browser print dialog to save the current view as PDF">
           <button className="btn btn-sm" onClick={() => window.print()}>
             Export PDF
@@ -50,11 +68,32 @@ export default function Topbar({ auditId, brandName }: TopbarProps) {
         <Tooltip label="Re-run this audit with the latest engine data">
           <button
             className="btn btn-sm btn-primary"
-            onClick={() => router.push(`/audits/${auditId}`)}
+            onClick={handleReAudit}
+            disabled={reAuditLoading}
           >
-            Re-audit
+            {reAuditLoading ? "Starting..." : "Re-audit"}
           </button>
         </Tooltip>
+        {reAuditError && (
+          <div
+            style={{
+              position: "absolute",
+              top: "100%",
+              right: 0,
+              marginTop: 8,
+              padding: "8px 12px",
+              borderRadius: "var(--r-md)",
+              background: "var(--crit-weak)",
+              border: "1px solid var(--crit-line)",
+              color: "var(--text-2)",
+              fontSize: 12,
+              whiteSpace: "nowrap",
+              zIndex: 10,
+            }}
+          >
+            {reAuditError}
+          </div>
+        )}
       </div>
     </div>
   );
