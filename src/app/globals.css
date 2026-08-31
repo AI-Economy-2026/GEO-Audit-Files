@@ -24,29 +24,36 @@
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
   /* Backgrounds */
-  --bg:         #060D1B;
-  --bg-grad-1:  #091529;
-  --surface:    #0E1A2D;
-  --surface-2:  #14223A;
-  --surface-3:  #1A2C48;
-  --inset:      #0A1321;
+  --bg:         #0B1428;
+  --bg-grad-1:  #0F1D34;
+  --surface:    #131F3B;
+  --surface-2:  #192745;
+  --surface-3:  #1F2F4F;
+  --inset:      #0F1A2E;
 
   /* Borders */
-  --border:      #1D2F49;
-  --border-soft: #162644;
-  --border-hi:   #2A4268;
+  --border:      #24345A;
+  --border-soft: #1D2B55;
+  --border-hi:   #314779;
 
   /* Text */
-  --text:   #F3F6FB;
-  --text-2: #C4CEDD;
-  --text-3: #8593AB;
-  --text-4: #5E6B82;
+  --text:   #F3F7FC;
+  --text-2: #C8D5E8;
+  --text-3: #A9B8D0;
+  --text-4: #8290A7;
 
   /* Brand (mint) */
-  --mint:       #5EEAD4;
-  --mint-2:     #2DD4BF;
-  --mint-weak:  rgba(94,234,212,.10);
-  --mint-line:  rgba(94,234,212,.28);
+  --mint:       #7CF0E0;
+  --mint-2:     #4BDACB;
+  --mint-weak:  rgba(124,240,224,.10);
+  --mint-line:  rgba(124,240,224,.28);
+
+  /* Accent (periwinkle) - upsell bumps, order-bump badges, secondary CTAs */
+  --peri:       #8FA4FF;
+  --peri-2:     #7186E0;
+  --peri-text:  #C0CBFF;
+  --peri-weak:  rgba(143,164,255,.14);
+  --peri-line:  rgba(143,164,255,.24);
 
   /* Semantic - good (sage) */
   --good:       #4ADE80;
@@ -78,6 +85,7 @@
   /* Effects */
   --shadow-md:  0 6px 20px rgba(0,0,0,.32);
   --shadow-lg:  0 18px 50px rgba(0,0,0,.42);
+  --grad-banner: linear-gradient(135deg, #0A1A30 0%, #0F2E4C 50%, #0E4A42 100%);
   --glow-mint:  0 0 0 1px rgba(94,234,212,.16), 0 24px 60px rgba(94,234,212,.10);
 
   --r-md: 12px;
@@ -209,6 +217,10 @@
   --color-warn:   var(--warn);
   --color-crit:   var(--crit);
   --color-info:   var(--info);
+  --color-peri:      var(--peri);
+  --color-peri-text: var(--peri-text);
+  --color-peri-weak: var(--peri-weak);
+  --color-peri-line: var(--peri-line);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -880,7 +892,7 @@ table.data tbody tr.clickable:hover .row-chevron { color: var(--mint); transform
 .cta-banner {
   display: flex; justify-content: space-between; align-items: center; gap: 24px;
   padding: 26px 30px; border-radius: var(--r-xl);
-  background: linear-gradient(135deg, #0A1A30 0%, #0F2E4C 50%, #0E4A42 100%);
+  background: var(--grad-banner);
   border: 1px solid var(--mint-line); box-shadow: var(--glow-mint);
   position: relative; overflow: hidden; margin-top: 24px;
 }

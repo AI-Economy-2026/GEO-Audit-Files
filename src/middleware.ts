@@ -50,11 +50,13 @@ export async function middleware(request: NextRequest) {
 
   // Public routes (no auth required). Note: /reset-password must stay
   // reachable even with a session : the recovery link signs the user in.
+  const publicMarketingRoutes = ["/", "/about", "/how", "/contact", "/pricing", "/white-label"];
   if (
     pathname.startsWith("/intake") ||
     pathname.startsWith("/report") ||
     pathname.startsWith("/forgot-password") ||
-    pathname.startsWith("/reset-password")
+    pathname.startsWith("/reset-password") ||
+    publicMarketingRoutes.includes(pathname)
   ) {
     return supabaseResponse;
   }

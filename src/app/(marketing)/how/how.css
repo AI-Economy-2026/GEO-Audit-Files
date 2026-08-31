@@ -1,0 +1,68 @@
+/* Page-scoped styles for /how — illustrative light "screenshot" fragments
+   (engine rows, answer card, score dial, competitor bars, ranked plan)
+   that don't belong in the shared dark marketing.css. */
+
+.how-card {
+  border-radius: 18px;
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #e9ecf4;
+  box-shadow: 0 30px 60px -40px rgba(11, 20, 40, 0.25);
+  color: #0b1428;
+}
+.how-card-h {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #8a97ad;
+  margin-bottom: 16px;
+}
+
+.how-erow { display: grid; grid-template-columns: 92px 1fr 42px 104px; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid #eef1f7; font-size: 13.5px; }
+.how-erow:first-of-type { border-top: 0; }
+.how-erow .en { font-weight: 600; }
+.how-bar { height: 7px; border-radius: 100px; background: #eef1f7; }
+.how-bar span { display: block; height: 100%; border-radius: 100px; background: linear-gradient(90deg, #7cf0e0, #8fe9d6); }
+.how-pc { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.how-pill { justify-self: end; white-space: nowrap; font-size: 10.5px; font-weight: 700; padding: 4px 11px; border-radius: 100px; }
+.how-pill.g { background: #e0f6ee; color: #0a7d63; }
+.how-pill.a { background: #fdf0d8; color: #a97a1e; }
+
+.how-ans .ah { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 600; color: #51617e; margin-bottom: 12px; }
+.how-ans .mk { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; }
+.how-ans .q { background: #f1f3f8; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #3a4a66; margin-bottom: 12px; }
+.how-ans .a { font-size: 14px; line-height: 1.6; }
+.how-ans .named { color: #0a7d63; font-weight: 700; }
+.how-ans .foot { margin-top: 13px; padding-top: 12px; border-top: 1px solid #eef1f7; display: flex; gap: 8px; }
+.how-ans .src { font-size: 11px; color: #6b7890; background: #f4f6fb; border: 1px solid #e9ecf4; border-radius: 100px; padding: 3px 10px; }
+
+.how-dial { display: flex; align-items: center; gap: 20px; }
+.how-dial .n { font-size: 34px; font-weight: 700; line-height: 1; }
+.how-dial .l { font-size: 13px; color: #51617e; margin-top: 4px; }
+.how-dial .s { font-size: 12px; color: #0a7d63; font-weight: 600; margin-top: 6px; }
+
+.how-vs { display: flex; flex-direction: column; gap: 13px; }
+.how-vsrow { display: grid; grid-template-columns: 100px 1fr 46px; gap: 12px; align-items: center; font-size: 13.5px; }
+.how-vsn { color: #51617e; font-weight: 600; }
+.how-vsrow.you .how-vsn { color: #c2493a; }
+.how-vsbar { height: 9px; border-radius: 100px; background: #eef1f7; }
+.how-vsbar span { display: block; height: 100%; border-radius: 100px; background: #8fa4ff; }
+.how-vsrow.you .how-vsbar span { background: linear-gradient(90deg, #ffb3a6, #c2493a); }
+.how-vspc { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.how-vsrow.you .how-vspc { color: #c2493a; }
+.how-vsnote { margin-top: 15px; padding-top: 14px; border-top: 1px solid #eef1f7; font-size: 13px; color: #a5651a; font-weight: 500; }
+
+.how-plan { display: flex; flex-direction: column; gap: 10px; }
+.how-plan .pi { display: flex; gap: 13px; align-items: flex-start; background: #f7f9fc; border: 1px solid #eef1f7; border-radius: 12px; padding: 13px 15px; }
+.how-plan .rk { flex: none; width: 24px; height: 24px; border-radius: 7px; background: #7cf0e0; color: #062019; font-weight: 700; font-size: 12px; display: grid; place-items: center; }
+.how-plan .pt { font-size: 13.5px; font-weight: 600; }
+.how-plan .pd { font-size: 12px; color: #8a97ad; margin-top: 2px; }
+.how-plan .imp { margin-left: auto; font-size: 11px; font-weight: 700; color: #0a7d63; white-space: nowrap; }
+
+.how-chat { display: flex; flex-direction: column; gap: 10px; }
+.how-chat .you { align-self: flex-end; max-width: 80%; background: #0b1428; color: #eaf2ff; border-radius: 14px 14px 4px 14px; padding: 11px 14px; font-size: 13.5px; }
+.how-chat .sarah { align-self: flex-start; max-width: 88%; background: #f2f5fb; color: #0b1428; border: 1px solid #e9ecf4; border-radius: 14px 14px 14px 4px; padding: 12px 15px; font-size: 13.5px; line-height: 1.55; }
+.how-chat-input { margin-top: 14px; display: flex; gap: 8px; align-items: center; background: #f7f9fc; border: 1px solid #eef1f7; border-radius: 12px; padding: 10px 13px; font-size: 13px; color: #8a97ad; }
