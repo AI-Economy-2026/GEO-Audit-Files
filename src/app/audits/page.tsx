@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import WorkspaceShell from "@/components/audit/WorkspaceShell";
-import Tooltip from "@/components/audit/Tooltip";
+import DataTable, { DataTableColumn, DataTableFilterGroup } from "@/components/ui/DataTable";
 import { tone } from "@/components/audit/useAuditData";
-import { useMe } from "@/lib/use-me";
+import { useMe } from "@/lib/me-context";
+import { usePaginatedTable } from "@/lib/use-paginated-table";
+import BuyCreditsModal from "@/components/billing/BuyCreditsModal";
 
 interface Audit {
   id: string;
@@ -14,13 +16,9 @@ interface Audit {
   status: string;
   visibility_rate: number | null;
   total_queries: number | null;
-  total_mentioned: number | null;
   engines: string[];
   created_at: string;
-  completed_at: string | null;
-  duration_seconds: number | null;
-  parent_audit_id?: string | null;
-  version?: number;
+  version: number | null;
 }
 
 const STATUS_CHIP: Record<string, string> = {
@@ -31,46 +29,88 @@ const STATUS_CHIP: Record<string, string> = {
   cancelled: "chip-neutral",
 };
 
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-AU", { day: "numeric", month: "short" });
+}
+
 export default function AuditsPage() {
-  const [audits, setAudits] = useState<Audit[]>([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { me } = useMe();
+  const table = usePaginatedTable<Audit>("/api/geo-audits", ["status"]);
   const outOfCredits = me?.role === "agency" && me.creditsRemaining <= 0;
+  const [buyCreditsOpen, setBuyCreditsOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const res = await fetch("/api/geo-audits");
-      const data = await res.json();
-      setAudits(data.audits || []);
-      setLoading(false);
-    })();
-  }, []);
+  const thisMonthCount = Number(table.stats.thisMonthCount ?? 0);
+  const creditPool = Number(table.stats.creditPool ?? 0);
+  const runningCount = Number(table.stats.runningCount ?? 0);
+  const runningPreview = table.stats.runningPreview as { brandName: string; totalQueries: number | null } | null;
+  const draftCount = Number(table.stats.draftCount ?? 0);
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("en-AU", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  }
+  const columns: DataTableColumn<Audit>[] = [
+    {
+      key: "client",
+      label: "Client",
+      render: (a) => (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 500, color: "var(--text)" }}>
+            {a.brand_name}
+            {a.version && a.version > 1 && (
+              <span className="chip chip-mint" style={{ fontSize: 10, padding: "2px 7px" }}>
+                v{a.version}
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-3)", fontFamily: "var(--font-mono)" }}>{a.brand_url}</div>
+        </>
+      ),
+    },
+    { key: "run", label: "Run", render: (a) => <span style={{ color: "var(--text-3)" }}>{formatDate(a.created_at)}</span> },
+    { key: "prompts", label: "Prompts", align: "center", render: (a) => a.total_queries ?? "-" },
+    { key: "engines", label: "Engines", align: "center", render: (a) => a.engines?.length || 0 },
+    {
+      key: "visibility",
+      label: "Visibility",
+      align: "center",
+      render: (a) =>
+        a.visibility_rate != null ? (
+          <span className={`num-big num-${tone(a.visibility_rate)}`}>
+            {a.visibility_rate}
+            <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>%</span>
+          </span>
+        ) : (
+          <span style={{ color: "var(--text-3)" }}>-</span>
+        ),
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (a) => <span className={`chip ${STATUS_CHIP[a.status] || "chip-neutral"}`}>{a.status}</span>,
+    },
+    {
+      key: "action",
+      label: "Action",
+      align: "center",
+      render: (a) => (
+        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-3)" }}>
+          {a.status === "completed" ? "View" : "Progress"}
+        </span>
+      ),
+    },
+  ];
 
-  function formatDuration(seconds: number | null) {
-    if (!seconds) return "-";
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs}s`;
-  }
-
-  const totalAudits = audits.length;
-  const completed = audits.filter((a) => a.status === "completed").length;
-  const running = audits.filter((a) => a.status === "running" || a.status === "pending").length;
-  const completedAudits = audits.filter((a) => a.visibility_rate != null);
-  const avgVisibility = completedAudits.length
-    ? Math.round(
-        completedAudits.reduce((sum, a) => sum + (a.visibility_rate || 0), 0) / completedAudits.length
-      )
-    : 0;
+  const filterGroups: DataTableFilterGroup[] = [
+    {
+      key: "status",
+      active: table.filters.status,
+      onChange: (value) => table.setFilter("status", value),
+      options: [
+        { value: "all", label: "All", count: table.counts.all ?? 0 },
+        { value: "completed", label: "Complete", count: table.counts.completed ?? 0 },
+        { value: "running", label: "Running", count: table.counts.running ?? 0 },
+        { value: "drafts", label: "Drafts", count: table.counts.drafts ?? 0 },
+      ],
+    },
+  ];
 
   return (
     <WorkspaceShell
@@ -88,277 +128,86 @@ export default function AuditsPage() {
     >
       <div className="page-head">
         <div>
-          <h1>Your audits</h1>
-          <p>
-            Every AI Search Visibility audit run from this workspace. Click any row to open the full
-            report.
-          </p>
+          <h1>AI Audits</h1>
+          <p>Every AI Search Visibility audit run from this workspace. Click any row to open the full report.</p>
         </div>
       </div>
 
       {outOfCredits && (
-        <div
-          className="card pad"
-          style={{
-            marginBottom: 18,
-            borderColor: "var(--crit-line)",
-            background: "var(--crit-weak)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: "var(--crit-weak)",
-                border: "1px solid var(--crit-line)",
-                display: "grid",
-                placeItems: "center",
-                color: "var(--crit)",
-                flexShrink: 0,
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontWeight: 600, color: "var(--text)", fontSize: 14, marginBottom: 2 }}>
-                Out of audit credits
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-2)" }}>
-                Ask your administrator to top up before starting another audit.
-              </div>
-            </div>
+        <div className="card pad" style={{ marginBottom: 18, borderColor: "var(--crit-line)", background: "var(--crit-weak)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div>
+            <div style={{ fontWeight: 600, color: "var(--text)", fontSize: 14, marginBottom: 2 }}>Out of audit credits</div>
+            <div style={{ fontSize: 13, color: "var(--text-2)" }}>Ask your administrator to top up before starting another audit.</div>
           </div>
-          <a
-            className="btn btn-sm"
-            style={{ textDecoration: "none", whiteSpace: "nowrap" }}
-            href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(
-              `Credit top-up request from ${me?.agencyName || me?.email || ""}`
-            )}`}
-          >
-            Request top-up
-          </a>
-        </div>
-      )}
-
-      {!loading && totalAudits > 0 && (
-        <div className="kpi-strip">
-          <div className="kpi">
-            <div className="kpi-label">Total audits</div>
-            <div className="kpi-number">{totalAudits}</div>
-            <div className="kpi-sub">in this workspace</div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Completed</div>
-            <div className="kpi-number num-good">{completed}</div>
-            <div className="kpi-sub">finished runs</div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Running</div>
-            <div className={`kpi-number ${running > 0 ? "num-info" : ""}`}>{running}</div>
-            <div className="kpi-sub">in progress</div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Avg visibility</div>
-            <div className={`kpi-number num-${tone(avgVisibility)}`}>
-              {completedAudits.length ? avgVisibility : "-"}
-              {completedAudits.length ? <span className="unit">%</span> : null}
-            </div>
-            <div className="kpi-sub">across completed runs</div>
-          </div>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
-          Loading audits...
-        </div>
-      ) : audits.length === 0 ? (
-        <div className="card pad-lg" style={{ textAlign: "center" }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              margin: "0 auto 14px",
-              borderRadius: 14,
-              background: "var(--mint-weak)",
-              border: "1px solid var(--mint-line)",
-              display: "grid",
-              placeItems: "center",
-              color: "var(--mint)",
-            }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-          </div>
-          <h3
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 20,
-              fontWeight: 700,
-              color: "var(--text)",
-              margin: "0 0 8px",
-            }}
-          >
-            No audits yet
-          </h3>
-          <p style={{ color: "var(--text-3)", maxWidth: 440, margin: "0 auto 18px" }}>
-            Run your first AI visibility audit to see how your brand appears across ChatGPT, Claude,
-            Gemini, Perplexity and more.
-          </p>
-          <button
-            className="btn btn-primary"
-            onClick={() => router.push("/audits/new")}
-            disabled={outOfCredits}
-            style={outOfCredits ? { opacity: 0.5, cursor: "not-allowed" } : undefined}
-          >
-            Create your first audit
+          <button className="btn btn-sm btn-primary" onClick={() => setBuyCreditsOpen(true)}>
+            Buy credits
           </button>
         </div>
-      ) : (
-        <div className="table-wrap">
-          <div className="table-head-bar">
-            <div>
-              <h3>Audit history</h3>
-              <div className="sub">Latest first.</div>
+      )}
+
+      <BuyCreditsModal
+        open={buyCreditsOpen}
+        onClose={() => setBuyCreditsOpen(false)}
+        balance={me?.creditsRemaining ?? null}
+      />
+
+      {!table.loading && (table.counts.all ?? 0) > 0 && (
+        <div className="kpi-strip">
+          <div className="kpi">
+            <div className="kpi-label">Audits run</div>
+            <div className="kpi-number">
+              {thisMonthCount}
+              {creditPool > 0 && <span className="unit">/{creditPool}</span>}
+            </div>
+            <div className="kpi-sub">This calendar month</div>
+          </div>
+          {me?.role === "agency" && (
+            <div className="kpi">
+              <div className="kpi-label">Credits used</div>
+              <div className="kpi-number">
+                {me.creditsUsed}
+                {creditPool > 0 && <span className="unit">/{creditPool}</span>}
+              </div>
+              <div className="kpi-sub">{me.creditsRemaining} remaining</div>
+            </div>
+          )}
+          <div className="kpi">
+            <div className="kpi-label">Running now</div>
+            <div className={`kpi-number ${runningCount > 0 ? "num-info" : ""}`}>{runningCount}</div>
+            <div className="kpi-sub">
+              {runningPreview
+                ? `${runningPreview.brandName}, ${runningPreview.totalQueries ?? "-"} prompts`
+                : runningCount > 1
+                  ? `${runningCount} audits in progress`
+                  : "None right now"}
             </div>
           </div>
-          <div className="scroll">
-            <table className="data" style={{ minWidth: 880 }}>
-              <thead>
-                <tr>
-                  <th>Brand</th>
-                  <th className="center">Status</th>
-                  <th className="center">Visibility</th>
-                  <th className="center">Engines</th>
-                  <th className="center">Duration</th>
-                  <th>Date</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {audits.map((audit) => {
-                  const t = tone(audit.visibility_rate ?? 0);
-                  return (
-                    <tr
-                      key={audit.id}
-                      className="clickable"
-                      onClick={() =>
-                        router.push(
-                          audit.status === "completed"
-                            ? `/audits/${audit.id}/dashboard`
-                            : `/audits/${audit.id}`
-                        )
-                      }
-                    >
-                      <td>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            fontWeight: 600,
-                            color: "var(--text)",
-                          }}
-                        >
-                          {audit.brand_name}
-                          {audit.version && audit.version > 1 && (
-                            <span
-                              style={{
-                                padding: "2px 7px",
-                                borderRadius: 999,
-                                background: "var(--mint-weak)",
-                                color: "var(--mint)",
-                                fontSize: 10,
-                                fontWeight: 700,
-                                letterSpacing: "0.05em",
-                                border: "1px solid var(--mint-line)",
-                              }}
-                            >
-                              v{audit.version}
-                            </span>
-                          )}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 12,
-                            color: "var(--text-3)",
-                            fontFamily: "var(--font-mono)",
-                            marginTop: 2,
-                          }}
-                        >
-                          {audit.brand_url}
-                        </div>
-                      </td>
-                      <td className="center">
-                        <span className={`chip ${STATUS_CHIP[audit.status] || "chip-neutral"}`}>
-                          {audit.status}
-                        </span>
-                      </td>
-                      <td className="center">
-                        {audit.visibility_rate != null ? (
-                          <span className={`num-big num-${t}`}>
-                            {audit.visibility_rate}
-                            <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500 }}>%</span>
-                          </span>
-                        ) : (
-                          <span style={{ color: "var(--text-3)" }}>-</span>
-                        )}
-                      </td>
-                      <td className="center" style={{ color: "var(--text-2)" }}>
-                        {audit.engines?.length || 0}
-                      </td>
-                      <td className="center" style={{ color: "var(--text-2)" }}>
-                        {formatDuration(audit.duration_seconds)}
-                      </td>
-                      <td style={{ color: "var(--text-3)" }}>{formatDate(audit.created_at)}</td>
-                      <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
-                        <Tooltip
-                          label={
-                            audit.status === "completed"
-                              ? "Open the full dashboard"
-                              : "Open audit progress / details"
-                          }
-                          side="left"
-                        >
-                          <span
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 600,
-                              color: "var(--text-3)",
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 4,
-                            }}
-                          >
-                            View
-                            <span className="row-chevron" aria-hidden="true">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                                <polyline points="9 6 15 12 9 18" />
-                              </svg>
-                            </span>
-                          </span>
-                        </Tooltip>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="kpi">
+            <div className="kpi-label">Drafts</div>
+            <div className="kpi-number">{draftCount}</div>
+            <div className="kpi-sub">Not started yet</div>
           </div>
         </div>
       )}
+
+      <DataTable
+        title="Audit history"
+        subtitle="Latest first."
+        columns={columns}
+        rows={table.rows}
+        rowKey={(a) => a.id}
+        onRowClick={(a) => router.push(a.status === "completed" ? `/audits/${a.id}/dashboard` : `/audits/${a.id}`)}
+        loading={table.loading}
+        emptyLabel="No audits yet. Run your first AI visibility audit."
+        filterGroups={filterGroups}
+        search={table.search}
+        onSearchChange={table.setSearch}
+        searchPlaceholder="Search audits..."
+        page={table.page}
+        pageSize={20}
+        total={table.total}
+        onPageChange={table.setPage}
+      />
     </WorkspaceShell>
   );
 }

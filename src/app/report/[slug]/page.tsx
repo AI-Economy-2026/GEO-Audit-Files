@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PrioritiseTab from "./components/PrioritiseTab";
 
@@ -193,9 +193,45 @@ function priorityLabel(gap: number) {
   return { label: "Low", cls: "bg-primary text-on-primary-fixed" };
 }
 
+/** Same thresholds as rateColor(), for the hero score ring stroke. */
+function ringColorVar(rate: number) {
+  if (rate >= 60) return "var(--good)";
+  if (rate >= 35) return "var(--warn)";
+  return "var(--crit)";
+}
+
+/**
+ * Understated eyebrow-style section header (small-caps label + trailing rule),
+ * used consistently across every report section for a single visual system.
+ */
+function SectionHeading({
+  children,
+  sub,
+}: {
+  children: ReactNode;
+  sub?: ReactNode;
+}) {
+  return (
+    <div className="mb-5">
+      <div className="flex items-center gap-3 mb-1">
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.09em] text-on-surface-variant whitespace-nowrap">
+          {children}
+        </h2>
+        <div className="flex-1 h-px bg-outline-variant" />
+      </div>
+      {sub && <p className="text-sm text-on-surface-variant max-w-2xl">{sub}</p>}
+    </div>
+  );
+}
+
 export default function ReportPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // "?view=stakeholder" renders a condensed summary (headline + why, no deep
+  // technical detail). No param, or any other value, is the full client view
+  // (current/default behaviour) and must not regress.
+  const isStakeholderView = searchParams.get("view") === "stakeholder";
   const [client, setClient] = useState<ClientData | null>(null);
   const [audit, setAudit] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -532,39 +568,135 @@ export default function ReportPage() {
         {isCompleted && (
           <>
             {/* Visibility Score Hero */}
-            <section className="glass-card border-0 rounded-3xl p-10 text-center">
-              <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-2">
-                AI Visibility Audit &amp; Action Plan
-              </p>
-              <h1 className="text-3xl font-black text-on-surface mb-1" style={{ fontFamily: "var(--font-display)" }}>
-                Visibility Dashboard
-              </h1>
-              <p className="text-on-surface-variant mb-6 text-sm">How AI search engines see and recommend your business</p>
-              <div className={`text-8xl font-black ${visColors.text}`} style={{ fontFamily: "var(--font-display)" }}>
-                {Math.round(visRate)}%
+            <section className="glass-card border-0 rounded-3xl p-8 md:p-10">
+              <div className="flex flex-col md:flex-row items-center gap-8 md:gap-10">
+                {/* Score ring */}
+                <div className="relative w-[176px] h-[176px] shrink-0">
+                  <svg viewBox="0 0 176 176" className="w-full h-full -rotate-90">
+                    <circle
+                      cx="88"
+                      cy="88"
+                      r="76"
+                      fill="none"
+                      stroke="var(--outline-variant)"
+                      strokeWidth="12"
+                    />
+                    <circle
+                      cx="88"
+                      cy="88"
+                      r="76"
+                      fill="none"
+                      stroke={ringColorVar(visRate)}
+                      strokeWidth="12"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 76}
+                      strokeDashoffset={2 * Math.PI * 76 * (1 - Math.min(Math.max(visRate, 0), 100) / 100)}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-5xl font-black text-on-surface" style={{ fontFamily: "var(--font-display)" }}>
+                      {Math.round(visRate)}
+                    </span>
+                    <span className="text-xs text-on-surface-variant">/ 100</span>
+                  </div>
+                </div>
+
+                {/* Narrative */}
+                <div className="flex-1 text-center md:text-left">
+                  <p className="text-[11px] font-bold text-primary uppercase tracking-[0.1em] mb-2">
+                    AI Visibility Audit &amp; Action Plan
+                  </p>
+                  <h1 className="text-2xl md:text-3xl font-black text-on-surface mb-2" style={{ fontFamily: "var(--font-display)" }}>
+                    {visRate >= 60
+                      ? "Strong visibility, keep the lead"
+                      : visRate >= 35
+                        ? "Clear path forward"
+                        : "Significant room to grow"}
+                  </h1>
+                  <p className="text-sm text-on-surface-variant leading-relaxed max-w-lg">
+                    <strong className="text-on-surface">{client?.name}</strong> was mentioned in{" "}
+                    <strong className="text-primary">{audit!.total_mentioned}</strong> out of{" "}
+                    <strong className="text-on-surface">{audit!.total_queries}</strong> AI engine
+                    queries across <strong className="text-on-surface">{audit!.engines?.length}</strong>{" "}
+                    platforms.
+                  </p>
+                  <div className="flex gap-8 justify-center md:justify-start mt-5 pt-5 border-t border-outline-variant">
+                    <div className="text-center md:text-left">
+                      <div className="text-xl font-bold text-on-surface" style={{ fontFamily: "var(--font-display)" }}>
+                        {audit!.total_mentioned}
+                        <span className="text-on-surface-variant font-medium text-base">
+                          {" "}
+                          / {audit!.total_queries}
+                        </span>
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wide text-on-surface-variant font-semibold mt-0.5">
+                        Prompts mentioned
+                      </div>
+                    </div>
+                    <div className="text-center md:text-left">
+                      <div className="text-xl font-bold text-on-surface" style={{ fontFamily: "var(--font-display)" }}>
+                        {sortedEngines.length}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wide text-on-surface-variant font-semibold mt-0.5">
+                        Engines tracked
+                      </div>
+                    </div>
+                    {history.length > 1 && (
+                      <div className="text-center md:text-left">
+                        <div className="text-xl font-bold text-on-surface" style={{ fontFamily: "var(--font-display)" }}>
+                          v{audit!.version}
+                        </div>
+                        <div className="text-[10px] uppercase tracking-wide text-on-surface-variant font-semibold mt-0.5">
+                          Audit version
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="w-16 h-1 bg-primary mx-auto my-4" />
-              <p className="text-on-surface-variant text-base">
-                <strong className="text-on-surface">{client?.name}</strong> was
-                mentioned in{" "}
-                <strong className="text-primary">
-                  {audit!.total_mentioned}
-                </strong>{" "}
-                out of{" "}
-                <strong className="text-on-surface">{audit!.total_queries}</strong>{" "}
-                AI engine queries across{" "}
-                <strong className="text-on-surface">
-                  {audit!.engines?.length}
-                </strong>{" "}
-                platforms.
-              </p>
-              {visRate < 25 && (
-                <p className="mt-4 text-primary text-sm">
-                  Your brand has significant room for improvement in AI search visibility.
-                  Scroll down to see how we can help.
-                </p>
-              )}
             </section>
+
+            {/* Start here / lock in what's working */}
+            {sortedEngines.length > 1 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(() => {
+                  const weakest = sortedEngines[sortedEngines.length - 1];
+                  const strongest = sortedEngines[0];
+                  const weakestName = weakest[1].display_name || ENGINE_LABELS[weakest[0]] || weakest[0];
+                  const strongestName = strongest[1].display_name || ENGINE_LABELS[strongest[0]] || strongest[0];
+                  return (
+                    <>
+                      <div className="glass-card border-0 rounded-2xl p-5 flex gap-4 items-start">
+                        <div className="w-9 h-9 rounded-lg bg-crit/10 text-crit flex items-center justify-center font-bold shrink-0">
+                          !
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-on-surface mb-1">Start here</h4>
+                          <p className="text-xs text-on-surface-variant leading-relaxed">
+                            {weakestName} is your biggest single opportunity at{" "}
+                            <strong className="text-on-surface">{Math.round(weakest[1].visibility_rate)}%</strong> visibility.
+                            Closing that gap moves the overall score the most.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="glass-card border-0 rounded-2xl p-5 flex gap-4 items-start">
+                        <div className="w-9 h-9 rounded-lg bg-good/10 text-good flex items-center justify-center font-bold shrink-0">
+                          ✓
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-on-surface mb-1">Lock in what&apos;s working</h4>
+                          <p className="text-xs text-on-surface-variant leading-relaxed">
+                            You lead on {strongestName} at{" "}
+                            <strong className="text-on-surface">{Math.round(strongest[1].visibility_rate)}%</strong> visibility.
+                            Ship more content where you already rank to capture further citations.
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -633,12 +765,7 @@ export default function ReportPage() {
             {/* Score History (shown when there are multiple versions) */}
             {history.length > 1 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  Audit History: Score Changes
-                </h2>
+                <SectionHeading>Audit History: Score Changes</SectionHeading>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -744,47 +871,30 @@ export default function ReportPage() {
             {/* Performance by AI Engine */}
             {sortedEngines.length > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-6"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  Performance by AI Engine
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <SectionHeading sub="How often each engine mentions you, all engines tested.">
+                  Visibility by Engine
+                </SectionHeading>
+                <div className="space-y-1">
                   {sortedEngines.map(([key, stats]) => {
                     const rate = stats.visibility_rate;
                     const colors = rateColor(rate);
-                    const gap = 100 - rate;
-                    const priority = priorityLabel(gap);
                     return (
                       <div
                         key={key}
-                        className="bg-surface-container border border-outline-variant rounded-xl p-4"
+                        className="grid grid-cols-[minmax(110px,150px)_1fr_44px] items-center gap-4 py-2"
                       >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium text-on-surface">
-                            {stats.display_name || ENGINE_LABELS[key] || key}
-                          </span>
-                          <span className={`text-lg font-bold ${colors.text}`}>
-                            {Math.round(rate)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-surface-container-lowest rounded-full h-2 mb-2">
+                        <span className="text-sm text-on-surface-variant truncate">
+                          {stats.display_name || ENGINE_LABELS[key] || key}
+                        </span>
+                        <div className="w-full bg-surface-container-lowest rounded-full h-2">
                           <div
                             className={`h-2 rounded-full ${colors.bar}`}
                             style={{ width: `${Math.max(rate, 2)}%` }}
                           />
                         </div>
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs text-on-surface-variant">
-                            {stats.brand_mentioned} / {stats.total_queries} mentions
-                          </p>
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${priority.cls}`}
-                          >
-                            {priority.label}
-                          </span>
-                        </div>
+                        <span className={`text-sm font-bold text-right ${colors.text}`}>
+                          {Math.round(rate)}%
+                        </span>
                       </div>
                     );
                   })}
@@ -795,12 +905,7 @@ export default function ReportPage() {
             {/* Engine Gap Analysis Table */}
             {sortedEngines.length > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  AI Engine Gap Analysis
-                </h2>
+                <SectionHeading>AI Engine Gap Analysis</SectionHeading>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -861,12 +966,7 @@ export default function ReportPage() {
             {/* Category Performance */}
             {sortedCategories.length > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  Category Performance
-                </h2>
+                <SectionHeading>Category Performance</SectionHeading>
                 <div className="space-y-4">
                   {sortedCategories.map(([category, stats]) => {
                     const colors = rateColor(stats.visibility_rate);
@@ -904,70 +1004,71 @@ export default function ReportPage() {
             {/* Competitor Analysis */}
             {sortedCompetitors.length > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  Competitor Mentions
-                </h2>
+                <SectionHeading sub="How your mention count stacks up against named competitors across the same prompts.">
+                  Share of Voice vs Competitors
+                </SectionHeading>
                 <div className="space-y-3">
-                  {/* Client row first */}
-                  <div className="flex items-center gap-3 bg-primary/10 border border-primary/30 rounded-lg p-3">
-                    <span className="text-sm font-bold text-primary w-40 truncate">
-                      {client?.name} (You)
-                    </span>
-                    <div className="flex-1">
-                      <div className="w-full bg-surface-container-lowest rounded-full h-3">
-                        <div
-                          className="h-3 rounded-full bg-primary"
-                          style={{
-                            width: `${Math.max(
-                              ((audit!.total_mentioned || 0) /
-                                Math.max(audit!.total_queries || 1, 1)) *
-                                100,
-                              2
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-sm font-bold text-primary w-16 text-right">
-                      {audit!.total_mentioned}
-                    </span>
-                  </div>
-                  {sortedCompetitors.map(([name, count]) => {
+                  {(() => {
+                    const shareTotal =
+                      (audit!.total_mentioned || 0) +
+                      sortedCompetitors.reduce((sum, [, count]) => sum + count, 0);
                     const maxMentions = Math.max(
-                      audit!.total_queries || 1,
-                      count,
+                      audit!.total_mentioned || 0,
+                      ...sortedCompetitors.map(([, count]) => count),
                       1
                     );
+                    const sharePct = (count: number) =>
+                      shareTotal > 0 ? Math.round((count / shareTotal) * 100) : 0;
                     return (
-                      <div
-                        key={name}
-                        className="flex items-center gap-3 bg-surface-container border border-outline-variant rounded-xl p-3"
-                      >
-                        <span className="text-sm text-on-surface w-40 truncate">
-                          {name}
-                        </span>
-                        <div className="flex-1">
-                          <div className="w-full bg-surface-container-lowest rounded-full h-3">
-                            <div
-                              className="h-3 rounded-full bg-outline"
-                              style={{
-                                width: `${Math.max(
-                                  (count / maxMentions) * 100,
-                                  2
-                                )}%`,
-                              }}
-                            />
+                      <>
+                        {/* Client row first */}
+                        <div className="flex items-center gap-3 bg-primary/10 border border-primary/30 rounded-lg p-3">
+                          <span className="text-sm font-bold text-primary w-40 truncate">
+                            {client?.name} (You)
+                          </span>
+                          <div className="flex-1">
+                            <div className="w-full bg-surface-container-lowest rounded-full h-3">
+                              <div
+                                className="h-3 rounded-full bg-primary"
+                                style={{
+                                  width: `${Math.max(
+                                    ((audit!.total_mentioned || 0) / maxMentions) * 100,
+                                    2
+                                  )}%`,
+                                }}
+                              />
+                            </div>
                           </div>
+                          <span className="text-sm font-bold text-primary w-20 text-right">
+                            {sharePct(audit!.total_mentioned || 0)}% · {audit!.total_mentioned}
+                          </span>
                         </div>
-                        <span className="text-sm text-on-surface-variant w-16 text-right">
-                          {count}
-                        </span>
-                      </div>
+                        {sortedCompetitors.map(([name, count]) => (
+                          <div
+                            key={name}
+                            className="flex items-center gap-3 bg-surface-container border border-outline-variant rounded-xl p-3"
+                          >
+                            <span className="text-sm text-on-surface w-40 truncate">
+                              {name}
+                            </span>
+                            <div className="flex-1">
+                              <div className="w-full bg-surface-container-lowest rounded-full h-3">
+                                <div
+                                  className="h-3 rounded-full bg-outline"
+                                  style={{
+                                    width: `${Math.max((count / maxMentions) * 100, 2)}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <span className="text-sm text-on-surface-variant w-20 text-right">
+                              {sharePct(count)}% · {count}
+                            </span>
+                          </div>
+                        ))}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
               </section>
             )}
@@ -975,12 +1076,7 @@ export default function ReportPage() {
             {/* Sentiment Breakdown */}
             {totalSentiment > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-4"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  Sentiment Analysis
-                </h2>
+                <SectionHeading>Sentiment Analysis</SectionHeading>
                 <div className="grid grid-cols-3 gap-4">
                   {[
                     {
@@ -1030,18 +1126,12 @@ export default function ReportPage() {
               </section>
             )}
 
-            {/* Keyword Gap Analysis */}
-            {keywordGaps.length > 0 && (
+            {/* Keyword Gap Analysis (client view only — too technical for stakeholders) */}
+            {!isStakeholderView && keywordGaps.length > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
+                <SectionHeading sub="Queries where competitors are being recommended but your brand is missing.">
                   Keyword Gap Analysis
-                </h2>
-                <p className="text-sm text-on-surface-variant mb-6">
-                  Queries where competitors are being recommended but your brand is missing.
-                </p>
+                </SectionHeading>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -1119,18 +1209,12 @@ export default function ReportPage() {
               </section>
             )}
 
-            {/* Directory & Citation Check */}
-            {directoryCitations.length > 0 && (
+            {/* Directory & Citation Check (client view only — too technical for stakeholders) */}
+            {!isStakeholderView && directoryCitations.length > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
+                <SectionHeading sub="AI engines reference business directories when recommending brands. Being listed increases your visibility.">
                   Directory &amp; Citation Check
-                </h2>
-                <p className="text-sm text-on-surface-variant mb-6">
-                  AI engines reference business directories when recommending brands. Being listed increases your visibility.
-                </p>
+                </SectionHeading>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {directoryCitations.map((dir) => (
                     <div
@@ -1177,16 +1261,9 @@ export default function ReportPage() {
             {/* Citation Opportunities */}
             {citationOpportunities.length > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
+                <SectionHeading sub="Sources AI engines already cite in your category. Getting featured on these high-trust domains improves your chances of being cited too.">
                   Citation Opportunities
-                </h2>
-                <p className="text-sm text-on-surface-variant mb-6">
-                  Sources AI engines already cite in your category. Getting featured on these
-                  high-trust domains improves your chances of being cited too.
-                </p>
+                </SectionHeading>
                 <div className="space-y-2">
                   {citationOpportunities.map((d, i) => (
                     <div
@@ -1211,18 +1288,12 @@ export default function ReportPage() {
               </section>
             )}
 
-            {/* AI vs SEO Visibility */}
-            {serpComparisons.length > 0 && serpAnalysis && (
+            {/* AI vs SEO Visibility (client view only — too technical for stakeholders) */}
+            {!isStakeholderView && serpComparisons.length > 0 && serpAnalysis && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
+                <SectionHeading sub="How your AI engine visibility compares to your traditional Google organic rankings.">
                   AI vs SEO Visibility
-                </h2>
-                <p className="text-sm text-on-surface-variant mb-6">
-                  How your AI engine visibility compares to your traditional Google organic rankings.
-                </p>
+                </SectionHeading>
 
                 {/* Summary cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -1305,18 +1376,12 @@ export default function ReportPage() {
               </section>
             )}
 
-            {/* Content Recommendations (Alice Brief) */}
-            {contentRecs.length > 0 && (
+            {/* Content Recommendations (Alice Brief) (client view only — too technical for stakeholders) */}
+            {!isStakeholderView && contentRecs.length > 0 && (
               <section className="glass-card border-0 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
+                <SectionHeading sub="AI-generated action plan to improve your visibility across AI search engines.">
                   Content Recommendations
-                </h2>
-                <p className="text-sm text-on-surface-variant mb-6">
-                  AI-generated action plan to improve your visibility across AI search engines.
-                </p>
+                </SectionHeading>
 
                 {/* Summary stats */}
                 {aliceBrief?.summary_stats && (
@@ -1391,25 +1456,27 @@ export default function ReportPage() {
               </section>
             )}
 
-            {/* ── Tab navigation ── */}
-            <div className="no-print flex gap-1 border-b border-outline-variant pb-0">
-              {(["overview", "prioritise"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors -mb-px ${
-                    activeTab === tab
-                      ? "border-primary text-primary"
-                      : "border-transparent text-on-surface-variant hover:text-on-surface"
-                  }`}
-                >
-                  {tab === "overview" ? "Overview" : "Prioritise & Activate"}
-                </button>
-              ))}
-            </div>
+            {/* ── Tab navigation (Prioritise & Activate hidden in stakeholder view) ── */}
+            {!isStakeholderView && (
+              <div className="no-print flex gap-1 border-b border-outline-variant pb-0">
+                {(["overview", "prioritise"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-5 py-2.5 text-sm font-semibold border-b-2 transition-colors -mb-px ${
+                      activeTab === tab
+                        ? "border-primary text-primary"
+                        : "border-transparent text-on-surface-variant hover:text-on-surface"
+                    }`}
+                  >
+                    {tab === "overview" ? "Overview" : "Prioritise & Activate"}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {/* ── Prioritise & Activate tab ── */}
-            {activeTab === "prioritise" && (
+            {/* ── Prioritise & Activate tab (client view only — too technical for stakeholders) ── */}
+            {!isStakeholderView && activeTab === "prioritise" && (
               <section className="rounded-2xl p-0 -mx-0">
                 <PrioritiseTab
                   brandName={client?.name ?? ""}
@@ -1429,16 +1496,9 @@ export default function ReportPage() {
             {/* Test More Queries */}
             {audit!.status === "completed" && (
               <section className="glass-card border-2 border-dashed border-primary/30 rounded-3xl p-6">
-                <h2
-                  className="text-xl font-bold text-on-surface mb-2"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
+                <SectionHeading sub="Want to check more queries? Add them below and we&apos;ll run them against the same AI engines.">
                   Test More Queries
-                </h2>
-                <p className="text-sm text-on-surface-variant mb-4">
-                  Want to check more queries? Add them below and we&apos;ll run
-                  them against the same AI engines.
-                </p>
+                </SectionHeading>
                 <div className="space-y-2 mb-4">
                   {additionalQueries.map((q, idx) => (
                     <div key={idx} className="flex gap-2">
@@ -1582,6 +1642,16 @@ export default function ReportPage() {
             </section>
               </>
             )}
+
+            {/* Methodology footnote */}
+            <p className="text-xs text-on-surface-variant text-center leading-relaxed pt-2">
+              Audit run across {audit!.engines?.length || 0} AI engines
+              {audit!.completed_at
+                ? ` on ${new Date(audit!.completed_at).toLocaleDateString("en-AU", { day: "numeric", month: "long", year: "numeric" })}`
+                : ""}
+              . {audit!.total_queries} prompts tested. Score reflects mention rate, position, citations
+              and sentiment across the tracked prompt set.
+            </p>
           </>
         )}
       </main>

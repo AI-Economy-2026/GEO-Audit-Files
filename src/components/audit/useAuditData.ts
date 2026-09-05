@@ -82,6 +82,7 @@ export interface HistoryEntry {
   total_queries: number | null;
   total_mentioned: number | null;
   completed_at: string | null;
+  engines: Record<string, number>;
 }
 
 export interface ResultRow {
@@ -176,4 +177,12 @@ export function tone(rate: number): "good" | "warn" | "crit" {
   if (rate >= 60) return "good";
   if (rate >= 30) return "warn";
   return "crit";
+}
+
+/** Per-engine status against the Absent / Under-cited / Holding scale used
+ *  on the Overview and Engine Gaps pages. */
+export function statusForEngine(rate: number): { label: string; className: "good" | "warn" | "crit" } {
+  if (rate === 0) return { label: "Absent", className: "crit" };
+  if (rate < 40) return { label: "Under-cited", className: "warn" };
+  return { label: "Holding", className: "good" };
 }

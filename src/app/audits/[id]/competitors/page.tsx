@@ -3,71 +3,152 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
-import InfoTip from "@/components/audit/InfoTip";
-import Tooltip from "@/components/audit/Tooltip";
+import AskSarahCard from "@/components/audit/AskSarahCard";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
-import { downloadCsv, safeFilename } from "@/lib/csv";
+import { useMe } from "@/lib/me-context";
 
 export default function CompetitorsPage() {
   const { id } = useParams<{ id: string }>();
   const { audit, results, loading } = useAuditData(id);
+  const { me } = useMe();
 
-  /* Share of voice computation */
+  const validResults = useMemo(
+    () => results.filter((r) => r.response_text && !r.response_text.startsWith("[ERROR]")),
+    [results]
+  );
+
+  /* Share-of-voice + head-to-head computation. Every rate below is derived from
+     the SET of unique prompt ids a brand is named in (not raw mention-instance
+     counts), so a brand named by 3 engines on 1 prompt doesn't outweigh a brand
+     named by 1 engine on 3 different prompts. */
   const analysis = useMemo(() => {
-    if (!audit || !results.length) return null;
-    const valid = results.filter((r) => r.response_text && !r.response_text.startsWith("[ERROR]"));
-    const clientMentions = valid.filter((r) => r.brand_mentioned).length;
-    const compCounts: Record<string, number> = {};
-    valid.forEach((r) => (r.competitor_mentions || []).forEach((c) => { compCounts[c] = (compCounts[c] || 0) + 1; }));
-    const totalMentions = clientMentions + Object.values(compCounts).reduce((s, n) => s + n, 0);
-    const clientSov = totalMentions > 0 ? Math.round((clientMentions / totalMentions) * 100) : 0;
+    if (!audit || !validResults.length) return null;
 
-    const ranked = [
-      { brand: audit.brand_name, url: audit.brand_url, mentions: clientMentions, isClient: true },
-      ...Object.entries(compCounts).map(([b, c]) => ({ brand: b, url: "", mentions: c, isClient: false })),
-    ]
-      .sort((a, b) => b.mentions - a.mentions)
-      .map((b, i) => ({
-        ...b,
+    const totalPrompts = new Set(validResults.map((r) => r.prompt_id)).size;
+    if (!totalPrompts) return null;
+
+    const totalEngines = audit.engines?.length || new Set(validResults.map((r) => r.engine)).size;
+
+    // Every competitor name ever surfaced, from the summary breakdown and the raw rows.
+    const compNames = new Set<string>();
+    Object.keys(audit.summary_json?.competitor_analysis?.mention_counts || {}).forEach((n) => compNames.add(n));
+    validResults.forEach((r) => (r.competitor_mentions || []).forEach((c) => compNames.add(c)));
+
+    type Row = { name: string; isClient: boolean; promptSet: Set<number>; engineSet: Set<string> };
+
+    const clientRowRaw: Row = { name: audit.brand_name, isClient: true, promptSet: new Set(), engineSet: new Set() };
+    const compRows = new Map<string, Row>();
+    compNames.forEach((n) => compRows.set(n, { name: n, isClient: false, promptSet: new Set(), engineSet: new Set() }));
+
+    validResults.forEach((r) => {
+      if (r.brand_mentioned) {
+        clientRowRaw.promptSet.add(r.prompt_id);
+        clientRowRaw.engineSet.add(r.engine);
+      }
+      (r.competitor_mentions || []).forEach((c) => {
+        const row = compRows.get(c);
+        if (row) {
+          row.promptSet.add(r.prompt_id);
+          row.engineSet.add(r.engine);
+        }
+      });
+    });
+
+    const allRows = [clientRowRaw, ...Array.from(compRows.values())];
+
+    const ranked = allRows
+      .map((r) => ({
+        name: r.name,
+        isClient: r.isClient,
+        mentions: r.promptSet.size,
+        sov: totalPrompts > 0 ? Math.round((r.promptSet.size / totalPrompts) * 100) : 0,
+        engineCount: r.engineSet.size,
+        promptSet: r.promptSet,
+      }))
+      .sort((a, b) => b.sov - a.sov || b.mentions - a.mentions)
+      .map((r, i) => ({
+        ...r,
         rank: i + 1,
-        sov: totalMentions > 0 ? Math.round((b.mentions / totalMentions) * 100) : 0,
+        // Prompts where this brand is named and the client is not - a head-to-head win for them.
+        leadsOnCount: r.isClient
+          ? 0
+          : Array.from(r.promptSet).filter((pid) => !clientRowRaw.promptSet.has(pid)).length,
       }));
 
     const leader = ranked[0];
-    const clientRow = ranked.find((r) => r.isClient);
-    const gap = leader && clientRow ? leader.sov - clientRow.sov : 0;
+    const clientRow = ranked.find((r) => r.isClient)!;
+    const ratio = leader.sov > 0 && clientRow.sov > 0 ? leader.sov / clientRow.sov : null;
 
-    /* Where competitors beat you */
-    const beatYou = valid
-      .filter((r) => !r.brand_mentioned && (r.competitor_mentions || []).length > 0)
-      .reduce<Record<number, { prompt: string; comps: string[] }>>((acc, r) => {
-        if (!acc[r.prompt_id]) acc[r.prompt_id] = { prompt: r.prompt_text, comps: [] };
-        (r.competitor_mentions || []).forEach((c) => {
-          if (!acc[r.prompt_id].comps.includes(c)) acc[r.prompt_id].comps.push(c);
-        });
-        return acc;
-      }, {});
+    // Prompt text/category lookup for the breakdown section below the table.
+    const promptMeta = new Map<number, { text: string; category: string }>();
+    validResults.forEach((r) => {
+      if (!promptMeta.has(r.prompt_id)) promptMeta.set(r.prompt_id, { text: r.prompt_text, category: r.category || "General" });
+    });
 
-    /* Where you beat competitors */
-    const youWin = valid
-      .filter((r) => r.brand_mentioned && (r.competitor_mentions || []).length === 0)
-      .reduce<Record<number, { prompt: string; engines: string[] }>>((acc, r) => {
-        if (!acc[r.prompt_id]) acc[r.prompt_id] = { prompt: r.prompt_text, engines: [] };
-        if (!acc[r.prompt_id].engines.includes(r.engine_display || r.engine))
-          acc[r.prompt_id].engines.push(r.engine_display || r.engine);
-        return acc;
-      }, {});
+    let beatSection: {
+      title: string;
+      sub: string;
+      note: string;
+      items: { category: string; text: string; detail: string }[];
+    } | null = null;
 
-    return {
-      ranked,
-      clientSov,
-      leader,
-      clientRow,
-      gap,
-      beatYou: Object.values(beatYou).slice(0, 5),
-      youWin: Object.values(youWin).slice(0, 5),
-    };
-  }, [audit, results]);
+    if (!leader.isClient) {
+      // The category leader beats you: prompts they're named on where you are absent.
+      const items: { pid: number; category: string; text: string; engines: string[] }[] = [];
+      leader.promptSet.forEach((pid) => {
+        if (!clientRowRaw.promptSet.has(pid)) {
+          const engines = new Set<string>();
+          validResults.forEach((r) => {
+            if (r.prompt_id === pid && (r.competitor_mentions || []).includes(leader.name)) {
+              engines.add(r.engine_display || r.engine);
+            }
+          });
+          const meta = promptMeta.get(pid);
+          items.push({ pid, category: meta?.category ?? "General", text: meta?.text ?? "", engines: Array.from(engines) });
+        }
+      });
+      beatSection = {
+        title: `Where ${leader.name} beats you`,
+        sub: "Prompts where engines reach for them, not you.",
+        note: `${leader.name} is cited on ${items.length} prompt${items.length === 1 ? "" : "s"} where ${audit.brand_name} is absent.`,
+        items: items.slice(0, 3).map((it) => ({
+          category: it.category,
+          text: it.text,
+          detail: it.engines.length
+            ? `Named on ${it.engines.slice(0, 3).join(", ")}${it.engines.length > 3 ? "…" : ""}`
+            : "Named by at least one engine",
+        })),
+      };
+    } else {
+      // You already lead: show the prompts you win solo, with no competitor named at all.
+      const items: { pid: number; category: string; text: string; engines: string[] }[] = [];
+      clientRowRaw.promptSet.forEach((pid) => {
+        const hasCompetitor = Array.from(compRows.values()).some((row) => row.promptSet.has(pid));
+        if (!hasCompetitor) {
+          const engines = new Set<string>();
+          validResults.forEach((r) => {
+            if (r.prompt_id === pid && r.brand_mentioned) engines.add(r.engine_display || r.engine);
+          });
+          const meta = promptMeta.get(pid);
+          items.push({ pid, category: meta?.category ?? "General", text: meta?.text ?? "", engines: Array.from(engines) });
+        }
+      });
+      beatSection = {
+        title: "Where you beat the field",
+        sub: "Prompts where you are cited solo, with no competitor named.",
+        note: `${audit.brand_name} is the only brand named on ${items.length} prompt${items.length === 1 ? "" : "s"}.`,
+        items: items.slice(0, 3).map((it) => ({
+          category: it.category,
+          text: it.text,
+          detail: it.engines.length
+            ? `Named on ${it.engines.slice(0, 3).join(", ")}${it.engines.length > 3 ? "…" : ""}`
+            : "Named by at least one engine",
+        })),
+      };
+    }
+
+    return { totalPrompts, totalEngines, ranked, leader, clientRow, ratio, beatSection };
+  }, [audit, validResults]);
 
   if (loading || !audit) {
     return (
@@ -85,7 +166,7 @@ export default function CompetitorsPage() {
         <div className="page-head">
           <div>
             <h1>Competitors</h1>
-            <p>Who is winning citations in your category.</p>
+            <p>Who is winning citations in your category, and where {audit.brand_name} can take ground.</p>
           </div>
         </div>
         <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
@@ -95,207 +176,167 @@ export default function CompetitorsPage() {
     );
   }
 
-  const { ranked, clientSov, leader, clientRow, gap, beatYou, youWin } = analysis;
+  const { totalPrompts, totalEngines, ranked, leader, clientRow, ratio, beatSection } = analysis;
 
   return (
     <AuditShell auditId={id} brandName={audit.brand_name}>
       <div className="page-head">
         <div>
           <h1>Competitors</h1>
-          <p>Who is winning citations in your category. Their share of voice and where you can take ground.</p>
+          <p>Who is winning citations in your category, and where {audit.brand_name} can take ground.</p>
         </div>
         <div className="actions">
-          <Tooltip label="Download the share-of-voice leaderboard as a CSV">
-            <button
-              className="btn btn-sm"
-              onClick={() => {
-                const rows: (string | number)[][] = [
-                  ["Rank", "Brand", "URL", "Mentions", "Share of voice %", "Is you"],
-                  ...ranked.map((b) => [
-                    b.rank,
-                    b.brand,
-                    b.url || "",
-                    b.mentions,
-                    b.sov,
-                    b.isClient ? "yes" : "no",
-                  ]),
-                ];
-                downloadCsv(`${safeFilename(audit.brand_name)}-competitors`, rows);
-              }}
-            >
-              Export CSV
-            </button>
-          </Tooltip>
+          <span className="chip chip-good chip-lg">Completed</span>
         </div>
       </div>
 
       {/* KPI STRIP */}
       <div className="kpi-strip">
         <div className="kpi">
-          <div className="kpi-label">
-            <InfoTip label="Your slice of every brand-mention pie in this category. Higher = AI engines pick you more often when listing brands. Compare to category average (15%).">
-              Your share of voice
-            </InfoTip>
-          </div>
-          <div className={`kpi-number num-${tone(clientSov)}`}>
-            {clientSov}<span className="unit">%</span>
-          </div>
-          <div className="kpi-sub">rank #{clientRow?.rank ?? "-"} in category</div>
-          <div className="benchmark">
-            <span className="benchmark-label">Category avg</span>
-            <span className="benchmark-val">15%</span>
-            {clientSov !== 15 && (
-              <span className={`delta ${clientSov > 15 ? "up" : "down"}`}>
-                {clientSov > 15 ? "▲" : "▼"} {Math.abs(clientSov - 15)}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">
-            <InfoTip label="The most-mentioned brand in your category, with their share of all citations. This is the brand to study and out-rank.">
-              Leader&rsquo;s share
-            </InfoTip>
-          </div>
-          <div className={`kpi-number num-${leader?.isClient ? "good" : "warn"}`}>
-            {leader?.sov ?? 0}<span className="unit">%</span>
-          </div>
-          <div className="kpi-sub">{leader?.brand ?? "-"}</div>
-          <div className="benchmark">
-            <span className="benchmark-label">Industry #1</span>
-            <span className="benchmark-val">38%</span>
-          </div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">
-            <InfoTip label="Points between your share-of-voice and the category leader. Small gap = realistic catch-up. Big gap = strategic shift needed.">
-              Gap to #1
-            </InfoTip>
-          </div>
-          <div className={`kpi-number num-${gap > 15 ? "crit" : "warn"}`}>
-            {gap}<span className="unit">pt</span>
-          </div>
-          <div className="kpi-sub">
-            {gap === 0 ? "you&rsquo;re the leader" : "recoverable in 90 days"}
-          </div>
-          <div className="benchmark">
-            <span className="benchmark-label">Typical</span>
-            <span className="benchmark-val">14pt</span>
-          </div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">
-            <InfoTip label="Number of distinct competitor brands AI engines mentioned in your category. More = denser landscape; fewer = clearer top-of-mind opportunity.">
-              Competitors tracked
-            </InfoTip>
-          </div>
+          <div className="kpi-label">Competitors tracked</div>
           <div className="kpi-number">{ranked.length - 1}</div>
-          <div className="kpi-sub">named in results</div>
-          <div className="benchmark">
-            <span className="benchmark-label">Category</span>
-            <span className="benchmark-val">Mid</span>
+          <div className="kpi-sub">Named alongside you in prompts</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Your share of voice</div>
+          <div className={`kpi-number num-${tone(clientRow.sov)}`}>
+            {clientRow.sov}
+            <span className="unit">%</span>
+          </div>
+          <div className="kpi-sub">rank #{clientRow.rank} of {ranked.length} in category</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Category leader</div>
+          <div className="kpi-number" style={{ fontSize: 24 }}>{leader.name}</div>
+          <div className="kpi-sub">Named in {leader.sov}% of the same prompts</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Head-to-head losses</div>
+          <div className={`kpi-number ${leader.leadsOnCount > 0 ? "num-crit" : "num-good"}`}>{leader.leadsOnCount}</div>
+          <div className="kpi-sub">
+            {leader.isClient ? "No competitor leads more prompts than you" : `Prompts where ${leader.name} wins and you do not`}
           </div>
         </div>
       </div>
 
-      {/* LEADERBOARD */}
-      <div className="card pad-lg section">
-        <div className="section-head" style={{ marginBottom: 18 }}>
+      {/* SHARE OF VOICE LEADERBOARD */}
+      <div className="section">
+        <div className="section-head">
           <div>
-            <h2>Share of voice leaderboard</h2>
-            <div className="sub">How often each player is cited. {audit.brand_name} highlighted in mint.</div>
+            <h2>Share of voice</h2>
+            <div className="sub">How often each provider is named across the {totalPrompts} tracked prompts.</div>
           </div>
-          <span className="chip chip-neutral">
-            {audit.engines?.length ?? 0} engines • {results.length} queries
-          </span>
+          <span className="chip chip-neutral">{totalEngines} engines • {totalPrompts} prompts</span>
         </div>
-        <div>
-          {ranked.slice(0, 10).map((b) => {
-            const t = b.isClient ? "good" : tone(b.sov);
-            return (
-              <div
-                key={b.brand}
-                className="comp-row"
-                style={
-                  b.isClient
-                    ? { background: "var(--mint-weak)", borderColor: "var(--mint-line)" }
-                    : undefined
-                }
-              >
-                <div className="comp-rank" style={b.isClient ? { color: "var(--mint)" } : undefined}>
-                  {String(b.rank).padStart(2, "0")}
-                </div>
-                <div>
-                  <div className="comp-name" style={b.isClient ? { color: "var(--mint)" } : undefined}>
-                    {b.brand}
-                    {b.isClient && (
-                      <span style={{ fontSize: 11, marginLeft: 6, color: "var(--mint)", opacity: 0.8 }}>YOU</span>
-                    )}
+
+        <div className="card pad" style={{ marginBottom: 14, display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span className="chip chip-mint">In plain terms</span>
+          <p style={{ margin: 0, color: "var(--text-2)" }}>
+            {leader.isClient
+              ? `${audit.brand_name} leads the category with ${leader.sov}% share of voice.`
+              : ratio
+                ? `${leader.name} is named ${ratio.toFixed(1)}× more often than ${audit.brand_name} on the same questions.`
+                : `${leader.name} is named in more prompts than ${audit.brand_name}.`}
+          </p>
+        </div>
+
+        <div className="table-wrap">
+          <div className="scroll">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Share of voice</th>
+                  <th className="center">Prompts named</th>
+                  <th className="center">Engines</th>
+                  <th>Position</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ranked.map((r) => (
+                  <tr key={r.name}>
+                    <td style={{ fontWeight: r.isClient ? 700 : 500, color: r.isClient ? "var(--mint)" : undefined }}>
+                      {r.name}
+                      {r.isClient && (
+                        <span style={{ fontSize: 11, marginLeft: 6, opacity: 0.8 }}>YOU</span>
+                      )}
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div className="bar" style={{ flex: 1, maxWidth: 180 }}>
+                          <div
+                            className={`bar-fill ${r.isClient ? "mint" : tone(r.sov)}`}
+                            style={{ width: `${Math.max(r.sov, 2)}%` }}
+                          />
+                        </div>
+                        <span style={{ fontWeight: 600, fontSize: 14, width: 40, textAlign: "right" }}>{r.sov}%</span>
+                      </div>
+                    </td>
+                    <td className="center">{r.mentions} / {totalPrompts}</td>
+                    <td className="center">{r.engineCount} of {totalEngines}</td>
+                    <td>
+                      {r.isClient ? (
+                        <span style={{ color: "var(--mint)", fontWeight: 600 }}>You</span>
+                      ) : r.leadsOnCount > 0 ? (
+                        <span style={{ color: "var(--text-2)" }}>
+                          Leads on {r.leadsOnCount} prompt{r.leadsOnCount === 1 ? "" : "s"}
+                        </span>
+                      ) : (
+                        <span style={{ color: "var(--text-3)" }}>No lead over you</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* WHERE THE LEADER BEATS YOU / WHERE YOU BEAT THE FIELD */}
+      {beatSection && (
+        <div className="section">
+          <div className="section-head">
+            <div>
+              <h2 style={{ fontSize: 21 }}>{beatSection.title}</h2>
+              <div className="sub">{beatSection.sub}</div>
+            </div>
+          </div>
+
+          <div className="card pad" style={{ marginBottom: 14, display: "flex", alignItems: "flex-start", gap: 12 }}>
+            <span className="chip chip-mint">In plain terms</span>
+            <p style={{ margin: 0, color: "var(--text-2)" }}>{beatSection.note}</p>
+          </div>
+
+          {beatSection.items.length === 0 ? (
+            <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
+              No prompts to show yet.
+            </div>
+          ) : (
+            <div className="grid-3">
+              {beatSection.items.map((it, i) => (
+                <div className="card pad-lg" key={i}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-3)", marginBottom: 10 }}>
+                    {it.category}
                   </div>
-                  {b.url && <div className="comp-url">{b.url}</div>}
+                  <p style={{ margin: "0 0 12px", fontSize: 14.5, fontWeight: 600, lineHeight: 1.5 }}>{it.text}</p>
+                  <div style={{ fontSize: 12.5, color: "var(--text-3)" }}>{it.detail}</div>
                 </div>
-                <div className="bar">
-                  <div
-                    className={`bar-fill ${b.isClient ? "mint" : t}`}
-                    style={{ width: `${Math.max(b.sov, 2)}%` }}
-                  />
-                </div>
-                <div
-                  className="comp-mentions"
-                  style={{ color: b.isClient ? "var(--mint)" : `var(--${t})` }}
-                >
-                  {b.sov}<span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500, marginLeft: 2 }}>%</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* WHERE COMPETITORS BEAT YOU & WHERE YOU BEAT COMPETITORS */}
-      <div className="grid-half section">
-        <div className="card pad-lg">
-          <div className="section-head" style={{ marginBottom: 14 }}>
-            <div>
-              <h2 style={{ fontSize: 18 }}>Where competitors beat you</h2>
-              <div className="sub">Prompts where a competitor is cited and you are not.</div>
-            </div>
-            <span className="chip chip-crit">{beatYou.length} gaps</span>
-          </div>
-          {beatYou.length === 0 ? (
-            <div style={{ color: "var(--text-3)", fontSize: 13 }}>No competitor-only prompts. Strong position.</div>
-          ) : (
-            <ul className="action-list" style={{ fontSize: 13.5 }}>
-              {beatYou.map((b, i) => (
-                <li key={i}>
-                  <strong style={{ color: "var(--text)" }}>{b.prompt}</strong>: {b.comps.slice(0, 3).join(", ")}{b.comps.length > 3 ? "…" : ""}
-                </li>
               ))}
-            </ul>
+            </div>
           )}
         </div>
+      )}
 
-        <div className="card pad-lg">
-          <div className="section-head" style={{ marginBottom: 14 }}>
-            <div>
-              <h2 style={{ fontSize: 18 }}>Where you beat competitors</h2>
-              <div className="sub">Prompts where you are cited and no competitor is.</div>
-            </div>
-            <span className="chip chip-good">{youWin.length} wins</span>
-          </div>
-          {youWin.length === 0 ? (
-            <div style={{ color: "var(--text-3)", fontSize: 13 }}>No solo wins yet. Start with comparison pages to capture some.</div>
-          ) : (
-            <ul className="action-list" style={{ fontSize: 13.5 }}>
-              {youWin.map((w, i) => (
-                <li key={i}>
-                  <strong style={{ color: "var(--text)" }}>{w.prompt}</strong>: cited on {w.engines.slice(0, 3).join(", ")}{w.engines.length > 3 ? "…" : ""}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+      {me?.role === "admin" && (
+        <AskSarahCard
+          brandName={audit.brand_name}
+          visibilityRate={audit.visibility_rate ?? 0}
+          totalQueries={audit.total_queries ?? 0}
+          totalMentioned={audit.total_mentioned ?? 0}
+          results={results}
+        />
+      )}
     </AuditShell>
   );
 }

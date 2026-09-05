@@ -1,206 +1,156 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
-import ExplainButton from "@/components/audit/ExplainButton";
-import ExplainDrawer from "@/components/audit/ExplainDrawer";
-import InfoTip from "@/components/audit/InfoTip";
-import Tooltip from "@/components/audit/Tooltip";
-import { useAuditData, tone } from "@/components/audit/useAuditData";
-import type { ExplainTargetContext } from "@/app/api/explain/route";
+import { useAuditData, type KeywordGap } from "@/components/audit/useAuditData";
+import { derivePromptData, type PromptData } from "@/lib/opportunity-engine";
 
-/* Opportunity cards derived from audit data */
-interface OppCard {
+type EffortLabel = "Low" | "Medium" | "High";
+type ImpactLabel = "Low" | "Medium" | "High";
+
+interface Opportunity {
   id: string;
-  severity: "crit" | "warn" | "good" | "info";
-  chipLabel: string;
   title: string;
-  body: string;
-  metrics: { label: string; value: string; tone?: "good" | "warn" | "crit" | null; unit?: string }[];
-  explainTarget: ExplainTargetContext;
+  effort: EffortLabel;
+  effortIsLow: boolean;
+  impact: ImpactLabel;
+  impactIsHigh: boolean;
+  promptsUnlocked: number;
+}
+
+/* Mirrors the Hard/Medium/Easier thresholds used by opportunity-engine's
+ * calculateDifficulty, just relabelled for this page's copy. */
+function effortFromScore(score: number): EffortLabel {
+  if (score >= 50) return "High";
+  if (score >= 30) return "Medium";
+  return "Low";
+}
+
+/* Same 30/60 split used by the tone() helper elsewhere in the app, applied
+ * to opportunity-engine's activation_score. */
+function impactFromScore(score: number): ImpactLabel {
+  if (score >= 60) return "High";
+  if (score >= 30) return "Medium";
+  return "Low";
+}
+
+function impactChipClass(impact: ImpactLabel): string {
+  if (impact === "High") return "chip-good";
+  if (impact === "Medium") return "chip-warn";
+  return "chip-neutral";
 }
 
 export default function OpportunityPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { audit, results, loading } = useAuditData(id);
-  const [explainTarget, setExplainTarget] = useState<ExplainTargetContext | null>(null);
-  const openExplain = (t: ExplainTargetContext) => setExplainTarget(t);
-  const closeExplain = () => setExplainTarget(null);
+  const [rankFilter, setRankFilter] = useState<"all" | "quick">("all");
 
-  const engineBreakdown = audit?.summary_json?.engine_breakdown || {};
-  const keywordGaps = audit?.summary_json?.keyword_gap_analysis?.keyword_gaps || [];
-
-  /* Opportunity score: rough inverse of gap */
+  const keywordGaps: KeywordGap[] = audit?.summary_json?.keyword_gap_analysis?.keyword_gaps || [];
   const visRate = audit?.visibility_rate ?? 0;
-  const oppScore = Math.min(100, Math.round((100 - visRate) * 0.85));
 
-  /* Counts for KPI strip */
-  const missedCount = useMemo(
-    () => keywordGaps.filter((g) => g.engines_hit.length === 0).length,
-    [keywordGaps]
-  );
-  const priorityPlays = 5;
-  const quickFixes = useMemo(
-    () => keywordGaps.filter((g) => g.gap_severity === "low" || g.gap_severity === "medium").length,
-    [keywordGaps]
+  const validResults = useMemo(
+    () => results.filter((r) => r.response_text && !r.response_text.startsWith("[ERROR]")),
+    [results]
   );
 
-  /* Build opportunity cards from actual data */
-  const cards: OppCard[] = useMemo(() => {
-    if (!audit) return [];
-    const engines = Object.entries(engineBreakdown).sort((a, b) => a[1].visibility_rate - b[1].visibility_rate);
-    const worst = engines[0];
-    const best = engines[engines.length - 1];
-    const worstRate = worst ? worst[1].visibility_rate : 0;
-    const worstName = worst ? worst[1].display_name : "-";
-    const bestRate = best ? best[1].visibility_rate : 0;
-    const bestName = best ? best[1].display_name : "-";
+  const totalTracked = useMemo(() => {
+    const meta = audit?.summary_json?.audit_metadata?.total_prompts;
+    if (meta) return meta;
+    return new Set(validResults.map((r) => r.prompt_id)).size;
+  }, [audit, validResults]);
 
-    const built: OppCard[] = [];
+  /* Prompts where every engine tested came up blank - the actual gaps a
+   * page of content could close. */
+  const missedGaps = useMemo(
+    () => keywordGaps.filter((g) => g.engines_hit.length === 0),
+    [keywordGaps]
+  );
 
-    // 1. Worst engine fix
-    if (worst && worstRate < 30) {
-      const liftPotential = Math.round((30 - worstRate) * 0.8);
-      built.push({
-        id: "worst-engine",
-        severity: "crit",
-        chipLabel: "Critical",
-        title: `${worstName} visibility fix`,
-        body: `You are ${worstRate === 0 ? "absent from" : "weak on"} ${worstName}, a key answer surface for category discovery prompts.`,
-        metrics: [
-          { label: "Current", value: `${Math.round(worstRate)}`, unit: "%", tone: "crit" },
-          { label: "Lift potential", value: `+${liftPotential}`, unit: "%", tone: "good" },
+  /* Group missed gaps into content plays using the same deterministic
+   * difficulty/activation scoring used on the Prioritise tab, so effort and
+   * impact here are derived from real audit data rather than invented. */
+  const opportunities: Opportunity[] = useMemo(() => {
+    if (!missedGaps.length) return [];
+
+    const groups = new Map<string, { gap: KeywordGap; activation: number; effortScore: number }[]>();
+
+    missedGaps.forEach((gap) => {
+      const competitorNames = gap.competitors_present.map((c) => c.name);
+      const promptData: PromptData = {
+        prompt_id: gap.prompt_id,
+        prompt_text: gap.prompt_text,
+        engines: [
+          ...gap.engines_hit.map((name) => ({
+            engine_name: name,
+            mentioned_client: true,
+            mentioned_competitors: competitorNames,
+          })),
+          ...gap.engines_missed.map((name) => ({
+            engine_name: name,
+            mentioned_client: false,
+            mentioned_competitors: competitorNames,
+          })),
         ],
-        explainTarget: {
-          type: "missed_opportunity",
-          id: "worst-engine",
-          label: `${worstName} visibility fix`,
-          value: `${Math.round(worstRate)}%`,
-          meta: { engineName: worstName, currentRate: Math.round(worstRate), liftPotentialPercent: liftPotential, promptText: `prompts on ${worstName}` },
-        },
-      });
-    }
-
-    // 2. Commercial / recommendation intent gap
-    const rankingRows = results.filter((r) => r.prompt_type === "ranking");
-    const rankingHit = rankingRows.filter((r) => r.brand_mentioned).length;
-    const rankingRate = rankingRows.length > 0 ? Math.round((rankingHit / rankingRows.length) * 100) : 0;
-    const rankingDifficulty = rankingRate < 15 ? "hard" : rankingRate < 30 ? "medium" : "easier";
-    built.push({
-      id: "buyer-intent",
-      severity: rankingRate < 30 ? "warn" : "good",
-      chipLabel: rankingRate < 30 ? "High impact" : "Strong",
-      title: "Buyer-intent content",
-      body:
-        rankingRate < 30
-          ? "You are missing from recommendation prompts, where buyers are closest to choosing."
-          : "You appear in commercial prompts. Good position, so compound it with more comparison content.",
-      metrics: [
-        { label: "Current", value: `${rankingRate}`, unit: "%", tone: tone(rankingRate) },
-        { label: "Target", value: "50", unit: "%", tone: "good" },
-      ],
-      explainTarget: {
-        type: "priority_play",
-        id: "buyer-intent",
-        label: "Buyer-intent content",
-        value: `${rankingRate}%`,
-        meta: { activationScore: 100 - rankingRate, difficulty: rankingDifficulty },
-      },
+      };
+      const derived = derivePromptData(promptData);
+      const key = derived.content_suggestion;
+      const arr = groups.get(key) ?? [];
+      arr.push({ gap, activation: derived.activation_score, effortScore: derived.difficulty.score });
+      groups.set(key, arr);
     });
 
-    // 3. Leverage best-performing engine
-    if (best && bestRate > 15) {
-      built.push({
-        id: "best-engine",
-        severity: "good",
-        chipLabel: "Quick fix",
-        title: `Replicate ${bestName} patterns`,
-        body: `${bestName} is your strongest engine. Reuse what's working there on the weaker surfaces.`,
-        metrics: [
-          { label: bestName, value: `${Math.round(bestRate)}`, unit: "%", tone: "good" },
-          { label: "Effort", value: "2-3 days", tone: null },
-        ],
-        explainTarget: {
-          type: "lock_in_whats_working",
-          id: "best-engine",
-          label: `Replicate ${bestName} patterns`,
-          value: `${Math.round(bestRate)}%`,
-          meta: { engineName: bestName, rate: Math.round(bestRate) },
-        },
-      });
-    }
+    const built = Array.from(groups.entries()).map(([suggestion, items]) => {
+      const avgActivation = items.reduce((s, it) => s + it.activation, 0) / items.length;
+      const avgEffortScore = items.reduce((s, it) => s + it.effortScore, 0) / items.length;
+      const effort = effortFromScore(avgEffortScore);
+      const impact = impactFromScore(avgActivation);
 
-    // 4. Citation / authority (if broad queries underperform)
-    const avgEngineRate =
-      engines.length > 0 ? engines.reduce((s, [, e]) => s + e.visibility_rate, 0) / engines.length : 0;
-    if (avgEngineRate < 30) {
-      built.push({
-        id: "authority",
-        severity: "warn",
-        chipLabel: "Authority",
-        title: "Citation and authority",
-        body: "AI engines need more trusted external signals to cite you on broad prompts.",
-        metrics: [
-          { label: "Broad queries", value: `${Math.round(avgEngineRate)}`, unit: "%", tone: tone(avgEngineRate) },
-          { label: "Target", value: "30", unit: "%", tone: "good" },
-        ],
-        explainTarget: {
-          type: "priority_play",
-          id: "authority",
-          label: "Citation and authority",
-          value: `${Math.round(avgEngineRate)}%`,
-          meta: { activationScore: 100 - Math.round(avgEngineRate), difficulty: "medium" },
-        },
-      });
-    }
+      // Comparison plays read better named after the competitor they're up
+      // against, so surface the most-mentioned one for that group.
+      let title = suggestion;
+      if (suggestion === "Comparison page") {
+        const counts = new Map<string, number>();
+        items.forEach((it) =>
+          it.gap.competitors_present.forEach((c) => counts.set(c.name, (counts.get(c.name) ?? 0) + c.count))
+        );
+        const top = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0];
+        if (top) title = `Comparison page vs ${top[0]}`;
+      }
 
-    // 5. Competitor gap
-    const compGaps = keywordGaps.filter((g) => g.competitors_present.length > 0 && g.engines_hit.length === 0).length;
-    if (compGaps > 0) {
-      built.push({
-        id: "competitor-gap",
-        severity: "crit",
-        chipLabel: "Competitor gap",
-        title: "Where competitors win and you don't",
-        body: `${compGaps} prompts cite competitors while you are absent. Target these for immediate content coverage.`,
-        metrics: [
-          { label: "Gap count", value: `${compGaps}`, tone: "crit" },
-          { label: "Effort", value: "1-2 weeks", tone: null },
-        ],
-        explainTarget: {
-          type: "missed_opportunity",
-          id: "competitor-gap",
-          label: "Where competitors win and you don't",
-          value: `${compGaps} prompts`,
-          meta: { competitorsPresent: compGaps, promptText: "competitor-only prompts" },
-        },
-      });
-    }
-
-    // 6. Foundational: structured data
-    built.push({
-      id: "foundational",
-      severity: "info",
-      chipLabel: "Foundational",
-      title: "Structured data & indexability",
-      body: "Technical hygiene so AI systems can find, trust, and cite the right pages.",
-      metrics: [
-        { label: "Schema gaps", value: "6", tone: "warn" },
-        { label: "Effort", value: "1 week", tone: null },
-      ],
-      explainTarget: {
-        type: "quick_fix",
-        id: "foundational",
-        label: "Structured data & indexability",
-        value: "6 gaps",
-        meta: { effortDays: "1 week" },
-      },
+      return {
+        id: suggestion,
+        title,
+        effort,
+        effortIsLow: effort === "Low",
+        impact,
+        impactIsHigh: impact === "High",
+        promptsUnlocked: items.length,
+      };
     });
 
-    return built;
-  }, [audit, engineBreakdown, keywordGaps, results]);
+    return built.sort((a, b) => b.promptsUnlocked - a.promptsUnlocked);
+  }, [missedGaps]);
+
+  const doFirst = useMemo(() => opportunities.filter((o) => o.effortIsLow && o.impactIsHigh), [opportunities]);
+  const planIn = useMemo(() => opportunities.filter((o) => !o.effortIsLow && o.impactIsHigh), [opportunities]);
+  const fillIn = useMemo(() => opportunities.filter((o) => o.effortIsLow && !o.impactIsHigh), [opportunities]);
+  const later = useMemo(() => opportunities.filter((o) => !o.effortIsLow && !o.impactIsHigh), [opportunities]);
+
+  const opportunitiesFound = opportunities.length;
+  const promptsInPlay = useMemo(
+    () => missedGaps.filter((g) => g.competitors_present.length > 0).length,
+    [missedGaps]
+  );
+  const quickWins = doFirst.length;
+  const reachCount = missedGaps.length;
+  const projectedVisRate = totalTracked > 0
+    ? Math.min(95, Math.round(visRate + (reachCount / totalTracked) * 100 * 0.75))
+    : Math.round(visRate);
+
+  const rankedRows = rankFilter === "quick" ? doFirst : opportunities;
 
   if (loading || !audit) {
     return (
@@ -212,324 +162,200 @@ export default function OpportunityPage() {
     );
   }
 
+  if (opportunities.length === 0) {
+    return (
+      <AuditShell auditId={id} brandName={audit.brand_name}>
+        <div className="page-head">
+          <div>
+            <h1>Opportunity Map</h1>
+            <p>Your audit findings turned into practical plays, ranked by reach.</p>
+          </div>
+        </div>
+        <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
+          {audit.status !== "completed"
+            ? `The opportunity map will be available once the audit finishes (current status: ${audit.status}).`
+            : `No open gaps found - ${audit.brand_name} is already being named on every prompt tracked in this audit.`}
+        </div>
+      </AuditShell>
+    );
+  }
+
   return (
     <AuditShell auditId={id} brandName={audit.brand_name}>
       <div className="page-head">
         <div>
           <h1>Opportunity Map</h1>
-          <p>Your audit findings turned into practical plays, ranked by impact.</p>
+          <p>Your audit findings turned into practical plays, ranked by reach.</p>
         </div>
         <div className="actions no-print">
-          <Tooltip label="Open the browser print dialog to save the opportunity map as PDF">
-            <button className="btn btn-sm" onClick={() => window.print()}>
-              Export PDF
-            </button>
-          </Tooltip>
-          <Tooltip label="Jump to the 90-day plan to schedule and tick off these fixes">
-            <button className="btn btn-primary btn-sm" onClick={() => router.push(`/audits/${id}/activate`)}>
-              Start with quick fixes
-            </button>
-          </Tooltip>
-        </div>
-      </div>
-
-      {/* HERO */}
-      <div className="hero">
-        <div className="hero-left">
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div className="hero-label" style={{ marginBottom: 0 }}>Opportunity score</div>
-            <ExplainButton
-              target={{
-                type: "opportunity_score",
-                id: "opp-score",
-                label: "Opportunity score",
-                value: oppScore,
-                meta: {
-                  categoryAverage: 58,
-                  quickFixCount: quickFixes,
-                  windowDays: 30,
-                  estimatedLiftPoints: cards[0] ? 28 : 0,
-                },
-              }}
-              onOpen={openExplain}
-            />
-          </div>
-          <div className="hero-headline" style={{ marginTop: 14 }}>
-            {oppScore}
-            <span className="slash">/ 100</span>
-          </div>
-          <div className="hero-summary">
-            {oppScore >= 70
-              ? "Strong upside. Category average is 58. Most of the gap is closable with three quick fixes and two bigger moves."
-              : "Clear path forward. Prioritise the quick fixes below for visible movement in 30 days."}
-          </div>
-          <div className="hero-benchmarks">
-            <div className="hero-bm-item">
-              <div className="hero-bm-label">Category avg</div>
-              <div className="hero-bm-value">
-                <span className="num">58</span>
-                <span className={`delta ${oppScore > 58 ? "up" : "down"}`}>
-                  {oppScore > 58 ? "▲" : "▼"} {Math.abs(oppScore - 58)}
-                </span>
-              </div>
-            </div>
-            <div className="hero-bm-item">
-              <div className="hero-bm-label">Quick fixes</div>
-              <div className="hero-bm-value">
-                <span className="num">{quickFixes}</span>
-              </div>
-            </div>
-            <div className="hero-bm-item">
-              <div className="hero-bm-label">Window</div>
-              <div className="hero-bm-value">
-                <span className="num">30 days</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="hero-right">
-          {cards[0] && (
-            <div className="hero-insight">
-              <div className="hero-insight-icon crit">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              </div>
-              <div className="hero-insight-text">
-                <div className="title">Start here</div>
-                <div className="body">{cards[0].title} is the biggest single lift available right now.</div>
-              </div>
-              <ExplainButton
-                target={{
-                  type: "start_here_recommendation",
-                  id: "start-here",
-                  label: cards[0].title,
-                  value: typeof cards[0].metrics[0]?.value === "string" ? cards[0].metrics[0].value : "",
-                  meta: {
-                    engineName: cards[0].title.replace(" visibility fix", ""),
-                    currentRate: parseInt(String(cards[0].metrics[0]?.value || "0"), 10),
-                    liftPotentialPercent: parseInt(String(cards[0].metrics[1]?.value || "0").replace("+", ""), 10),
-                  },
-                }}
-                onOpen={openExplain}
-              />
-            </div>
-          )}
-          <div className="hero-insight">
-            <div className="hero-insight-icon good">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <div className="hero-insight-text">
-              <div className="title">Lock in what&rsquo;s working</div>
-              <div className="body">Ship dedicated pages where you already rank to capture 3-5 more citations in a week.</div>
-            </div>
-            <ExplainButton
-              target={{
-                type: "lock_in_whats_working",
-                id: "lock-in",
-                label: "Lock in what's working",
-                meta: {
-                  engineName: cards.find((c) => c.id === "best-engine")?.title.replace("Replicate ", "").replace(" patterns", "") || "your strongest engine",
-                  rate: parseInt(String(cards.find((c) => c.id === "best-engine")?.metrics[0]?.value || "0"), 10),
-                },
-              }}
-              onOpen={openExplain}
-            />
-          </div>
+          <button className="btn btn-sm" onClick={() => window.print()}>
+            Export
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => router.push(`/audits/${id}/activate`)}>
+            Build the plan
+          </button>
         </div>
       </div>
 
       {/* KPI STRIP */}
       <div className="kpi-strip">
         <div className="kpi">
-          <div className="kpi-label">
-            <InfoTip label="Prompts where NO engine mentioned you. Every blind spot is a buyer asking a question you have no answer in front of.">
-              Missed opportunities
-            </InfoTip>
-          </div>
-          <div className="kpi-number num-crit">{missedCount}</div>
-          <div className="kpi-sub">zero-mention prompts</div>
-          <div className="benchmark">
-            <span className="benchmark-label">Industry</span>
-            <span className="benchmark-val">31</span>
-          </div>
+          <div className="kpi-label">Opportunities found</div>
+          <div className="kpi-number">{opportunitiesFound}</div>
+          <div className="kpi-sub">Mapped by effort and reach</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">
-            <InfoTip label="Top-ranked plays surfaced from this audit. Each one bundles a content angle, the engines that need it, and an expected lift. Click any card for the step-by-step fix.">
-              Priority plays
-            </InfoTip>
-          </div>
-          <div className="kpi-number">{priorityPlays}</div>
-          <div className="kpi-sub">ranked by score</div>
-          <div className="benchmark">
-            <span className="benchmark-label">Typical</span>
-            <span className="benchmark-val">4</span>
-          </div>
+          <div className="kpi-label">Prompts in play</div>
+          <div className="kpi-number">{promptsInPlay}</div>
+          <div className="kpi-sub">Currently answered by competitors</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">
-            <InfoTip label="Plays you can ship in under a week: schema, llms.txt, a single comparison page. Bank these for momentum before larger content work.">
-              Quick fixes
-            </InfoTip>
-          </div>
-          <div className="kpi-number num-good">{quickFixes}</div>
-          <div className="kpi-sub">under 1 week</div>
-          <div className="benchmark">
-            <span className="benchmark-label">Typical</span>
-            <span className="benchmark-val">2</span>
-          </div>
+          <div className="kpi-label">Quick wins</div>
+          <div className="kpi-number num-good">{quickWins}</div>
+          <div className="kpi-sub">Single page, high reach</div>
         </div>
         <div className="kpi">
-          <div className="kpi-label">
-            <InfoTip label="Recommended time before re-running the audit to measure movement. Most engines need 2-4 weeks to re-index after content changes.">
-              Window
-            </InfoTip>
-          </div>
+          <div className="kpi-label">Reach if all shipped</div>
           <div className="kpi-number">
-            30<span className="unit">days</span>
+            {reachCount}<span className="unit"> of {totalTracked}</span>
           </div>
-          <div className="kpi-sub">to re-audit</div>
-          <div className="benchmark">
-            <span className="benchmark-label">Avg</span>
-            <span className="benchmark-val">45 days</span>
-          </div>
+          <div className="kpi-sub">Visibility would move to roughly {projectedVisRate}%</div>
         </div>
       </div>
 
-      {/* PRIORITY OPPORTUNITIES */}
+      {/* EFFORT AGAINST IMPACT */}
       <div className="section">
         <div className="section-head">
           <div>
-            <h2>Priority opportunities</h2>
-            <div className="sub">Click any card to see the full step-by-step fix.</div>
+            <h2>Effort against impact</h2>
+            <div className="sub">Start top left. Every item there is one page of work.</div>
           </div>
         </div>
 
-        <div className="grid-3">
-          {cards.map((c, i) => (
-            <div
-              key={i}
-              className="card pad"
-              style={{
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-                overflow: "hidden",
-                padding: 24,
-                transition: "all 0.3s var(--ease)",
-                borderTop: `4px solid var(--${c.severity})`,
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: 4,
-                  height: "100%",
-                  background: `var(--${c.severity})`,
-                }}
-              />
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 12,
-                    background: `var(--${c.severity}-weak)`,
-                    border: `1px solid var(--${c.severity}-line)`,
-                    display: "grid",
-                    placeItems: "center",
-                    flexShrink: 0,
-                    color: `var(--${c.severity})`,
-                  }}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    {c.severity === "crit" ? (
-                      <>
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                      </>
-                    ) : c.severity === "good" ? (
-                      <polyline points="20 6 9 17 4 12" />
-                    ) : c.severity === "info" ? (
-                      <>
-                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                      </>
-                    ) : (
-                      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-                    )}
-                  </svg>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className={`chip chip-${c.severity}`}>{c.chipLabel}</span>
-                  <ExplainButton target={c.explainTarget} onOpen={openExplain} />
-                </div>
+        <div className="card pad" style={{ marginBottom: 14, display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span className="chip chip-mint">In plain terms</span>
+          <p style={{ margin: 0, color: "var(--text-2)" }}>
+            Everything worth doing, sorted by how hard it is and how many buyer questions it wins.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {[
+            { label: "Do first", sub: "Low effort, high impact", items: doFirst },
+            { label: "Plan in", sub: "High effort, high impact", items: planIn },
+            { label: "Fill in", sub: "Low effort, lower impact", items: fillIn },
+            { label: "Later", sub: "High effort, lower impact", items: later },
+          ].map((quad) => (
+            <div key={quad.label} className="card pad" style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 150 }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text)" }}>
+                  {quad.label}
+                </span>
+                <span style={{ fontSize: 12, color: "var(--text-3)" }}>{quad.sub}</span>
               </div>
-
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 600, lineHeight: 1.3, margin: 0, letterSpacing: "-0.01em" }}>
-                {c.title}
-              </h3>
-              <p style={{ fontSize: 13, color: "var(--text-2)", lineHeight: 1.55, margin: 0 }}>{c.body}</p>
-
-              {/* Metrics */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 10,
-                  padding: 14,
-                  background: "var(--surface-2)",
-                  border: "1px solid var(--border-soft)",
-                  borderRadius: "var(--r-md)",
-                }}
-              >
-                {c.metrics.map((m, mi) => (
-                  <div key={mi} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-3)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
-                      {m.label}
-                    </div>
-                    <div
-                      className={m.tone ? `num-xl num-${m.tone}` : "num-xl"}
-                      style={{ display: "inline-flex", alignItems: "baseline" }}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {quad.items.length === 0 ? (
+                  <span style={{ fontSize: 13, color: "var(--text-3)" }}>Nothing here right now.</span>
+                ) : (
+                  quad.items.map((o) => (
+                    <span
+                      key={o.id}
+                      style={{
+                        padding: "7px 12px",
+                        border: "1px solid var(--border)",
+                        borderRadius: 99,
+                        background: "var(--surface-2)",
+                        fontSize: 12.5,
+                        fontWeight: 500,
+                      }}
                     >
-                      {m.value}
-                      {m.unit && <span style={{ fontSize: 13, color: "var(--text-3)", fontWeight: 500, marginLeft: 2 }}>{m.unit}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 4 }}>
-                <Tooltip label="See the step-by-step fix detail (Sarah explains it in plain English)">
-                  <button
-                    className="btn btn-sm"
-                    style={{ flex: 1, justifyContent: "center", width: "100%" }}
-                    onClick={() => openExplain(c.explainTarget)}
-                  >
-                    View fixes
-                  </button>
-                </Tooltip>
-                <Tooltip label="Open your 90-day action plan to schedule this work">
-                  <button
-                    className="btn btn-sm btn-primary"
-                    style={{ flex: 1, justifyContent: "center", width: "100%" }}
-                    onClick={() => router.push(`/audits/${id}/activate`)}
-                  >
-                    Add to plan
-                  </button>
-                </Tooltip>
+                      {o.title}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* RANKED BY REACH */}
+      <div className="section">
+        <div className="section-head">
+          <div>
+            <h2>Ranked by reach</h2>
+            <div className="sub">Prompts each opportunity would unlock.</div>
+          </div>
+          <div style={{ display: "flex", gap: 6, fontSize: 12 }}>
+            <button
+              className="chip"
+              onClick={() => setRankFilter("all")}
+              style={{
+                cursor: "pointer",
+                background: rankFilter === "all" ? "var(--surface-3)" : "transparent",
+                borderColor: rankFilter === "all" ? "var(--border)" : "transparent",
+                color: rankFilter === "all" ? "var(--text)" : "var(--text-3)",
+                fontWeight: rankFilter === "all" ? 700 : 500,
+              }}
+            >
+              All {opportunities.length}
+            </button>
+            <button
+              className="chip"
+              onClick={() => setRankFilter("quick")}
+              style={{
+                cursor: "pointer",
+                background: rankFilter === "quick" ? "var(--surface-3)" : "transparent",
+                borderColor: rankFilter === "quick" ? "var(--border)" : "transparent",
+                color: rankFilter === "quick" ? "var(--text)" : "var(--text-3)",
+                fontWeight: rankFilter === "quick" ? 700 : 500,
+              }}
+            >
+              Quick wins {quickWins}
+            </button>
+          </div>
+        </div>
+
+        <div className="card pad" style={{ marginBottom: 14, display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span className="chip chip-mint">In plain terms</span>
+          <p style={{ margin: 0, color: "var(--text-2)" }}>
+            The same items as a list, ordered by how many buyer questions each one unlocks.
+          </p>
+        </div>
+
+        <div className="table-wrap">
+          <div className="scroll">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>Opportunity</th>
+                  <th>Effort</th>
+                  <th>Impact</th>
+                  <th className="center">Prompts unlocked</th>
+                  <th className="center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rankedRows.map((o) => (
+                  <tr key={o.id}>
+                    <td style={{ fontWeight: 600 }}>{o.title}</td>
+                    <td style={{ color: "var(--text-3)" }}>{o.effort} effort</td>
+                    <td>
+                      <span className={`chip ${impactChipClass(o.impact)}`}>{o.impact} impact</span>
+                    </td>
+                    <td className="center" style={{ fontVariantNumeric: "tabular-nums" }}>
+                      {o.promptsUnlocked} of {totalTracked}
+                    </td>
+                    <td className="center">
+                      <Link href={`/audits/${id}/activate`} className="chip chip-neutral" style={{ cursor: "pointer" }}>
+                        Add to plan
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -542,37 +368,29 @@ export default function OpportunityPage() {
           gap: 24,
           padding: "26px 30px",
           borderRadius: "var(--r-xl)",
-          background: "linear-gradient(135deg,#0A1A30 0%,#0F2E4C 50%,#0E4A42 100%)",
+          background: "var(--grad-banner)",
           border: "1px solid var(--mint-line)",
           boxShadow: "var(--glow-mint)",
           position: "relative",
           overflow: "hidden",
-          marginTop: 24,
         }}
       >
         <div style={{ position: "relative" }}>
           <h3 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, margin: "0 0 4px", color: "var(--text)", letterSpacing: "-0.02em" }}>
-            Want a hand getting started?
+            Need help delivering this?
           </h3>
           <p style={{ margin: 0, fontSize: 14, color: "var(--text-2)", maxWidth: "68ch" }}>
-            We can tackle the quick fixes for you in a week, so you&rsquo;re in shape to take on the bigger moves yourself.
+            Request a fix and we will send you a quote.
           </p>
         </div>
         <a
           className="btn btn-primary"
           style={{ position: "relative", zIndex: 1, whiteSpace: "nowrap", textDecoration: "none" }}
-          href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(`Quick fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi, I'd like Gatha to handle the Month 1 quick fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
+          href={`mailto:hello@gatha.ai?subject=${encodeURIComponent(`Opportunity map fixes for ${audit.brand_name}`)}&body=${encodeURIComponent(`Hi, I'd like a quote for delivering the opportunity map fixes for ${audit.brand_name} (${audit.brand_url}).\n\nAudit ID: ${id}`)}`}
         >
-          Get the quick fixes done →
+          Request a fix
         </a>
       </div>
-
-      <ExplainDrawer
-        open={explainTarget !== null}
-        target={explainTarget}
-        onClose={closeExplain}
-        auditId={id}
-      />
     </AuditShell>
   );
 }

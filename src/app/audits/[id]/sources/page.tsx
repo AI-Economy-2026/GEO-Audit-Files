@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import AuditShell from "@/components/audit/AuditShell";
 import InfoTip from "@/components/audit/InfoTip";
@@ -46,9 +46,21 @@ function buildDomainsFromResults(results: { engine: string; citations: string[] 
     }));
 }
 
+/** Extracts the hostname (no www.) from a raw citation URL, or null if unparseable. */
+function hostnameOf(raw: string): string | null {
+  try {
+    return new URL(raw).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+type SourceFilter = "all" | "absent" | "third-party";
+
 export default function SourcesPage() {
   const { id } = useParams<{ id: string }>();
   const { audit, results, loading } = useAuditData(id);
+  const [filter, setFilter] = useState<SourceFilter>("all");
 
   const domains: CitedDomain[] = useMemo(() => {
     if (!audit) return [];
@@ -75,6 +87,31 @@ export default function SourcesPage() {
     return idx === -1 ? null : idx + 1;
   }, [domains]);
 
+  const totalEngines = audit?.engines?.length || 0;
+
+  /* Real, derived signal: for each domain, did any response that cited it
+     also name the brand? This is the closest honest proxy we have to
+     "does this source also mention you", computed straight from the raw
+     per-response citations + brand_mentioned flags (no fabricated data). */
+  const coOccurrence = useMemo(() => {
+    const map = new Map<string, boolean>();
+    results.forEach((r) => {
+      (r.citations || []).forEach((raw) => {
+        const d = hostnameOf(raw);
+        if (!d) return;
+        if (!map.has(d)) map.set(d, false);
+        if (r.brand_mentioned) map.set(d, true);
+      });
+    });
+    return map;
+  }, [results]);
+
+  const filteredDomains = useMemo(() => {
+    if (filter === "third-party") return domains.filter((d) => !d.is_brand);
+    if (filter === "absent") return domains.filter((d) => !d.is_brand && !coOccurrence.get(d.domain));
+    return domains;
+  }, [domains, filter, coOccurrence]);
+
   if (loading || !audit) {
     return (
       <AuditShell auditId={id} brandName={audit?.brand_name ?? "…"}>
@@ -91,9 +128,7 @@ export default function SourcesPage() {
         <div className="page-head">
           <div>
             <h1>Sources</h1>
-            <p>
-              Domains AI engines cite when answering questions in your category.
-            </p>
+            <p>The pages AI engines read when they answer questions in your category.</p>
           </div>
         </div>
         <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
@@ -114,8 +149,8 @@ export default function SourcesPage() {
         <div>
           <h1>Sources</h1>
           <p>
-            Domains AI engines cite when answering questions in your category. Aim for content on the
-            top-ranked sources here to lift your own citation rate.
+            The pages AI engines read when they answer questions in your category, and whether you
+            appear on them. Aim for content on the top-ranked sources below to lift your citation rate.
           </p>
         </div>
         <div className="actions">
@@ -137,7 +172,7 @@ export default function SourcesPage() {
                 downloadCsv(`${safeFilename(audit.brand_name)}-sources`, rows);
               }}
             >
-              Export CSV
+              Export
             </button>
           </Tooltip>
         </div>
@@ -156,7 +191,7 @@ export default function SourcesPage() {
         </div>
         <div className="kpi">
           <div className="kpi-label">
-            <InfoTip label="Number of distinct domains those citations point to. Smaller pool = AI keeps reaching for the same 10-20 sites, and those are the ones to target.">
+            <InfoTip label="Number of distinct domains those citations point to. Smaller pool = AI keeps reaching for the same handful of sites, and those are the ones to target.">
               Unique domains
             </InfoTip>
           </div>
@@ -187,161 +222,152 @@ export default function SourcesPage() {
         </div>
       </div>
 
-      {/* RANKED BAR LIST */}
+      {/* WHAT THE ENGINES READ */}
       <div className="section">
         <div className="section-head">
           <div>
-            <h2>Most-cited domains</h2>
-            <div className="sub">
-              Ranked by citation share across all {results.length} engine responses for this audit.
-              {brandRank && (
-                <>
-                  {" "}
-                  <strong style={{ color: "var(--mint)" }}>{audit.brand_name}</strong> highlighted in mint.
-                </>
-              )}
-            </div>
+            <h2>What the engines read</h2>
+            <div className="sub">The pages cited when engines answer your buyers, ranked by citation share.</div>
           </div>
-          <span className="chip chip-neutral">{domains.length} domains</span>
+          <div style={{ display: "flex", gap: 6, fontSize: 12 }}>
+            <span
+              className={`chip ${filter === "all" ? "chip-neutral" : ""}`}
+              style={{ cursor: "pointer", ...(filter !== "all" ? { border: "1px solid transparent", background: "transparent", color: "var(--text-3)" } : {}) }}
+              onClick={() => setFilter("all")}
+            >
+              All sources
+            </span>
+            <span
+              className={`chip ${filter === "absent" ? "chip-neutral" : ""}`}
+              style={{ cursor: "pointer", ...(filter !== "absent" ? { border: "1px solid transparent", background: "transparent", color: "var(--text-3)" } : {}) }}
+              onClick={() => setFilter("absent")}
+            >
+              You are absent
+            </span>
+            <span
+              className={`chip ${filter === "third-party" ? "chip-neutral" : ""}`}
+              style={{ cursor: "pointer", ...(filter !== "third-party" ? { border: "1px solid transparent", background: "transparent", color: "var(--text-3)" } : {}) }}
+              onClick={() => setFilter("third-party")}
+            >
+              Third party
+            </span>
+          </div>
         </div>
 
-        <div className="card pad-lg">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {domains.map((d, i) => {
-              const widthPct = (d.count / maxCount) * 100;
-              const t = d.is_brand ? "mint" : d.share_percent >= 5 ? "good" : d.share_percent >= 2 ? "warn" : "info";
-              return (
-                <div
-                  key={d.domain}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "32px 1fr 220px 70px",
-                    alignItems: "center",
-                    gap: 14,
-                    padding: "10px 14px",
-                    borderRadius: "var(--r-md)",
-                    background: d.is_brand ? "var(--mint-weak)" : "var(--surface-2)",
-                    border: `1px solid ${d.is_brand ? "var(--mint-line)" : "var(--border-soft)"}`,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: d.is_brand ? "var(--mint)" : "var(--text-3)",
-                      textAlign: "center",
-                    }}
-                  >
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: d.is_brand ? "var(--mint)" : "var(--text)",
-                      }}
-                    >
-                      {d.domain}
-                      {d.is_brand && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            marginLeft: 8,
-                            color: "var(--mint)",
-                            opacity: 0.8,
-                            fontWeight: 700,
-                            letterSpacing: "0.05em",
-                          }}
-                        >
-                          YOU
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 4,
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 4,
-                      }}
-                    >
-                      {d.engines.slice(0, 5).map((e) => (
-                        <span
-                          key={e}
-                          className="tag"
-                          style={{ fontSize: 9, padding: "2px 6px" }}
-                        >
-                          {e}
-                        </span>
-                      ))}
-                      {d.engines.length > 5 && (
-                        <span style={{ fontSize: 10, color: "var(--text-4)" }}>
-                          +{d.engines.length - 5}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="bar" style={{ width: "100%", height: 10 }}>
-                    <div
-                      className={`bar-fill ${t}`}
-                      style={{ width: `${Math.max(widthPct, 2)}%` }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: 16,
-                      fontWeight: 700,
-                      textAlign: "right",
-                      color: d.is_brand ? "var(--mint)" : "var(--text)",
-                    }}
-                  >
-                    {d.share_percent}
-                    <span style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 500, marginLeft: 2 }}>
-                      %
-                    </span>
-                    <div style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 500 }}>
-                      {d.count} cites
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div className="card pad" style={{ marginBottom: 14, display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <span className="chip chip-mint">In plain terms</span>
+          <p style={{ margin: 0, color: "var(--text-2)" }}>
+            Engines answer from other people&apos;s pages, not yours directly. These are the pages they
+            read about your category, how often each one gets cited, and whether the same answers name{" "}
+            {audit.brand_name}.
+          </p>
         </div>
+
+        {filteredDomains.length === 0 ? (
+          <div className="card pad-lg" style={{ textAlign: "center", color: "var(--text-3)" }}>
+            No sources match this filter.
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <div className="scroll">
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th className="center">Times cited</th>
+                    <th className="center">Engines</th>
+                    <th>Also named you</th>
+                    <th className="center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredDomains.map((d) => {
+                    const widthPct = Math.max((d.count / maxCount) * 100, 4);
+                    const barTone = d.is_brand ? "mint" : d.share_percent >= 5 ? "good" : d.share_percent >= 2 ? "warn" : "info";
+                    const named = coOccurrence.get(d.domain);
+                    return (
+                      <tr key={d.domain}>
+                        <td>
+                          <span style={{ fontWeight: 600 }}>{d.domain}</span>
+                          {d.is_brand && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                marginLeft: 8,
+                                color: "var(--mint)",
+                                fontWeight: 700,
+                                letterSpacing: "0.05em",
+                              }}
+                            >
+                              YOU
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ color: "var(--text-3)" }}>{d.is_brand ? "Your site" : "Third-party"}</td>
+                        <td className="center">
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14 }}>{d.count}</span>
+                            <div className="bar" style={{ width: 70, height: 5 }}>
+                              <div className={`bar-fill ${barTone}`} style={{ width: `${widthPct}%` }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="center">
+                          {d.engines.length} of {totalEngines || d.engines.length}
+                        </td>
+                        <td>
+                          {d.is_brand ? (
+                            <span className="chip chip-neutral">&mdash;</span>
+                          ) : named ? (
+                            <span className="chip chip-good">Yes</span>
+                          ) : (
+                            <span className="chip chip-crit">No</span>
+                          )}
+                        </td>
+                        <td className="center">
+                          <a
+                            href={`https://${d.domain}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ fontWeight: 600 }}
+                          >
+                            Visit
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* PLAY HINT */}
-      <div
-        className="card pad-lg"
-        style={{
-          borderColor: "var(--mint-line)",
-          background:
-            "linear-gradient(135deg, rgba(94,234,212,.04) 0%, rgba(125,211,252,.04) 100%)",
-        }}
-      >
-        <h3
+      <div className="section">
+        <div className="section-head">
+          <div>
+            <h2>How to use this</h2>
+          </div>
+        </div>
+        <div
+          className="card pad-lg"
           style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 16,
-            fontWeight: 600,
-            color: "var(--text)",
-            margin: "0 0 8px",
+            borderColor: "var(--mint-line)",
+            background: "linear-gradient(135deg, rgba(94,234,212,.04) 0%, rgba(125,211,252,.04) 100%)",
           }}
         >
-          How to use this
-        </h3>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)", lineHeight: 1.6 }}>
-          AI engines pick sources from a small set of high-trust domains. To get cited yourself, get
-          content placed on the top-ranked domains above. For each top source, ask: <em>can we
-          contribute a guest post, an answer, a profile, or a citation here?</em>{" "}
-          {brandRank
-            ? `You currently rank #${brandRank} in your own category. Work the list above to climb.`
-            : "Your domain isn't cited by any engine yet, so that's your starting point."}
-        </p>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)", lineHeight: 1.6 }}>
+            AI engines pick sources from a small set of high-trust domains. To get cited yourself, get
+            content placed on the top-ranked domains above. For each top source, ask: <em>can we
+            contribute a guest post, an answer, a profile, or a citation here?</em>{" "}
+            {brandRank
+              ? `You currently rank #${brandRank} in your own category. Work the list above to climb.`
+              : "Your domain isn't cited by any engine yet, so that's your starting point."}
+          </p>
+        </div>
       </div>
     </AuditShell>
   );

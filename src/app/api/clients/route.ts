@@ -2,25 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext, AuthError } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/server";
 import { generateIntakeToken, generateReportSlug } from "@/lib/tokens";
+import { parseTableParams } from "@/lib/table-query";
+import { listClients } from "@/services/clients-service";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const ctx = await getAuthContext();
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-      .from("geo_clients")
-      .select(
-        "id, name, url, email, status, intake_token, report_slug, audit_id, intake_completed_at, created_at"
-      )
-      .eq("created_by", ctx.userId)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ clients: data });
+    const params = parseTableParams(req);
+    const result = await listClients(ctx.userId, params);
+    return NextResponse.json(result);
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

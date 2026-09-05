@@ -52,7 +52,7 @@ export async function GET(
 
     // Build comparison data: extract per-engine visibility from summary_json
     const history = (versions || []).map((v) => {
-      const engineBreakdown = v.summary_json?.per_engine_breakdown || {};
+      const engineBreakdown = v.summary_json?.engine_breakdown || {};
       const engines: Record<string, number> = {};
       for (const [engineKey, engineData] of Object.entries(engineBreakdown)) {
         engines[engineKey] = (engineData as { visibility_rate: number })?.visibility_rate ?? 0;

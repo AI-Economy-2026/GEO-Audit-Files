@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 export interface Me {
   userId: string;
@@ -13,21 +13,25 @@ export interface Me {
   status: "active" | "suspended";
 }
 
-interface UseMeResult {
+interface MeContextValue {
   me: Me | null;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
 }
 
-/** Fetches the current user's profile from /api/me. Components use it to
- *  show credit balance, disable buttons when credits=0, etc. */
-export function useMe(): UseMeResult {
+const MeContext = createContext<MeContextValue | null>(null);
+
+/** Fetches the current user's profile from /api/me exactly once for the
+ *  whole app (mounted at the root layout, so it survives client-side
+ *  navigation between pages instead of refetching on every route). */
+export function MeProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
+    setLoading(true);
     try {
       const res = await fetch("/api/me");
       const data = await res.json();
@@ -45,5 +49,15 @@ export function useMe(): UseMeResult {
     load();
   }, []);
 
-  return { me, loading, error, refresh: load };
+  return (
+    <MeContext.Provider value={{ me, loading, error, refresh: load }}>
+      {children}
+    </MeContext.Provider>
+  );
+}
+
+export function useMe(): MeContextValue {
+  const ctx = useContext(MeContext);
+  if (!ctx) throw new Error("useMe must be used within MeProvider");
+  return ctx;
 }

@@ -7,9 +7,25 @@ import Tooltip from "@/components/audit/Tooltip";
 import { useAuditData, tone } from "@/components/audit/useAuditData";
 import { downloadCsv, safeFilename } from "@/lib/csv";
 
+type Direction = "up" | "down" | "flat";
+
+function directionOf(delta: number): Direction {
+  return delta > 0 ? "up" : delta < 0 ? "down" : "flat";
+}
+
+function arrowFor(dir: Direction): string {
+  return dir === "up" ? "▲" : dir === "down" ? "▼" : "±";
+}
+
 function fmtDate(iso: string | null): string {
   if (!iso) return "-";
   return new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function statusChipClass(status: string): string {
+  if (status === "completed") return "chip-good";
+  if (status === "failed") return "chip-crit";
+  return "chip-warn";
 }
 
 export default function TrackerPage() {
@@ -77,8 +93,11 @@ export default function TrackerPage() {
           </div>
         </div>
         <div className="card pad-lg" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 12 }}>
-            This is your baseline audit. Run another audit to start tracking movement.
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 8 }}>
+            {Math.round(audit.visibility_rate ?? 0)}<span style={{ fontSize: 20, color: "var(--text-3)", fontWeight: 500 }}>%</span>
+          </div>
+          <div style={{ fontSize: 14, color: "var(--text-2)", marginBottom: 20 }}>
+            This is {audit.brand_name}&rsquo;s baseline audit. Run another audit to start tracking movement.
           </div>
           <button className="btn btn-primary" onClick={handleReAudit} disabled={reAuditLoading}>
             {reAuditLoading ? "Starting re-audit…" : "Run re-audit now"}
@@ -91,10 +110,10 @@ export default function TrackerPage() {
     );
   }
 
-  const directionVsPrev: "up" | "down" | "flat" =
-    movement.deltaVsPrev > 0 ? "up" : movement.deltaVsPrev < 0 ? "down" : "flat";
-  const directionVsBaseline: "up" | "down" | "flat" =
-    movement.deltaVsBaseline > 0 ? "up" : movement.deltaVsBaseline < 0 ? "down" : "flat";
+  const directionVsPrev = directionOf(movement.deltaVsPrev);
+  const directionVsBaseline = directionOf(movement.deltaVsBaseline);
+  const completedCount = history.filter((h) => h.status === "completed").length;
+  const bestRate = Math.max(...history.map((h) => h.visibility_rate ?? 0));
 
   return (
     <AuditShell auditId={id} brandName={audit.brand_name}>
@@ -127,58 +146,80 @@ export default function TrackerPage() {
               Export CSV
             </button>
           </Tooltip>
+          <button className="btn btn-primary btn-sm" onClick={handleReAudit} disabled={reAuditLoading}>
+            {reAuditLoading ? "Starting…" : "Run re-audit now"}
+          </button>
+        </div>
+      </div>
+      {reAuditError && (
+        <div style={{ marginBottom: 20, fontSize: 13, color: "var(--crit)" }}>{reAuditError}</div>
+      )}
+
+      {/* HERO */}
+      <div className="hero">
+        <div className="hero-left">
+          <div className="hero-label">AI visibility now</div>
+          <div className="hero-headline">
+            {Math.round(movement.currentRate)}
+            <span className="slash">%</span>
+          </div>
+          <span
+            className={`chip ${directionVsPrev === "up" ? "chip-good" : directionVsPrev === "down" ? "chip-crit" : "chip-neutral"}`}
+            style={{ marginTop: 10, alignSelf: "flex-start" }}
+          >
+            {arrowFor(directionVsPrev)} {Math.abs(movement.deltaVsPrev)} points since {fmtDate(movement.prev.completed_at)}
+          </span>
+          <div className="hero-summary">
+            {audit.brand_name} has moved from {Math.round(movement.baselineRate)}% at baseline to{" "}
+            {Math.round(movement.currentRate)}% across {completedCount} audit{completedCount === 1 ? "" : "s"}
+            {directionVsBaseline === "flat"
+              ? ", holding steady since the first run."
+              : `, ${directionVsBaseline === "up" ? "a gain" : "a drop"} of ${Math.abs(movement.deltaVsBaseline)} points since the first run.`}
+          </div>
+        </div>
+        <div className="hero-right">
+          <div className="hero-benchmarks" style={{ borderTop: "none", paddingTop: 0, marginTop: 0 }}>
+            <div className="hero-bm-item">
+              <div className="hero-bm-label">Baseline (v{movement.baseline.version})</div>
+              <div className="hero-bm-value">
+                <span className="num">{Math.round(movement.baselineRate)}</span>
+              </div>
+            </div>
+            <div className="hero-bm-item">
+              <div className="hero-bm-label">Best so far</div>
+              <div className="hero-bm-value">
+                <span className="num">{Math.round(bestRate)}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* MOVEMENT CARDS */}
-      <div className="section">
-        <div className="section-head">
-          <div>
-            <h2>Latest movement</h2>
-            <div className="sub">What happened between the last two audits and vs baseline.</div>
+      {/* KPI STRIP */}
+      <div className="kpi-strip">
+        <div className="kpi">
+          <div className="kpi-label">vs Last audit</div>
+          <div className={`kpi-number ${directionVsPrev === "up" ? "num-good" : directionVsPrev === "down" ? "num-warn" : ""}`}>
+            {arrowFor(directionVsPrev)} {Math.abs(movement.deltaVsPrev)}
           </div>
+          <div className="kpi-sub">v{movement.prev.version} → v{movement.current.version}</div>
         </div>
-        <div className="movement-grid">
-          <div className={`mv-card ${directionVsPrev}`}>
-            <div className="mv-label">vs Last audit</div>
-            <div className="mv-before-after">
-              <span className="mv-num mv-before">{Math.round(movement.prevRate)}</span>
-              <span className="mv-arrow">→</span>
-              <span className={`mv-num mv-after ${directionVsPrev}`}>{Math.round(movement.currentRate)}</span>
-            </div>
-            <span className={`mv-delta ${directionVsPrev}`}>
-              {directionVsPrev === "up" ? "▲" : directionVsPrev === "down" ? "▼" : "±"}{" "}
-              {Math.abs(movement.deltaVsPrev)}
-            </span>
-            <div className="mv-sub">
-              {fmtDate(movement.prev.completed_at)} → {fmtDate(movement.current.completed_at)}
-            </div>
+        <div className="kpi">
+          <div className="kpi-label">vs Baseline</div>
+          <div className={`kpi-number ${directionVsBaseline === "up" ? "num-good" : directionVsBaseline === "down" ? "num-warn" : ""}`}>
+            {arrowFor(directionVsBaseline)} {Math.abs(movement.deltaVsBaseline)}
           </div>
-
-          <div className={`mv-card ${directionVsBaseline}`}>
-            <div className="mv-label">vs Baseline</div>
-            <div className="mv-before-after">
-              <span className="mv-num mv-before">{Math.round(movement.baselineRate)}</span>
-              <span className="mv-arrow">→</span>
-              <span className={`mv-num mv-after ${directionVsBaseline}`}>{Math.round(movement.currentRate)}</span>
-            </div>
-            <span className={`mv-delta ${directionVsBaseline}`}>
-              {directionVsBaseline === "up" ? "▲" : directionVsBaseline === "down" ? "▼" : "±"}{" "}
-              {Math.abs(movement.deltaVsBaseline)}
-            </span>
-            <div className="mv-sub">
-              Baseline set {fmtDate(movement.baseline.completed_at)}
-            </div>
-          </div>
-
-          <div className="mv-card">
-            <div className="mv-label">Audits completed</div>
-            <div className="mv-before-after">
-              <span className="mv-num mv-after">{history.filter((h) => h.status === "completed").length}</span>
-            </div>
-            <span className="mv-delta flat">v{audit.version} live</span>
-            <div className="mv-sub">Total rounds run on this brand</div>
-          </div>
+          <div className="kpi-sub">since {fmtDate(movement.baseline.completed_at)}</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Audits completed</div>
+          <div className="kpi-number">{completedCount}</div>
+          <div className="kpi-sub">total rounds run on this brand</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Current version</div>
+          <div className="kpi-number">v{audit.version}</div>
+          <div className="kpi-sub">latest run, {fmtDate(audit.completed_at)}</div>
         </div>
       </div>
 
@@ -187,79 +228,94 @@ export default function TrackerPage() {
         <div className="section-head">
           <div>
             <h2>Audit history</h2>
-            <div className="sub">Each audit run with its score, mentions and movement.</div>
+            <div className="sub">Each audit run with its score, mentions and movement vs the run before it.</div>
           </div>
         </div>
-        <div>
-          {history
-            .slice()
-            .reverse()
-            .map((h, i, arr) => {
-              const isLatest = i === 0;
-              const prevEntry = arr[i + 1];
-              const delta =
-                prevEntry?.visibility_rate != null && h.visibility_rate != null
-                  ? +(h.visibility_rate - prevEntry.visibility_rate).toFixed(1)
-                  : null;
-              const dir: "up" | "down" | "flat" = delta == null ? "flat" : delta > 0 ? "up" : delta < 0 ? "down" : "flat";
-              const rate = h.visibility_rate ?? 0;
-              const t = tone(rate);
+        <div className="table-wrap">
+          <div className="scroll">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>Version</th>
+                  <th>Date</th>
+                  <th>Visibility</th>
+                  <th className="center">Mentions</th>
+                  <th className="center">vs previous</th>
+                  <th>Status</th>
+                  <th className="center"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {history
+                  .slice()
+                  .reverse()
+                  .map((h, i, arr) => {
+                    const isLatest = i === 0;
+                    const prevEntry = arr[i + 1];
+                    const delta =
+                      prevEntry?.visibility_rate != null && h.visibility_rate != null
+                        ? +(h.visibility_rate - prevEntry.visibility_rate).toFixed(1)
+                        : null;
+                    const dir: Direction = delta == null ? "flat" : directionOf(delta);
+                    const rate = h.visibility_rate ?? 0;
+                    const t = tone(rate);
 
-              return (
-                <div
-                  key={h.id}
-                  className={`history-row ${isLatest ? "latest" : ""}`}
-                  onClick={() => router.push(`/audits/${h.id}/dashboard`)}
-                >
-                  <div className="history-date">
-                    {fmtDate(h.completed_at)}
-                    {isLatest && (
-                      <span
-                        style={{
-                          display: "inline-block",
-                          marginLeft: 6,
-                          padding: "2px 7px",
-                          borderRadius: 999,
-                          background: "var(--mint-weak)",
-                          color: "var(--mint)",
-                          fontSize: 9,
-                          fontWeight: 700,
-                          letterSpacing: "0.05em",
-                          border: "1px solid var(--mint-line)",
-                          textTransform: "uppercase",
-                          verticalAlign: "middle",
-                        }}
+                    return (
+                      <tr
+                        key={h.id}
+                        className="clickable"
+                        onClick={() => router.push(`/audits/${h.id}/dashboard`)}
                       >
-                        Latest
-                      </span>
-                    )}
-                  </div>
-                  <div className="history-label">
-                    Visibility audit v{h.version}
-                    {prevEntry ? ` (${prevEntry.version} → ${h.version})` : " (baseline)"}
-                  </div>
-                  <div className={`history-metric ${t}`}>
-                    {Math.round(rate)}
-                    <span style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 500, marginLeft: 2 }}>%</span>
-                  </div>
-                  <div className="history-metric">
-                    {h.total_mentioned ?? 0}
-                    <span style={{ fontSize: 11, color: "var(--text-3)", fontWeight: 500, marginLeft: 2 }}>
-                      /{h.total_queries ?? 0}
-                    </span>
-                  </div>
-                  <div className={`history-delta ${dir}`}>
-                    {delta == null ? "baseline" : `${delta > 0 ? "▲" : delta < 0 ? "▼" : "±"} ${Math.abs(delta)}`}
-                  </div>
-                  <div style={{ fontSize: 11, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    {h.status}
-                  </div>
-                  <div className="history-label" style={{ textAlign: "right" }}>
-                    View →
-                  </div>
-                </div>
-              );
-            })}
+                        <td style={{ fontWeight: 600 }}>
+                          v{h.version}
+                          {isLatest && (
+                            <span className="chip chip-mint" style={{ marginLeft: 8, padding: "1px 7px", fontSize: 9 }}>
+                              Latest
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ fontFamily: "var(--font-mono)", fontSize: 12.5, color: "var(--text-2)" }}>
+                          {fmtDate(h.completed_at)}
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div className="bar" style={{ flex: 1, maxWidth: 160 }}>
+                              <div className={`bar-fill ${t}`} style={{ width: `${Math.max(rate, 2)}%` }} />
+                            </div>
+                            <span style={{ fontWeight: 600, fontSize: 14, width: 40, textAlign: "right" }}>
+                              {Math.round(rate)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="center">
+                          {h.total_mentioned ?? 0} / {h.total_queries ?? 0}
+                        </td>
+                        <td className="center">
+                          {delta == null ? (
+                            <span style={{ color: "var(--text-3)" }}>baseline</span>
+                          ) : (
+                            <span
+                              style={{
+                                color: dir === "up" ? "var(--good)" : dir === "down" ? "var(--crit)" : "var(--text-3)",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {arrowFor(dir)} {Math.abs(delta)}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`chip ${statusChipClass(h.status)}`}>{h.status}</span>
+                        </td>
+                        <td className="center">
+                          <span className="row-chevron">→</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </AuditShell>

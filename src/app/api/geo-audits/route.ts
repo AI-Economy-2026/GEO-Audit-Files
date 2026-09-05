@@ -1,31 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthContext, AuthError } from "@/lib/auth-context";
+import { getAuthContext, AuthError, getProfile } from "@/lib/auth-context";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { parseTableParams } from "@/lib/table-query";
+import { listAudits } from "@/services/audits-service";
 
 const WORKER_URL = (process.env.GEO_WORKER_URL || "").replace(/\/+$/, "");
 const WORKER_API_KEY = process.env.GEO_WORKER_API_KEY;
 
-// GET /api/geo-audits: list audits for the user's org
-export async function GET() {
+// GET /api/geo-audits: paginated audit list for the user's org
+export async function GET(req: NextRequest) {
   try {
     const ctx = await getAuthContext();
-    const supabase = await createClient();
-
-    const query = supabase
-      .from("geo_audits")
-      .select(
-        "id, brand_name, brand_url, status, visibility_rate, total_queries, total_mentioned, engines, created_at, completed_at, duration_seconds, parent_audit_id, version, dashboard_url"
-      )
-      .order("created_at", { ascending: false });
-
-    query.eq("created_by", ctx.userId);
-
-    const { data, error } = await query;
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ audits: data });
+    const profile = await getProfile();
+    const params = parseTableParams(req);
+    const creditPool = profile.creditsRemaining + profile.creditsUsed;
+    const result = await listAudits(ctx.userId, params, creditPool);
+    return NextResponse.json(result);
   } catch (err) {
     if (err instanceof AuthError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -49,6 +39,7 @@ export async function POST(req: NextRequest) {
       competitors,
       keywords,
       prompts,
+      engines: requestedEngines,
     }: {
       user_name: string;
       user_email: string;
@@ -58,6 +49,7 @@ export async function POST(req: NextRequest) {
       competitors: string[];
       keywords: string[];
       prompts: { prompt_id: number; category: string; prompt_text: string; prompt_type: string }[];
+      engines?: string[];
     } = body;
 
     // Validate
@@ -112,6 +104,21 @@ export async function POST(req: NextRequest) {
       "deepseek",
     ];
 
+    // Engines to actually run: user-selected subset of the live engines,
+    // falling back to all of them when none were sent (older clients / API
+    // callers keep working unchanged).
+    const engines =
+      Array.isArray(requestedEngines) && requestedEngines.length > 0
+        ? requestedEngines.filter((e) => allEngines.includes(e))
+        : allEngines;
+
+    if (engines.length === 0) {
+      return NextResponse.json(
+        { error: "At least one AI engine must be selected." },
+        { status: 400 }
+      );
+    }
+
     // 1. Create the audit row
     const { data: audit, error: auditErr } = await supabase
       .from("geo_audits")
@@ -126,9 +133,9 @@ export async function POST(req: NextRequest) {
         ...(country ? { country } : {}),
         competitors: competitors || [],
         keywords: keywords || [],
-        engines: allEngines,
+        engines,
         status: "pending",
-        progress_total: prompts.length * allEngines.length,
+        progress_total: prompts.length * engines.length,
       })
       .select("id")
       .single();

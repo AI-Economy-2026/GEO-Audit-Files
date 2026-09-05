@@ -30,6 +30,16 @@ const COUNTRIES = [
   "Germany", "France", "Netherlands", "Spain",
 ];
 
+// Keep in sync with the allEngines list in /api/geo-audits.
+const ALL_ENGINES = [
+  { key: "openai", label: "ChatGPT", sub: "OpenAI" },
+  { key: "anthropic", label: "Claude", sub: "Anthropic" },
+  { key: "google", label: "Gemini", sub: "Google" },
+  { key: "perplexity", label: "Perplexity", sub: "Perplexity" },
+  { key: "xai", label: "Grok", sub: "xAI" },
+  { key: "deepseek", label: "DeepSeek", sub: "DeepSeek" },
+];
+
 export default function NewAuditPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -49,6 +59,15 @@ export default function NewAuditPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [selectedEngines, setSelectedEngines] = useState<string[]>(
+    ALL_ENGINES.map((e) => e.key)
+  );
+
+  function toggleEngine(key: string) {
+    setSelectedEngines((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }
 
   /**
    * Split input on commas OR newlines so users can paste lists like
@@ -161,6 +180,10 @@ export default function NewAuditPage() {
       setError("Please provide at least one valid ranking prompt to run the audit.");
       return;
     }
+    if (selectedEngines.length === 0) {
+      setError("Please select at least one AI engine to run the audit against.");
+      return;
+    }
 
     setSubmitting(true);
     setError("");
@@ -178,6 +201,7 @@ export default function NewAuditPage() {
           competitors,
           keywords,
           prompts: prompts.filter((p) => p.prompt_text.trim() !== ""),
+          engines: selectedEngines,
         }),
       });
 
@@ -578,12 +602,52 @@ export default function NewAuditPage() {
                 </button>
               </div>
 
+              <div className="mt-2">
+                <h3 className="text-sm font-bold text-on-surface mb-1">
+                  Choose which AI engines to test
+                </h3>
+                <p className="text-sm text-on-surface-variant mb-3">
+                  We&apos;ll fire {prompts.filter((p) => p.prompt_text).length} prompts at every engine you select below.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {ALL_ENGINES.map((engine) => {
+                    const checked = selectedEngines.includes(engine.key);
+                    return (
+                      <label
+                        key={engine.key}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                          checked
+                            ? "border-primary bg-primary/5"
+                            : "border-outline-variant hover:border-primary/40"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleEngine(engine.key)}
+                          className="w-4 h-4 accent-current text-primary cursor-pointer"
+                        />
+                        <span>
+                          <span className="block text-sm font-semibold text-on-surface">{engine.label}</span>
+                          <span className="block text-xs text-on-surface-variant">{engine.sub}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 flex items-start gap-4">
                 <span className="material-symbols-outlined text-primary">info</span>
                 <p className="text-sm text-on-surface leading-relaxed">
                   <strong className="text-primary">Ready to launch.</strong> We&apos;ll fire
-                  these {prompts.filter((p) => p.prompt_text).length} prompts at ChatGPT, Claude,
-                  Gemini, Perplexity, Grok, and Google AI. Usually takes 2 to 3 minutes.
+                  these {prompts.filter((p) => p.prompt_text).length} prompts at{" "}
+                  {selectedEngines.length} engine{selectedEngines.length === 1 ? "" : "s"}
+                  {selectedEngines.length > 0 &&
+                    `: ${ALL_ENGINES.filter((e) => selectedEngines.includes(e.key))
+                      .map((e) => e.label)
+                      .join(", ")}`}
+                  . Usually takes 2 to 3 minutes.
                 </p>
               </div>
             </div>
@@ -619,7 +683,7 @@ export default function NewAuditPage() {
                 size="lg"
                 icon="rocket_launch"
                 onClick={handleSubmit}
-                disabled={submitting}
+                disabled={submitting || selectedEngines.length === 0}
               >
                 {submitting ? "Launching..." : "Run Diagnostic"}
               </Button>

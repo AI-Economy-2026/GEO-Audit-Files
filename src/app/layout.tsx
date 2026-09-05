@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { MeProvider } from "@/lib/me-context";
 
 export const metadata: Metadata = {
   title: {
@@ -43,7 +44,9 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
         />
       </head>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <MeProvider>{children}</MeProvider>
+      </body>
     </html>
   );
 }

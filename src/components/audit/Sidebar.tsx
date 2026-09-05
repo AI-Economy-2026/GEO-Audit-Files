@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMe } from "@/lib/use-me";
+import { useMe } from "@/lib/me-context";
 import LogoutButton from "@/components/LogoutButton";
 
 interface NavItem {
@@ -24,11 +25,65 @@ interface SidebarProps {
   auditId?: string;
 }
 
+const COLLAPSE_KEY = "gatha-sidebar-collapsed";
+const EXPANDED_WIDTH = 260;
+const COLLAPSED_WIDTH = 64;
+
 /** Fixed navy sidebar matching the reference design. Mint active state.
- *  Audit-specific groups only render when auditId is provided. */
+ *  Audit-specific groups only render when auditId is provided. Collapses
+ *  to an icon-only rail via local state (no shared layout files touched). */
 export default function Sidebar({ auditId }: SidebarProps) {
   const pathname = usePathname();
   const { me } = useMe();
+  const [collapsed, setCollapsed] = useState(false);
+  const [clientName, setClientName] = useState<string | null>(null);
+
+  // Restore the collapsed preference after mount only, so the server-rendered
+  // markup (always expanded) matches the first client render and avoids a
+  // hydration mismatch.
+  useEffect(() => {
+    try {
+      setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === "1");
+    } catch {
+      /* localStorage unavailable (privacy mode, SSR) — default to expanded */
+    }
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(COLLAPSE_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore persistence failures */
+      }
+      return next;
+    });
+  }
+
+  // Fetch just enough of the audit record to label the "Audit · {Client}"
+  // group — AuditShell doesn't pass the brand name down to Sidebar, so this
+  // is a lightweight fetch scoped to this component only.
+  useEffect(() => {
+    if (!auditId) {
+      setClientName(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/geo-audits/${auditId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.audit?.brand_name) {
+          setClientName(data.audit.brand_name as string);
+        }
+      })
+      .catch(() => {
+        /* label falls back to "Audit" below */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [auditId]);
 
   const workspaceGroup: Group = {
     label: "Workspace",
@@ -69,10 +124,23 @@ export default function Sidebar({ auditId }: SidebarProps) {
     ],
   };
 
+  // Single back-to-workspace link shown above the audit-scoped groups,
+  // matching the "Home" item in the reference mockups.
+  const homeItem: NavItem = {
+    href: "/clients",
+    label: "Home",
+    hint: "Back to all clients",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+    ),
+  };
+
   const auditGroups: Group[] = auditId
     ? [
     {
-      label: "Audit",
+      label: clientName ? `Audit · ${clientName}` : "Audit",
       items: [
         {
           href: `/audits/${auditId}/dashboard`,
@@ -145,7 +213,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
       ],
     },
     {
-      label: "Take action",
+      label: "Next steps",
       items: [
         {
           href: `/audits/${auditId}/opportunity`,
@@ -189,7 +257,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
       ]
     : [];
 
-  const groups: Group[] = [workspaceGroup, ...auditGroups];
+  const groups: Group[] = auditId ? auditGroups : [workspaceGroup];
 
   return (
     <aside
@@ -197,53 +265,121 @@ export default function Sidebar({ auditId }: SidebarProps) {
         position: "sticky",
         top: 0,
         height: "100vh",
-        width: 260,
+        width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
         background: "linear-gradient(180deg,rgba(14,26,45,.92),rgba(10,19,33,.92))",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         borderRight: "1px solid var(--border)",
-        padding: "24px 18px",
+        padding: collapsed ? "24px 10px" : "24px 18px",
         display: "flex",
         flexDirection: "column",
         gap: 22,
         overflowY: "auto",
+        overflowX: "hidden",
         flexShrink: 0,
+        transition: "width 0.18s var(--ease)",
       }}
     >
-      {/* Brand */}
+      {/* Brand + collapse toggle */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
+          justifyContent: collapsed ? "center" : "space-between",
           gap: 10,
-          padding: "4px 6px 16px",
+          padding: collapsed ? "4px 0 16px" : "4px 6px 16px",
           borderBottom: "1px solid var(--border-soft)",
         }}
       >
-        <div style={{ minWidth: 0 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/gatha-wordmark-mint.svg" alt="Gatha" style={{ height: 24, width: "auto", display: "block" }} />
-          <div style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 6 }}>
-            Be Seen in AI Search
+        {!collapsed && (
+          <div style={{ minWidth: 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/gatha-wordmark-mint.svg" alt="Gatha" style={{ height: 24, width: "auto", display: "block" }} />
+            <div style={{ fontSize: 10, color: "var(--text-3)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 6 }}>
+              Be Seen in AI Search
+            </div>
           </div>
-        </div>
+        )}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 26,
+            height: 26,
+            flexShrink: 0,
+            borderRadius: 8,
+            border: "1px solid var(--border-soft)",
+            background: "var(--surface-2)",
+            color: "var(--text-3)",
+            cursor: "pointer",
+          }}
+        >
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ transform: collapsed ? "rotate(180deg)" : "none", transition: "transform 0.18s var(--ease)" }}
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
       </div>
+
+      {/* Home (audit-scoped pages only) */}
+      {auditId && (
+        <Link
+          href={homeItem.href}
+          title={collapsed ? homeItem.label : undefined}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: collapsed ? "7px" : "7px 8px",
+            justifyContent: collapsed ? "center" : "flex-start",
+            borderRadius: 6,
+            color: "var(--text-2)",
+            fontWeight: 500,
+            fontSize: 13,
+            textDecoration: "none",
+          }}
+        >
+          <span style={{ width: 14, height: 14, flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
+            {homeItem.icon}
+          </span>
+          {!collapsed && <span>{homeItem.label}</span>}
+        </Link>
+      )}
 
       {/* Nav groups */}
       {groups.map((group) => (
         <div key={group.label}>
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "var(--text-4)",
-              padding: "0 12px 6px",
-            }}
-          >
-            {group.label}
-          </div>
+          {!collapsed && (
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: "var(--text-4)",
+                padding: "0 12px 6px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {group.label}
+            </div>
+          )}
           <nav style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {group.items.map((item) => {
               const active = group.exactMatchOnly
@@ -253,11 +389,13 @@ export default function Sidebar({ auditId }: SidebarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
+                  title={collapsed ? item.label : undefined}
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    padding: "10px 12px",
+                    padding: collapsed ? "10px" : "10px 12px",
+                    justifyContent: collapsed ? "center" : "flex-start",
                     borderRadius: 10,
                     color: active ? "var(--mint)" : "var(--text-2)",
                     fontSize: 14,
@@ -271,7 +409,7 @@ export default function Sidebar({ auditId }: SidebarProps) {
                   <span style={{ width: 16, height: 16, flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
                     {item.icon}
                   </span>
-                  <span>{item.label}</span>
+                  {!collapsed && <span>{item.label}</span>}
                 </Link>
               );
             })}
@@ -279,8 +417,9 @@ export default function Sidebar({ auditId }: SidebarProps) {
         </div>
       ))}
 
-      {/* Footer: credit balance for agencies, quick-fix CTA for admins */}
-      {me?.role === "agency" ? (
+      {/* Footer: credit balance for agencies, quick-fix CTA for admins.
+       *  Hidden while collapsed to keep the icon rail compact. */}
+      {!collapsed && (me?.role === "agency" ? (
         <div
           style={{
             marginTop: "auto",
@@ -360,10 +499,12 @@ export default function Sidebar({ auditId }: SidebarProps) {
             Get the quick fixes done
           </a>
         </div>
-      )}
+      ))}
 
-      {/* Logout */}
-      <LogoutButton />
+      {/* Logout — pinned to the bottom when the footer cards are hidden. */}
+      <div style={collapsed ? { marginTop: "auto" } : undefined}>
+        <LogoutButton />
+      </div>
     </aside>
   );
 }

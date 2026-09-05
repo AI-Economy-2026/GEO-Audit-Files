@@ -58,6 +58,13 @@ export default function LoginPage() {
       </div>
 
       <GlassCard padding="lg">
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-on-surface mb-1">Welcome back</h1>
+          <p className="text-sm text-on-surface-variant">
+            Sign in to pick up where you left off.
+          </p>
+        </div>
+
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
             <label className="block text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
